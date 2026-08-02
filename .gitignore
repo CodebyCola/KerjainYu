@@ -1,0 +1,8 @@
+.next
+node_modules
+.env
+.DS_Store
+/dist
+coverage
+client/.next
+server/node_modules
