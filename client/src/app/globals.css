@@ -1,26 +1,122 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base */
+  --background: #fff8f4;
+  --foreground: #2c2620;
+
+  /* Brand (dipakai untuk button utama, link, header) */
+  --primary: #b8703a;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e6e4e0;
+
+  --teritary: #817c70;
+  --neutral: #2c2620;
+
+  /* UI umum */
+  --border: #CFBFB5;
+  --muted: #817c70; /* teks sekunder: subtitle, timestamp, deskripsi */
+  --card: #ffffff; /* background untuk card/box */
+
+  /* Status task */
+  --status-todo-bg: #f0eee9;
+  --status-todo-text: #5f5a4e;
+
+  --status-progress-bg: #fae3c6;
+  --status-progress-text: #7a4b23;
+
+  --status-done-bg: #d9ead6;
+  --status-done-text: #2c5530;
+
+  --status-blocked-bg: #f7dcd7;
+  --status-blocked-text: #7a2e26;
+
+  /* Role anggota */
+  --role-lead-bg: #ecdcc4; /* ketua */
+  --role-lead-text: #5c3d18;
+
+  --role-member-bg: #e3ddd0; /* member */
+  --role-member-text: #45403a;
+
+  --role-guest-bg: #f5ede0; /* guest */
+  --role-guest-text: #6e5735;
+}
+
+.dark {
+  /* Base */
+  --background: #17130f;
+  --foreground: #f5f4f2;
+
+  /* Brand (dipakai untuk button utama, link, header) */
+  --primary: #b8703a;
+  --primary-foreground: #2c2620;
+
+  /* UI umum */
+  --border: #453f35;
+  --muted: #a8a49a; /* teks sekunder: subtitle, timestamp, deskripsi */
+  --card: #2c2620; /* background untuk card/box */
+
+  /* Status task */
+  --status-todo-bg: #3a352c;
+  --status-todo-text: #cfccc5;
+
+  --status-progress-bg: #573419;
+  --status-progress-text: #f3c48a;
+
+  --status-done-bg: #1f3a26;
+  --status-done-text: #a8d6ae;
+
+  --status-blocked-bg: #4a231f;
+  --status-blocked-text: #f0aca4;
+
+  /* Role anggota */
+  --role-lead-bg: #4a3620; /* ketua */
+  --role-lead-text: #ecdcc4;
+
+  --role-member-bg: #3a352c; /* member */
+  --role-member-text: #d9d5cb;
+
+  --role-guest-bg: #453423; /* guest */
+  --role-guest-text: #f0e4ce;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+
+  --color-teritary: var(--teritary);
+
+  --color-neutral: var(--neutral);
+
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+
+  --color-status-todo-bg: var(--status-todo-bg);
+  --color-status-todo-text: var(--status-todo-text);
+  --color-status-progress-bg: var(--status-progress-bg);
+  --color-status-progress-text: var(--status-progress-text);
+  --color-status-done-bg: var(--status-done-bg);
+  --color-status-done-text: var(--status-done-text);
+  --color-status-blocked-bg: var(--status-blocked-bg);
+  --color-status-blocked-text: var(--status-blocked-text);
+
+  --color-role-lead-bg: var(--role-lead-bg);
+  --color-role-lead-text: var(--role-lead-text);
+  --color-role-member-bg: var(--role-member-bg);
+  --color-role-member-text: var(--role-member-text);
+  --color-role-guest-bg: var(--role-guest-bg);
+  --color-role-guest-text: var(--role-guest-text);
+
+  --font-inter: var(--font-inter);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+ background: var(--background);
 }
