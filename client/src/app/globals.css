@@ -15,7 +15,7 @@
   --neutral: #2c2620;
 
   /* UI umum */
-  --border: #CFBFB5;
+  --border: #cfbfb5;
   --muted: #817c70; /* teks sekunder: subtitle, timestamp, deskripsi */
   --card: #ffffff; /* background untuk card/box */
 
@@ -117,6 +117,12 @@
   --font-inter: var(--font-inter);
 }
 
+html,
 body {
- background: var(--background);
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background: var(--background);
 }
