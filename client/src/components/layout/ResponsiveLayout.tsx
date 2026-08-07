@@ -1,22 +1,30 @@
-import type { ReactNode } from "react";
-import MobileLayout from "./mobile/MobileLayout";
+import { ReactNode } from "react";
+import MobileLayout from "@/components/layout/mobile/MobileLayout";
+import TabletLayout from "@/components/layout/tablet/TabletLayout";
+import DesktopLayout from "@/components/layout/desktop/DesktopLayout";
 
-interface ResponsiveLayoutProps {
+type ResponsiveLayoutProps = {
+    user?: { name?: string | null; avatarUrl?: string | null };
     children: ReactNode;
-}
+};
 
-export default function ResponsiveLayout({
-    children,
-}: ResponsiveLayoutProps) {
+export default function ResponsiveLayout({ user, children }: ResponsiveLayoutProps) {
     return (
         <>
-            <MobileLayout className="lg:hidden md:hidden">
-                {children}
-            </MobileLayout>
+            {/* Mobile: < md */}
+            <div className="w-full h-screen md:hidden">
+                <MobileLayout user={user}>{children}</MobileLayout>
+            </div>
 
-            {/* <DesktopLayout className="hidden lg:flex">
-                {children}
-            </DesktopLayout> */}
+            {/* Tablet: md - lg */}
+            <div className="hidden w-full h-screen md:flex lg:hidden">
+                <TabletLayout user={user}>{children}</TabletLayout>
+            </div>
+
+            {/* Desktop: >= lg */}
+            <div className="hidden w-full h-screen lg:flex">
+                <DesktopLayout user={user}>{children}</DesktopLayout>
+            </div>
         </>
     );
 }

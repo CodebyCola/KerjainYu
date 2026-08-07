@@ -4,8 +4,8 @@ import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import "./globals.css";
 
 const inter = Inter({
-  subsets:['latin'],
-  variable:"--font-inter",
+  subsets: ['latin'],
+  variable: "--font-inter",
 })
 
 export const metadata: Metadata = {
