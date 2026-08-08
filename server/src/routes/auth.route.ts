@@ -10,6 +10,7 @@ const router = Router()
 
 router.post("/register", authLimiter, validate(registerSchema), authController.register)
 router.post("/login", authLimiter, validate(loginSchema), authController.login)
+router.post("/logout", authenticate, authController.logout)
 router.get("/me", authenticate, authController.getProfile)
 router.patch("/me", authenticate, validate(updateUserSchema), authController.updateProfile)
 router.patch("/me/password", authLimiter, authenticate, validate(changePasswordSchema), authController.changePassword)
