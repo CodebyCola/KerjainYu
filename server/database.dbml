@@ -1,3 +1,24 @@
+Project KerjainYu {
+  database_type: 'PostgreSQL'
+  Note: '''
+    # KerjainYu — Project Collaboration App
+
+    Aplikasi kolaborasi tugas project berbasis tim, dengan fitur:
+    - Manajemen project & member (leader/member)
+    - Task pool (claimable/pre-assigned), swap antar member
+    - Submission & review (approve/revision/reject)
+    - Appeal (banding) atas hasil review
+    - Notifikasi
+
+    Konvensi penamaan kolom: snake_case (standar PostgreSQL).
+    Konvensi penamaan variabel di kode (backend/frontend): camelCase.
+    Konversi dilakukan otomatis lewat knex-stringcase di layer database —
+    lihat NAMING_MAPPING.md di repo untuk detail.
+
+    Sinkron dengan tipe Kysely (database.d.ts) per update terakhir.
+  '''
+}
+
 // =========================================================
 // PROJECT COLLABORATION APP — DBML SCHEMA (KerjainYu)
 // =========================================================
@@ -5,7 +26,7 @@
 Table users {
   id bigint [pk, increment]
   username varchar [unique, not null]
-  hash_password varchar [not null]
+  password varchar [not null] // renamed from hash_password
   created_at timestamp [default: `now()`]
 }
 
@@ -20,12 +41,12 @@ Table projects {
   allow_free_swap boolean [not null, default: false] // feature: leader toggles swap-without-approval
   deadline datetime
   is_archived boolean [not null, default: false] // separate from status; "simpan atau engga" when archiving
-  archived_at timestamp
+  is_archived_at timestamp // renamed from archived_at
   created_at timestamp [default: `now()`]
 }
 
 // NOTE: dropped 'archived' from this enum — archiving is now tracked purely
-// via is_archived/archived_at, so status only reflects work progress.
+// via is_archived/is_archived_at, so status only reflects work progress.
 Enum project_status {
   ongoing
   completed
@@ -57,21 +78,22 @@ Enum member_status {
   removed
 }
 
-Enum category{
-  docs
-  design
-  development
-  other
-}
-
 // Workapp links (Figma, GitHub, Google Docs, etc.)
 Table project_links {
   id bigint [pk, increment]
   project_id bigint [not null, ref: > projects.id]
   label varchar [not null] // e.g. "Figma", "GitHub repo"
   url varchar [not null]
+  category project_link_category [not null] // new: classify link type
   added_by bigint [ref: > users.id]
   created_at timestamp [default: `now()`]
+}
+
+Enum project_link_category {
+  design
+  development
+  docs
+  other
 }
 
 // ---------------------------------------------------------
@@ -87,8 +109,8 @@ Table tasks {
   display_order int [default: 0]
   project_id bigint [not null, ref: > projects.id]
   deadline datetime
-  assigner_id bigint [ref: > users.id] // nullable = unclaimed ("war tugas")
-  // created_by bigint [not null, ref: > users.id] // leader who created it
+  assignee_id bigint [ref: > users.id] // renamed from assigner_id; nullable = unclaimed ("war tugas")
+  created_by bigint [not null, ref: > users.id] // now active: leader who created it
   is_claimable boolean [not null, default: false] // leader-controlled: open pool vs pre-assigned
   created_at timestamp [default: `now()`]
   updated_at timestamp
@@ -122,7 +144,7 @@ Enum ownership_change_reason {
   reassigned    // leader manually reassigned
 }
 
-// NEW: pending swap requests — only used when project.allow_free_swap = false.
+// pending swap requests — only used when project.allow_free_swap = false.
 // When true, swaps happen instantly and just get logged in task_ownership_log.
 // When false, a request sits here until the leader approves/rejects it.
 Table task_swap_requests {
@@ -238,7 +260,10 @@ Enum notification_type {
   task_assigned
   task_swapped
   swap_requested
+  submission_pending    // new: submission masuk, menunggu review leader
   submission_reviewed
   comment_added
   appeal_updated
+  member_added           // new: member baru ditambahkan ke project
+  member_invited          // new: member di-invite ke project
 }
