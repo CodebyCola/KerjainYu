@@ -5,15 +5,13 @@ export const registerSchema = z.object({
     .string()
     .trim()
     .min(3, "Username must be at least 3 characters")
-    .max(100, "Username must be at most 100 characters")
-    .nonempty("Username is required"),
+    .max(100, "Username must be at most 100 characters"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(100, "Password must be at most 100 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .nonempty("Password is required"),
+    .regex(/[0-9]/, "Password must contain at least one number"),
 });
 
 export const loginSchema = z.object({
@@ -30,8 +28,8 @@ export const updateUserSchema = z
       .max(100, "Username must be at most 100 characters")
       .optional(),
     email: z.string().trim().email("Invalid email address").optional(),
-    avatar_url: z.string().trim().url("Invalid URL").optional(),
-    full_name: z
+    avatarUrl: z.string().trim().url("Invalid URL").optional(),
+    fullName: z
       .string()
       .trim()
       .max(100, "Full name must be at most 100 characters")
@@ -43,17 +41,18 @@ export const updateUserSchema = z
 
 export const changePasswordSchema = z
   .object({
-    current_password: z.string().nonempty("Current password is required"),
-    new_password: z
+    currentPassword: z.string().nonempty("Current password is required"),
+    newPassword: z
       .string()
       .min(8, "New password must be at least 8 characters")
       .regex(/[A-Z]/, "New password must contain at least one uppercase letter")
       .regex(/[0-9]/, "New password must contain at least one number")
       .nonempty("New password is required"),
-    confirm_password: z.string().nonempty("Confirm password is required"),
+    confirmPassword: z.string().nonempty("Confirm password is required"),
   })
-  .refine((data) => data.new_password === data.confirm_password, {
+  .refine((data) => data.newPassword === data.confirmPassword, {
     message: "New password and confirm password must match",
+    path: ["confirmPassword"],
   });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
