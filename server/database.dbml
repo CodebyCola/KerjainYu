@@ -1,0 +1,273 @@
+Project KerjainYu {
+  database_type: 'PostgreSQL'
+  Note: '''
+    # KerjainYu — Project Collaboration App
+
+    Aplikasi kolaborasi tugas project berbasis tim, dengan fitur:
+    - Manajemen project & member (leader/member)
+    - Task pool (claimable/pre-assigned), swap antar member
+    - Submission & review (approve/revision/reject)
+    - Appeal (banding) atas hasil review
+    - Notifikasi
+
+    Konvensi penamaan kolom: snake_case (standar PostgreSQL).
+    Konvensi penamaan variabel di kode (backend/frontend): camelCase.
+    Konversi dilakukan otomatis lewat knex-stringcase di layer database —
+    lihat NAMING_MAPPING.md di repo untuk detail.
+
+    Sinkron dengan tipe Kysely (database.d.ts) per update terakhir.
+  '''
+}
+
+// =========================================================
+// PROJECT COLLABORATION APP — DBML SCHEMA (KerjainYu)
+// =========================================================
+
+Table users {
+  id bigint [pk, increment]
+  username varchar [unique, not null]
+  email varchar [unique, notnull]
+  full_name varchar [unique] 
+  avatar_url varchar
+  password varchar [not null] // renamed from hash_password
+  updated_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`]
+}
+
+// ---------------------------------------------------------
+// PROJECTS
+// ---------------------------------------------------------
+
+Table projects {
+  id bigint [pk, increment]
+  title varchar [not null]
+  status project_status [not null, default: 'ongoing']
+  allow_free_swap boolean [not null, default: false] // feature: leader toggles swap-without-approval
+  deadline datetime
+  is_archived boolean [not null, default: false] // separate from status; "simpan atau engga" when archiving
+  is_archived_at timestamp // renamed from archived_at
+  created_at timestamp [default: `now()`]
+}
+
+// NOTE: dropped 'archived' from this enum — archiving is now tracked purely
+// via is_archived/is_archived_at, so status only reflects work progress.
+Enum project_status {
+  ongoing
+  completed
+}
+
+// leader_id removed — leadership is now just a role row in project_members.
+// When a user creates a project, the app auto-inserts them here with role='leader'.
+Table project_members {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > projects.id]
+  user_id bigint [not null, ref: > users.id]
+  role project_role [not null, default: 'member']
+  joined_at timestamp [default: `now()`]
+  status member_status [not null, default: 'active']
+
+  indexes {
+    (project_id, user_id) [unique]
+  }
+}
+
+Enum project_role {
+  leader
+  member
+}
+
+Enum member_status {
+  invited
+  active
+  removed
+}
+
+// Workapp links (Figma, GitHub, Google Docs, etc.)
+Table project_links {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > projects.id]
+  label varchar [not null] // e.g. "Figma", "GitHub repo"
+  url varchar [not null]
+  category project_link_category [not null] // new: classify link type
+  added_by bigint [ref: > users.id]
+  created_at timestamp [default: `now()`]
+}
+
+Enum project_link_category {
+  design
+  development
+  docs
+  other
+}
+
+// ---------------------------------------------------------
+// TASKS
+// ---------------------------------------------------------
+
+Table tasks {
+  id bigint [pk, increment]
+  title varchar [not null]
+  description text
+  status task_status [not null, default: 'unclaimed']
+  priority int // nullable by default; ordered by created_at when null
+  display_order int [default: 0]
+  project_id bigint [not null, ref: > projects.id]
+  deadline datetime
+  assignee_id bigint [ref: > users.id] // renamed from assigner_id; nullable = unclaimed ("war tugas")
+  created_by bigint [not null, ref: > users.id] // now active: leader who created it
+  is_claimable boolean [not null, default: false] // leader-controlled: open pool vs pre-assigned
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Enum task_status {
+  unclaimed   // in the open pool, no owner yet
+  todo
+  ongoing
+  submitted
+  in_revision // leader requested changes
+  approved
+  rejected
+}
+
+// Log of ownership changes — covers direct assignment, member-to-member
+// swaps (with/without leader approval), and gives an audit trail for appeals
+Table task_ownership_log {
+  id bigint [pk, increment]
+  task_id bigint [not null, ref: > tasks.id]
+  from_user_id bigint [ref: > users.id] // null if first claim
+  to_user_id bigint [not null, ref: > users.id]
+  reason ownership_change_reason [not null]
+  changed_at timestamp [default: `now()`]
+}
+
+Enum ownership_change_reason {
+  assigned      // leader assigned directly
+  claimed       // member claimed from open pool
+  swap          // member-to-member swap
+  reassigned    // leader manually reassigned
+}
+
+// pending swap requests — only used when project.allow_free_swap = false.
+// When true, swaps happen instantly and just get logged in task_ownership_log.
+// When false, a request sits here until the leader approves/rejects it.
+Table task_swap_requests {
+  id bigint [pk, increment]
+  task_id bigint [not null, ref: > tasks.id] // task being offered
+  target_task_id bigint [ref: > tasks.id] // optional: the task offered in exchange, if a two-way swap
+  requested_by bigint [not null, ref: > users.id]
+  requested_to bigint [not null, ref: > users.id] // the other member involved
+  status swap_request_status [not null, default: 'pending']
+  resolved_by bigint [ref: > users.id] // leader who approved/rejected, null if free-swap/self-resolved
+  resolved_at timestamp
+  created_at timestamp [default: `now()`]
+}
+
+Enum swap_request_status {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+// ---------------------------------------------------------
+// SUBMISSIONS
+// ---------------------------------------------------------
+
+Table task_submissions {
+  id bigint [pk, increment]
+  task_id bigint [not null, ref: > tasks.id]
+  submitted_by bigint [not null, ref: > users.id]
+  note varchar
+  review_status review_status [not null, default: 'pending']
+  review_note varchar // leader's feedback, esp. on revision request
+  reviewed_by bigint [ref: > users.id]
+  reviewed_at timestamp
+  submitted_at timestamp [default: `now()`]
+}
+
+Enum review_status {
+  pending
+  approved
+  revision_requested
+  rejected
+}
+
+// One submission can carry multiple pieces of content (text/image/link/file)
+Table submission_attachments {
+  id bigint [pk, increment]
+  submission_id bigint [not null, ref: > task_submissions.id]
+  type attachment_type [not null]
+  content varchar [not null] // file URL, link, or plain text depending on type
+  created_at timestamp [default: `now()`]
+}
+
+Enum attachment_type {
+  text
+  image
+  file
+  link
+}
+
+// ---------------------------------------------------------
+// APPEALS ("aju banding")
+// ---------------------------------------------------------
+
+Table task_appeals {
+  id bigint [pk, increment]
+  task_id bigint [not null, ref: > tasks.id]
+  submission_id bigint [ref: > task_submissions.id] // null = appealing while still ongoing
+  raised_by bigint [not null, ref: > users.id]
+  reason varchar [not null]
+  status appeal_status [not null, default: 'pending']
+  resolved_by bigint [ref: > users.id]
+  resolution_note varchar
+  created_at timestamp [default: `now()`]
+  resolved_at timestamp
+}
+
+Enum appeal_status {
+  pending
+  accepted
+  rejected
+}
+
+// ---------------------------------------------------------
+// COMMENTS
+// ---------------------------------------------------------
+
+Table comments_task {
+  id bigint [pk, increment]
+  user_id bigint [not null, ref: > users.id]
+  task_id bigint [not null, ref: > tasks.id]
+  comment varchar [not null]
+  created_at timestamp [default: `now()`]
+}
+
+// ---------------------------------------------------------
+// NOTIFICATIONS
+// ---------------------------------------------------------
+
+Table notifications {
+  id bigint [pk, increment]
+  user_id bigint [not null, ref: > users.id] // recipient
+  type notification_type [not null]
+  reference_type varchar // e.g. "task", "project", "submission", "appeal", "swap_request"
+  reference_id bigint
+  message varchar [not null]
+  is_read boolean [not null, default: false]
+  created_at timestamp [default: `now()`]
+}
+
+Enum notification_type {
+  deadline_reminder
+  task_assigned
+  task_swapped
+  swap_requested
+  submission_pending    // new: submission masuk, menunggu review leader
+  submission_reviewed
+  comment_added
+  appeal_updated
+  member_added           // new: member baru ditambahkan ke project
+  member_invited          // new: member di-invite ke project
+}
