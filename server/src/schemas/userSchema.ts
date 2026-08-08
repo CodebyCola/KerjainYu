@@ -1,0 +1,62 @@
+import { z } from "zod";
+
+export const registerSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3, "Username must be at least 3 characters")
+    .max(100, "Username must be at most 100 characters")
+    .nonempty("Username is required"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(100, "Password must be at most 100 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .nonempty("Password is required"),
+});
+
+export const loginSchema = z.object({
+  username: z.string().trim().nonempty("Username is required"),
+  password: z.string().nonempty("Password is required"),
+});
+
+export const updateUserSchema = z
+  .object({
+    username: z
+      .string()
+      .trim()
+      .min(3, "Username must be at least 3 characters")
+      .max(100, "Username must be at most 100 characters")
+      .optional(),
+    email: z.string().trim().email("Invalid email address").optional(),
+    avatar_url: z.string().trim().url("Invalid URL").optional(),
+    full_name: z
+      .string()
+      .trim()
+      .max(100, "Full name must be at most 100 characters")
+      .optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided for update",
+  });
+
+export const changePasswordSchema = z
+  .object({
+    current_password: z.string().nonempty("Current password is required"),
+    new_password: z
+      .string()
+      .min(8, "New password must be at least 8 characters")
+      .regex(/[A-Z]/, "New password must contain at least one uppercase letter")
+      .regex(/[0-9]/, "New password must contain at least one number")
+      .nonempty("New password is required"),
+    confirm_password: z.string().nonempty("Confirm password is required"),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "New password and confirm password must match",
+  });
+
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

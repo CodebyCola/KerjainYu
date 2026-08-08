@@ -26,7 +26,11 @@ Project KerjainYu {
 Table users {
   id bigint [pk, increment]
   username varchar [unique, not null]
+  email varchar [unique, notnull]
+  full_name varchar [unique] 
+  avatar_url varchar
   password varchar [not null] // renamed from hash_password
+  updated_at timestamp [default: `now()`]
   created_at timestamp [default: `now()`]
 }
 

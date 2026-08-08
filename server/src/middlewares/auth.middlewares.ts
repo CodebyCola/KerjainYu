@@ -30,11 +30,11 @@ export const authenticate = (
     next(); // Continue to controller if token is valid
   } catch (err) {
     if (err instanceof TokenExpiredError) {
-      return next(new UnauthorizedError("Token is expired, please re-login"))
+      return next(new UnauthorizedError("Token is expired, please re-login"));
     }
     if (err instanceof UnauthorizedError) {
-      return next(err)
+      return next(err);
     }
-    next(new UnauthorizedError("Invalid or expired token"))
+    next(new UnauthorizedError("Invalid or expired token"));
   }
 };
