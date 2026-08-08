@@ -28,12 +28,14 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
+    "jsonwebtoken": "^9.0.3",
     "knex": "^3.3.0",
     "pg": "^8.22.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.20.4",
     "nodemon": "^3.1.14",
