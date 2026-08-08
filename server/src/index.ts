@@ -1,9 +1,12 @@
 import 'dotenv/config'
 import express from 'express'
 import { errorHandler } from './middlewares/errorHandler'
-import { db } from './config/db'
+import { db } from './database/db'
+import cookieParser from 'cookie-parser'
+
 const app = express();
 app.use(express.json())
+app.use(cookieParser())
 
 app.get('/health', (req, res) => {
     res.json({ success: true, message: "Server is running" })
