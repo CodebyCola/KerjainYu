@@ -26,4 +26,5 @@ export async function changePassword(id: number, new_password: string) {
     .where({ id })
     .update({ password: new_password })
     .returning("*");
+
 }
