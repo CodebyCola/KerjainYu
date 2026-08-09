@@ -3,6 +3,7 @@ import * as userService from "../services/user.service";
 import { AuthRequest } from "../middlewares/auth.middlewares";
 import { baseCookieOptions, authCookieOptions } from "../lib/cookies";
 
+//POST /api/v1/auth/register
 export async function register(
   req: Request,
   res: Response,
@@ -16,6 +17,7 @@ export async function register(
   }
 }
 
+//POST /api/v1/auth/login
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { user, token } = await userService.loginUser(req.body);
@@ -31,6 +33,7 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
   res.status(200).json({ success: true, message: "Logged Out" });
 }
 
+//GET /api/v1/auth/me
 export async function getProfile(
   req: AuthRequest,
   res: Response,
@@ -44,6 +47,7 @@ export async function getProfile(
   }
 }
 
+//PATCH /api/v1/auth/change-password
 export async function changePassword(
   req: AuthRequest,
   res: Response,
@@ -58,6 +62,8 @@ export async function changePassword(
     next(error);
   }
 }
+
+//PATCH /api/v1/auth/me
 export async function updateProfile(
   req: AuthRequest,
   res: Response,

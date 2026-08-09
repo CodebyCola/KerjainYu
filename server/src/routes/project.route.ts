@@ -13,4 +13,6 @@ router.post(
   validate(projectSchema.createProjectWithLinksSchema),
   projectController.createProject,
 );
+router.get("/:id", authenticate, projectController.getDetailProject)
+
 export default router;

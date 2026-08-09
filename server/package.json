@@ -7,6 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
+    "db:seed": "knex seed:run --knexfile src/database/knexfile.js",
     "db:reset": "docker compose down -v && npm run db:up && npm run migrate:up",
     "migrate:make": "knex migrate:make --knexfile src/database/knexfile.js",
     "migrate:up": "knex migrate:latest --knexfile src/database/knexfile.js",
