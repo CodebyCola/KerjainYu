@@ -14,16 +14,15 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-  }),
+    cors({
+        origin: "http://localhost:3000",
+        credentials: true,
+    }),
 );
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-s;
 
 app.get("/health", (req, res) => {
-  res.json({ success: true, message: "Server is running" });
+    res.json({ success: true, message: "Server is running" });
 });
 // Other Routes
 app.use("/api/v1/auth", authRoutes);
@@ -33,6 +32,6 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 db.raw("SELECT 1")
-  .then(() => console.log("Database connected"))
-  .catch((err) => console.error("Database connection failed:", err));
+    .then(() => console.log("Database connected"))
+    .catch((err) => console.error("Database connection failed:", err));
 app.listen(PORT, () => console.log(`Server is running on PORT ${PORT}`));
