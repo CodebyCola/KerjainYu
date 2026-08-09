@@ -10,6 +10,7 @@ exports.up = function (knex) {
         table.boolean("allow_free_swap").notNullable().defaultTo(false);
         table.dateTime("deadline").notNullable()
         table.boolean("is_archived").defaultTo(false)
+        table.timestamp("is_archived_at").nullable()
         table.timestamp('created_at').defaultTo(knex.fn.now());
     })
 };

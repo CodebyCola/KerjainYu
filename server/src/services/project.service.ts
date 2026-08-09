@@ -18,7 +18,7 @@ export async function createProjectWithLinks(
   userId: number,
 ) {
   return db.transaction(async (trx) => {
-    const [project] = await projectRepo.createProject(projectInput, trx);
+    const project = await projectRepo.createProject(projectInput, trx);
     await projectMemberRepo.setLeader(project.id, userId, trx);
     if (linksInput.length > 0) {
       await projectLinkRepo.createLink(project.id, userId, linksInput, trx);
@@ -30,10 +30,10 @@ export async function createProjectWithLinks(
 
 //GET /api/v1/projects/:id
 export async function getDetailProject(projectId: number, userId: number) {
-  const [project, membership] = await Promise.all([
+  const [project, membership, links] = await Promise.all([
     projectRepo.getProjectById(projectId),
-    ,
     projectMemberRepo.getRole(projectId, userId),
+    projectLinkRepo.getAllLinksByProject(projectId)
   ]);
   if (!project) {
     throw new NotFoundError("Project not found!");
@@ -41,4 +41,5 @@ export async function getDetailProject(projectId: number, userId: number) {
   if (!membership) {
     throw new ForbiddenError("You're not part of this project!");
   }
+  return [project, membership, links]
 }
