@@ -1,14 +1,19 @@
-// src/schemas/projectSchema.ts
 import { z } from "../lib/zod-extended";
-import { createProjectLinkSchema } from "./projectLinkSchema";
 
-export const createProjectSchema = z.object({
-  title: z.string().trim().min(3).max(150).openapi({ example: "Website Redesign" }),
-  allowFreeSwap: z.boolean().optional().default(false),
-  deadline: z.coerce.date().optional().openapi({ example: "2026-09-01T00:00:00.000Z" }),
-}).strict().openapi("CreateProjectInput");
+export const createProjectLinkSchema = z
+  .object({
+    label: z
+      .string()
+      .trim()
+      .min(1, "Label is required")
+      .max(100)
+      .openapi({ example: "budi123" }),
+    url: z.string().trim().url("Invalid Url").openapi({ example: "figma.com" }),
+    category: z
+      .enum(["design", "development", "docs", "other"])
+      .openapi({ example: "design" }),
+  })
+  .strict()
+  .openapi("CreateProjectLinkInput");
 
-export const createProjectWithLinksSchema = z.object({
-  project: createProjectSchema,
-  links: z.array(createProjectLinkSchema).optional().default([]),
-}).strict().openapi("CreateProjectWithLinksInput");
+export type CreateProjectLinkInput = z.infer<typeof createProjectLinkSchema>;
