@@ -1,7 +1,6 @@
 import { z } from "../lib/zod-extended";
 import { createProjectLinkSchema } from "./projectLinkSchema";
 
-
 export const createProjectSchema = z
   .object({
     title: z
