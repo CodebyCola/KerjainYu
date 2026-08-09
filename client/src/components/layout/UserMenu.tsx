@@ -1,15 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { LogOut, Settings, UserRound } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { getInitials } from "@/utils/getInitials";
-
-type User = {
-    name?: string | null;
-    avatarUrl?: string | null;
-};
+import { type User } from "@/types/user";
+import { useSession } from "@/contexts/SessionContext";
+import { logoutAction } from "@/lib/api/auth/logoutAction";
 
 type UserMenuProps = {
     user?: User;
@@ -21,10 +19,14 @@ const MENU_ITEMS = [
     { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export default function UserMenu({ user, align = "right" }: UserMenuProps) {
+export default function UserMenu({ user: userProp, align = "right" }: UserMenuProps) {
+    const sessionUser = useSession();
+    const user = userProp ?? sessionUser ?? undefined;
+
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoggingOut, startLogoutTransition] = useTransition();
     const containerRef = useRef<HTMLDivElement>(null);
-    const initials = getInitials(user?.name);
+    const initials = getInitials(user?.username);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -59,7 +61,7 @@ export default function UserMenu({ user, align = "right" }: UserMenuProps) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={user.avatarUrl}
-                        alt={user?.name ?? "User avatar"}
+                        alt={user?.username ?? "User avatar"}
                         className="size-full object-cover"
                     />
                 ) : (
@@ -95,10 +97,17 @@ export default function UserMenu({ user, align = "right" }: UserMenuProps) {
                         type="button"
                         role="menuitem"
                         aria-label="Log out"
-                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-inter text-status-blocked-text hover:bg-status-blocked-bg"
+                        disabled={isLoggingOut}
+                        onClick={() => {
+                            setIsOpen(false);
+                            startLogoutTransition(() => {
+                                logoutAction();
+                            });
+                        }}
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-inter text-status-blocked-text hover:bg-status-blocked-bg disabled:opacity-50"
                     >
                         <LogOut className="size-4" />
-                        Log out
+                        {isLoggingOut ? "Logging out..." : "Log out"}
                     </button>
                 </div>
             )}

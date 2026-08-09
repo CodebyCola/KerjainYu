@@ -1,5 +1,5 @@
 import { APP_NAME } from "@/lib/constants";
-import UserMenu from "@/components/ui/UserMenu";
+import UserMenu from "@/components/layout/UserMenu";
 
 type User = {
     name?: string | null;
