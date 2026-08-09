@@ -77,7 +77,7 @@ registry.registerPath({
 });
 registry.registerPath({
   method: "patch",
-  path: "/api/v1/login/me/password",
+  path: "/api/v1/auth/me/password",
   tags: ["Auth"],
   security: [{ cookieAuth: [] }],
   request: {
