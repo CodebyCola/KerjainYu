@@ -3,9 +3,15 @@ import * as projectMemberRepo from "../database/repositories/project.member.repo
 import * as projectLinkRepo from "../database/repositories/project.link.repository";
 import * as projectSchema from "../schemas/projectSchema";
 import { db } from "../database/db";
-import { ConflictError, UnauthorizedError } from "../errors/AppError";
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../errors/AppError";
 import { CreateProjectLinkInput } from "../schemas/projectLinkSchema";
 
+//POST /api/v1/projects
 export async function createProjectWithLinks(
   projectInput: projectSchema.CreateProjectInput,
   linksInput: CreateProjectLinkInput[],
@@ -20,4 +26,19 @@ export async function createProjectWithLinks(
 
     return project;
   });
+}
+
+//GET /api/v1/projects/:id
+export async function getDetailProject(projectId: number, userId: number) {
+  const [project, membership] = await Promise.all([
+    projectRepo.getProjectById(projectId),
+    ,
+    projectMemberRepo.getRole(projectId, userId),
+  ]);
+  if (!project) {
+    throw new NotFoundError("Project not found!");
+  }
+  if (!membership) {
+    throw new ForbiddenError("You're not part of this project!");
+  }
 }

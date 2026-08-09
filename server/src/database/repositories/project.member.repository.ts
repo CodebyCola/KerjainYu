@@ -30,3 +30,10 @@ export async function removeMember(projectId: number, userId: number) {
     })
     .del();
 }
+
+export async function getRole(projectId: number, userId: number) {
+  return db("project_members")
+    .where("project_id", projectId)
+    .where("user_id", userId)
+    .returning("*");
+}

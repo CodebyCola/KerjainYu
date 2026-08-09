@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { Knex } from "knex";
-
+import { Project } from "./../../types/project.types";
 export async function createProject(
   data: { title: string; allowFreeSwap: boolean; deadline?: Date },
   trx?: Knex.Transaction,
@@ -25,4 +25,6 @@ export async function updateProject(
 //     returning db("projects")
 // }
 
-// export async function
+export async function getProjectById(id: number): Promise<Project | undefined>  {
+  return db<Project>("projects").where("id", id).first();
+}
