@@ -4,6 +4,7 @@ import { errorHandler } from './middlewares/errorHandler'
 import { db } from './database/db'
 import cookieParser from 'cookie-parser'
 import authRoutes from "./routes/auth.route"
+import projectRoutes from "./routes/project.route"
 import cors from "cors"
 
 const app = express();
@@ -21,6 +22,7 @@ app.get('/health', (req, res) => {
 })
 // Other Routes
 app.use("/api/v1/auth", authRoutes)
+app.use("/api/v1/projects", projectRoutes)
 
 app.use(errorHandler)
 const PORT = process.env.PORT || 5000

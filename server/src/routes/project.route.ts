@@ -13,3 +13,4 @@ router.post(
   validate(projectSchema.createProjectWithLinksSchema),
   projectController.createProject,
 );
+export default router;
