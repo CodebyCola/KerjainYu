@@ -58,6 +58,7 @@ export async function changePassword(
     next(error);
   }
 }
+
 export async function updateProfile(
   req: AuthRequest,
   res: Response,

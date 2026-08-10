@@ -1,9 +1,10 @@
 import { ReactNode } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import { type User } from "@/types/user";
 
 type TabletLayoutProps = {
-    user?: { name?: string | null; avatarUrl?: string | null };
+    user?: User;
     children: ReactNode;
 };
 
