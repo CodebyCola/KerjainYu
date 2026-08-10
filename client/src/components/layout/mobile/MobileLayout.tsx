@@ -1,9 +1,10 @@
 import { ReactNode } from "react";
 import MobileTopBar from "./MobileTopBar";
 import MobileBottomBar from "./MobileBottomBar";
+import { type User } from "@/types/user";
 
 type MobileLayoutProps = {
-    user?: { name?: string | null; avatarUrl?: string | null };
+    user?: User;
     children: ReactNode;
 };
 

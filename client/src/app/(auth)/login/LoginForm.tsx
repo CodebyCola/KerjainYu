@@ -21,7 +21,7 @@ export default function LoginForm() {
                 label="Username"
                 type="text"
                 icon={User}
-                placeholder="username_kamu"
+                placeholder="Username Kamu"
                 autoComplete="username"
                 error={state.fieldErrors?.username}
             />

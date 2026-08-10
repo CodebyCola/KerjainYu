@@ -2,9 +2,10 @@ import { ReactNode } from "react";
 import MobileLayout from "@/components/layout/mobile/MobileLayout";
 import TabletLayout from "@/components/layout/tablet/TabletLayout";
 import DesktopLayout from "@/components/layout/desktop/DesktopLayout";
+import { type User } from "@/types/user";
 
 type ResponsiveLayoutProps = {
-    user?: { name?: string | null; avatarUrl?: string | null };
+    user?: User;
     children: ReactNode;
 };
 

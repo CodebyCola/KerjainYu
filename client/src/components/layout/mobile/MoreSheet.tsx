@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { UserRound, Archive, HelpCircle, LogOut, X } from "lucide-react";
+import { Archive, HelpCircle, X } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 
 type MoreSheetProps = {
