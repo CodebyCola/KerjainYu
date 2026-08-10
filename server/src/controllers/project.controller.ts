@@ -43,3 +43,13 @@ export async function getDetailProject(req: AuthRequest, res: Response, next: Ne
     next(error)
   }
 }
+
+//GET /api/v1/projects
+export async function getProjectsByUserId(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const projects = await projectService.getAllProjects(req.user!.id)
+    res.status(200).json({ success: true, data: projects })
+  } catch (error) {
+    next(error)
+  }
+}

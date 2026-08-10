@@ -14,5 +14,6 @@ router.post(
   projectController.createProject,
 );
 router.get("/:id", authenticate, projectController.getDetailProject)
+router.get("/", authenticate, projectController.getProjectsByUserId)
 
 export default router;

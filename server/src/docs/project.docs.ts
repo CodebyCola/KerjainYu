@@ -34,3 +34,14 @@ registry.registerPath({
         404: { description: "Project not found" },
     },
 });
+
+registry.registerPath({
+    method: "get",
+    path: "/api/v1/projects/",
+    tags: ["Projects"],
+    security: [{ cookieAuth: [] }],
+    responses: {
+        200: { description: "Successfully fetched All user projects" },
+        401: { description: "Not authenticated" },
+    },
+});
