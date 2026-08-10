@@ -7,13 +7,18 @@
     "dev": "tsx watch src/index.ts",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
+    "db:seed": "knex seed:run --knexfile src/database/knexfile.js",
     "db:reset": "docker compose down -v && npm run db:up && npm run migrate:up",
     "migrate:make": "knex migrate:make --knexfile src/database/knexfile.js",
     "migrate:up": "knex migrate:latest --knexfile src/database/knexfile.js",
     "migrate:rollback": "knex migrate:rollback --knexfile src/database/knexfile.js",
+    "test": "cross-env DATABASE_URL=postgresql://kerjainyu:kerjainyu123@127.0.0.1:5433/kerjainyu_test_db NODE_ENV=test vitest run",
+    "test:watch": "cross-env DATABASE_URL=postgresql://kerjainyu:kerjainyu123@127.0.0.1:5433/kerjainyu_test_db NODE_ENV=test vitest",
+    "test:db:up": "docker compose up -d db_test --wait",
+    "test:db:down": "docker compose stop db_test",
+    "test:db:migrate": "cross-env DATABASE_URL=postgresql://kerjainyu:kerjainyu123@localhost:5433/kerjainyu_test_db knex migrate:latest --knexfile src/database/knexfile.js",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -51,9 +56,13 @@
     "@types/lodash": "^4.17.25",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.20.4",
+    "@types/supertest": "^7.2.1",
     "@types/swagger-ui-express": "^4.1.8",
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.14",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
-    "tsx": "^4.23.10"
+    "tsx": "^4.23.10",
+    "vitest": "^4.1.10"
   }
 }

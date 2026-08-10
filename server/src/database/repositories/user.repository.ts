@@ -4,6 +4,10 @@ export async function findByUsername(username: string) {
   return db("users").where({ username }).first();
 }
 
+export async function findByEmail(email: string) {
+  return db("users").where({ email }).first()
+}
+
 export async function create(data: { username: string; password: string }) {
   return db("users").insert(data).returning("*");
 }
@@ -26,5 +30,4 @@ export async function changePassword(id: number, new_password: string) {
     .where({ id })
     .update({ password: new_password })
     .returning("*");
-
 }

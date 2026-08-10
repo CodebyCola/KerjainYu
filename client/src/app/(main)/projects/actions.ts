@@ -15,10 +15,11 @@ export async function createProjectAction(
   const title = String(formData.get("title") ?? "");
   const deadline = String(formData.get("deadline") ?? "");
   const allowFreeSwap = formData.get("allowFreeSwap") === "on";
+  const values = { title, deadline, allowFreeSwap };
 
-  const fieldErrors = validateCreateProjectFields(title);
+  const fieldErrors = validateCreateProjectFields(title, deadline);
   if (Object.keys(fieldErrors).length > 0) {
-    return { success: false, error: null, fieldErrors };
+    return { success: false, error: null, fieldErrors, values };
   }
 
   try {
@@ -30,18 +31,19 @@ export async function createProjectAction(
         project: {
           title: title.trim(),
           allowFreeSwap,
-          deadline: deadline || undefined,
+          deadline,
         },
       },
       cookieHeader,
     );
   } catch (err) {
     if (err instanceof ApiRequestError) {
-      return { success: false, error: err.message };
+      return { success: false, error: err.message, values };
     }
     return {
       success: false,
       error: "Terjadi kesalahan tak terduga. Coba lagi.",
+      values,
     };
   }
 

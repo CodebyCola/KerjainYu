@@ -27,8 +27,8 @@ export type Project = {
   deadline: string;
   isArchived: boolean;
   createdAt: string;
-  members: ProjectMember[];
-  links: ProjectLink[];
+  members?: ProjectMember[]; // belum ada atau belum disertakan di endpoint jadi masih optional
+  links?: ProjectLink[]; // ini sama dengan yang atas
 };
 
 export type CreateProjectLinkPayload = {
@@ -41,7 +41,7 @@ export type CreateProjectPayload = {
   project: {
     title: string;
     allowFreeSwap?: boolean;
-    deadline?: string;
+    deadline: string;
   };
   links?: CreateProjectLinkPayload[];
 };

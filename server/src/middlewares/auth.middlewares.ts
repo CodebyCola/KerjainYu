@@ -18,7 +18,6 @@ export const authenticate = (
     const token = req.cookies?.token;
     if (!token) {
       throw new UnauthorizedError("Please Login First")
-      return;
     }
 
     // verify token

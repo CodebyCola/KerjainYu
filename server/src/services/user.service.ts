@@ -14,11 +14,11 @@ import {
 import bcrypt from "bcrypt";
 import { generateToken } from "../lib/jwt";
 
+//POST /api/v1/auth/register
 export async function registerUser(input: RegisterInput) {
   const existingUser = await userRepo.findByUsername(input.username)
   if (existingUser) {
     throw new ConflictError("Username is already used")
-    return;
   }
   const hashedPassword = await bcrypt.hash(input.password, 10);
 
@@ -28,6 +28,7 @@ export async function registerUser(input: RegisterInput) {
   return safeUser;
 }
 
+//POST /api/v1/auth/login
 export async function loginUser(input: LoginInput) {
   const user = await userRepo.findByUsername(input.username)
   if (!user) {
@@ -45,6 +46,7 @@ export async function loginUser(input: LoginInput) {
   return { user: safeUser, token }
 }
 
+//GET /api/v1/auth/me
 export async function getUserProfile(id: number) {
   const user = await userRepo.findById(id);
   if (!user) {
@@ -54,6 +56,8 @@ export async function getUserProfile(id: number) {
   return safeUser;
 }
 
+
+//PATCH /api/v1/auth/me
 export async function updateUserProfile(id: number, input: UpdateUserInput) {
   const existing = await userRepo.findById(id)
   if (!existing) {
@@ -66,11 +70,19 @@ export async function updateUserProfile(id: number, input: UpdateUserInput) {
       throw new ConflictError("Username already taken")
     }
   }
+  if (input.email) {
+    const taken = await userRepo.findByEmail(input.email)
+    if (taken && taken.id !== id) {
+      throw new ConflictError("Email already taken")
+    }
+  }
   const [updated] = await userRepo.updateUser(id, input);
   const { password, ...safeUser } = updated;
   return safeUser;
 }
 
+
+//PATCH /api/v1/auth/me/change-password
 export async function changeUserPassword(
   id: number,
   input: ChangePasswordInput,

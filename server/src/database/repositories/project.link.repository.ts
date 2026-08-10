@@ -1,4 +1,5 @@
 import { CreateProjectLinkInput } from "../../schemas/projectLinkSchema";
+import { ProjectLink } from "../../types/entities/projectLink.types";
 import { db } from "../db";
 import { Knex } from "knex";
 export async function createLink(
@@ -17,4 +18,8 @@ export async function createLink(
       category: link.category,
     })),
   );
+}
+
+export async function getAllLinksByProject(projectId: number): Promise<ProjectLink[]> {
+  return db<ProjectLink>("project_links").where("project_id", projectId);
 }

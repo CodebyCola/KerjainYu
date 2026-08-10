@@ -31,7 +31,9 @@ function isOverdue(deadline: string, status: Project["status"]) {
 }
 
 export default function ProjectListCard({ project }: ProjectListCardProps) {
-    const leader = project.members.find((member) => member.role === "leader");
+    const members = project.members ?? [];
+    const links = project.links ?? [];
+    const leader = members.find((member) => member.role === "leader");
     const overdue = isOverdue(project.deadline, project.status);
 
     return (
@@ -68,10 +70,10 @@ export default function ProjectListCard({ project }: ProjectListCardProps) {
                     {overdue && " · Lewat tenggat"}
                 </span>
 
-                {project.links.length > 0 && (
+                {links.length > 0 && (
                     <span className="flex items-center gap-1.5">
                         <Link2 className="size-3.5 sm:size-4" />
-                        {project.links.length} link
+                        {links.length} link
                     </span>
                 )}
 
@@ -86,7 +88,7 @@ export default function ProjectListCard({ project }: ProjectListCardProps) {
             {/* Footer */}
             <div className="mt-4 flex items-center justify-between">
                 <div className="flex -space-x-2">
-                    {project.members.slice(0, 4).map((member) => (
+                    {members.slice(0, 4).map((member) => (
                         <div
                             key={member.id}
                             title={member.username}
@@ -100,9 +102,9 @@ export default function ProjectListCard({ project }: ProjectListCardProps) {
                             {getInitials(member.username)}
                         </div>
                     ))}
-                    {project.members.length > 4 && (
+                    {members.length > 4 && (
                         <div className="flex size-7 items-center justify-center rounded-full border-2 border-card bg-secondary text-[10px] font-inter font-medium text-teritary sm:size-8 sm:text-xs">
-                            +{project.members.length - 4}
+                            +{members.length - 4}
                         </div>
                     )}
                 </div>
