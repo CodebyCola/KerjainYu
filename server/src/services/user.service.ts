@@ -19,7 +19,6 @@ export async function registerUser(input: RegisterInput) {
   const existingUser = await userRepo.findByUsername(input.username)
   if (existingUser) {
     throw new ConflictError("Username is already used")
-    return;
   }
   const hashedPassword = await bcrypt.hash(input.password, 10);
 
@@ -69,6 +68,12 @@ export async function updateUserProfile(id: number, input: UpdateUserInput) {
     const taken = await userRepo.findByUsername(input.username);
     if (taken && taken.id !== id) {
       throw new ConflictError("Username already taken")
+    }
+  }
+  if (input.email) {
+    const taken = await userRepo.findByEmail(input.email)
+    if (taken && taken.id !== id) {
+      throw new ConflictError("Email already taken")
     }
   }
   const [updated] = await userRepo.updateUser(id, input);

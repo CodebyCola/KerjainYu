@@ -9,3 +9,7 @@ export interface ProjectMember {
     joinedAt: Date;
     status: MemberStatus;
 }
+
+export interface Role {
+    userId: number, role: ProjectRole
+}

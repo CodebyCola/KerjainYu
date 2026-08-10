@@ -11,7 +11,7 @@ import {
 } from "../errors/AppError";
 import { CreateProjectLinkInput } from "../schemas/projectLinkSchema";
 
-//POST /api/v1/projects
+//POST /api/v1/project
 export async function createProjectWithLinks(
   projectInput: projectSchema.CreateProjectInput,
   linksInput: CreateProjectLinkInput[],
@@ -28,7 +28,7 @@ export async function createProjectWithLinks(
   });
 }
 
-//GET /api/v1/projects/:id
+//GET /api/v1/project/:id
 export async function getDetailProject(projectId: number, userId: number) {
   const [project, membership, links] = await Promise.all([
     projectRepo.getProjectById(projectId),
@@ -44,8 +44,23 @@ export async function getDetailProject(projectId: number, userId: number) {
   return [project, membership, links]
 }
 
-//GET /api/v1/projects
+//GET /api/v1/project
 export async function getAllProjects(userId: number) {
   const projects = await projectRepo.getProjectsByUserId(userId)
   return projects
+}
+
+//PATCH /api/v1/project
+export async function updateProject(projectId: number, userId: number, input: projectSchema.UpdateProjectInput) {
+  const [project, membership] = await Promise.all([
+    projectRepo.getProjectById(projectId),
+    projectMemberRepo.getRole(projectId, userId)
+  ])
+  if (!project) {
+    throw new NotFoundError("Project not found")
+  }
+  if (membership?.role !== "leader") {
+    throw new ForbiddenError("Only the leader who can update the project")
+  }
+  return await projectRepo.updateProject(project.id, input);
 }

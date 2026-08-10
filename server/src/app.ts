@@ -17,7 +17,7 @@ app.get('/health', (req, res) => {
 })
 
 app.use("/api/v1/auth", authRoutes)
-app.use("/api/v1/projects", projectRoutes)
+app.use("/api/v1/project", projectRoutes)
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 

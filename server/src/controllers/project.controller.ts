@@ -53,3 +53,14 @@ export async function getProjectsByUserId(req: AuthRequest, res: Response, next:
     next(error)
   }
 }
+
+//PATCH /api/v1/project/{id}
+export async function updateProject(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const projectId = Number(req.params.id)
+    const project = await projectService.updateProject(projectId, req.user!.id, req.body)
+    res.status(200).json({ success: true, data: project })
+  } catch (error) {
+    next(error)
+  }
+}
