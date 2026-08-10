@@ -37,3 +37,7 @@ export async function getRole(projectId: number, userId: number) {
     .where("user_id", userId)
     .returning("*");
 }
+
+export async function getProjects(userId: number) {
+  return db("project_memebrs").where("user_id", userId).select("project_id")
+}

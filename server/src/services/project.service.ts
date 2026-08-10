@@ -43,3 +43,9 @@ export async function getDetailProject(projectId: number, userId: number) {
   }
   return [project, membership, links]
 }
+
+//GET /api/v1/projects
+export async function getAllProjects(userId: number) {
+  const projects = await projectRepo.getProjectsByUserId(userId)
+  return projects
+}

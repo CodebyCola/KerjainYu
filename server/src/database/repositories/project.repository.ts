@@ -21,6 +21,7 @@ export async function createProject(
   return project;
 }
 
+
 export async function updateProject(
   projectId: number,
   data: Partial<{
@@ -36,4 +37,8 @@ export async function updateProject(
 
 export async function getProjectById(id: number): Promise<Project | undefined> {
   return db<Project>("projects").where("id", id).first();
+}
+
+export async function getProjectsByUserId(user_id: number) {
+  return db<Project>("projects").join("project_members", "projects.id", "project_members.project_id").where("project_members.user_id", user_id).select("projects.*")
 }
