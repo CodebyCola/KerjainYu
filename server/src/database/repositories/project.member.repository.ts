@@ -1,3 +1,4 @@
+import { Role } from "../../types/entities/projectMember.types";
 import { db } from "../db";
 import { Knex } from "knex";
 
@@ -32,10 +33,9 @@ export async function removeMember(projectId: number, userId: number) {
 }
 
 export async function getRole(projectId: number, userId: number) {
-  return db("project_members")
+  return db<Role>("project_members")
     .where("project_id", projectId)
-    .where("user_id", userId)
-    .returning("*");
+    .where("user_id", userId).select("role").first()
 }
 
 export async function getProjects(userId: number) {

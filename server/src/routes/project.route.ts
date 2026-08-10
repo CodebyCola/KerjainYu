@@ -13,6 +13,7 @@ router.post(
   validate(projectSchema.createProjectWithLinksSchema),
   projectController.createProject,
 );
+router.patch("/:id", authenticate, createLimiter, validate(projectSchema.updateProjectSchema), projectController.updateProject)
 router.get("/:id", authenticate, projectController.getDetailProject)
 router.get("/", authenticate, projectController.getProjectsByUserId)
 

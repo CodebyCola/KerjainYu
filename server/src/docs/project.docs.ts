@@ -1,10 +1,12 @@
 // Projects'
-import { createProjectWithLinksSchema } from '../schemas/projectSchema';
+import { createProjectWithLinksSchema, updateProjectSchema } from '../schemas/projectSchema';
 import { registry } from './components';
 import { projectIdParams } from './params/project.params';
+
+
 registry.registerPath({
     method: "post",
-    path: "/api/v1/projects",
+    path: "/api/v1/project",
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     request: {
@@ -17,11 +19,30 @@ registry.registerPath({
         400: { description: "Validation error" },
         401: { description: "Not authenticated" },
     },
+});
+
+registry.registerPath({
+    method: "patch",
+    path: "/api/v1/project/{id}",
+    tags: ["Projects"],
+    security: [{ cookieAuth: [] }],
+    request: {
+        params: projectIdParams,
+        body: {
+            content: { "application/json": { schema: updateProjectSchema } },
+        },
+    },
+    responses: {
+        201: { description: "Project updated successfully" },
+        400: { description: "Validation error" },
+        401: { description: "Not authenticated" },
+    },
 
 });
+
 registry.registerPath({
     method: "get",
-    path: "/api/v1/projects/{id}",
+    path: "/api/v1/project/{id}",
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     request: {
@@ -37,7 +58,7 @@ registry.registerPath({
 
 registry.registerPath({
     method: "get",
-    path: "/api/v1/projects/",
+    path: "/api/v1/project/",
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     responses: {
@@ -45,3 +66,4 @@ registry.registerPath({
         401: { description: "Not authenticated" },
     },
 });
+
