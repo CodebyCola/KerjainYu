@@ -14,6 +14,7 @@ export async function create(data: { username: string; password: string }) {
 export async function findById(id: number) {
   return db("users").where({ id }).first();
 }
+
 export async function updateUser(
   id: number,
   data: Partial<{

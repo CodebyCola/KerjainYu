@@ -28,6 +28,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+//POST /api/v1/auth/logout
 export async function logout(req: Request, res: Response, next: NextFunction) {
   res.clearCookie("token", baseCookieOptions);
   res.status(200).json({ success: true, message: "Logged Out" });
@@ -56,7 +57,7 @@ export async function changePassword(
   try {
     await userService.changeUserPassword(req.user!.id, req.body);
     res
-      .status(201)
+      .status(204)
       .json({ success: true, message: "Password changed successfully" });
   } catch (error) {
     next(error);
@@ -71,7 +72,7 @@ export async function updateProfile(
 ) {
   try {
     const updated = await userService.updateUserProfile(req.user!.id, req.body);
-    res.status(201).json({ success: true, data: updated });
+    res.status(200).json({ success: true, data: updated });
   } catch (err) {
     next(err);
   }
