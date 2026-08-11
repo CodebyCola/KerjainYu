@@ -32,7 +32,7 @@ export async function getDetailProject(projectId: number, userId: number) {
   const [project, membership, links] = await Promise.all([
     projectRepo.getProjectById(projectId),
     projectMemberRepo.getRole(projectId, userId),
-    projectLinkRepo.getAllLinksByProject(projectId)
+    projectLinkRepo.getAllLinksByProject(projectId),
   ]);
   if (!project) {
     throw new NotFoundError("Project not found!");
@@ -40,26 +40,33 @@ export async function getDetailProject(projectId: number, userId: number) {
   if (!membership) {
     throw new ForbiddenError("You're not part of this project!");
   }
-  return [project, membership, links]
+  return [project, membership, links];
 }
 
 //GET /api/v1/project
 export async function getAllProjects(userId: number) {
-  const projects = await projectRepo.getProjectsByUserId(userId)
-  return projects
+  const projects = await projectRepo.getProjectsByUserId(userId);
+  return projects;
 }
 
-//PATCH /api/v1/project
-export async function updateProject(projectId: number, userId: number, input: projectSchema.UpdateProjectInput) {
+//PATCH /api/v1/project/:id
+export async function updateProject(
+  projectId: number,
+  userId: number,
+  input: projectSchema.UpdateProjectInput,
+) {
   const [project, membership] = await Promise.all([
     projectRepo.getProjectById(projectId),
-    projectMemberRepo.getRole(projectId, userId)
-  ])
+    projectMemberRepo.getRole(projectId, userId),
+  ]);
   if (!project) {
-    throw new NotFoundError("Project not found")
+    throw new NotFoundError("Project not found");
   }
   if (membership?.role !== "leader") {
-    throw new ForbiddenError("Only the leader who can update the project")
+    throw new ForbiddenError("Only the leader who can update the project");
+  }
+  if (input.isArchived) {
+    input.isArchivedAt = new Date();
   }
   return await projectRepo.updateProject(project.id, input);
 }
