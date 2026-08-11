@@ -8,3 +8,19 @@ export const ROUTES = {
   LOGIN: "/login",
   REGISTER: "/register",
 } as const;
+
+export function projectRoutes(projectId: string) {
+  return {
+    TEAM: `/projects/${projectId}/team`,
+    TASK_BOARD: `/projects/${projectId}/task-board`,
+    CALENDAR: `/projects/${projectId}/calendar`,
+    FILES: `/projects/${projectId}/files`,
+  } as const;
+}
+
+const PROJECT_DETAIL_PATTERN = /^\/projects\/([^/]+)(\/.*)?$/;
+
+export function getProjectIdFromPathname(pathname: string): string | null {
+  const match = pathname.match(PROJECT_DETAIL_PATTERN);
+  return match ? match[1] : null;
+}
