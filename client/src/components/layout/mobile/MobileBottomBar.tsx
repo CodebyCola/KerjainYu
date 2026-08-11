@@ -2,33 +2,75 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Folder, ListChecks, Bell, List } from "lucide-react";
+import { Folder, ListChecks, Bell, List, Users, KanbanSquare, Calendar, FolderOpen } from "lucide-react";
 import { cn } from "@/utils/cn";
 import Link from "next/link";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES, projectRoutes, getProjectIdFromPathname } from "@/lib/routes";
 import MoreSheet from "@/components/layout/mobile/MoreSheet";
 
-const NAV_ITEMS = [
-    {
-        label: "Proyek",
-        href: ROUTES.PROJECTS,
-        icon: Folder,
-    },
-    {
-        label: "Tugas",
-        href: ROUTES.MY_TASK,
-        icon: ListChecks,
-    },
-    {
-        label: "Notifikasi",
-        href: ROUTES.NOTIFICATION,
-        icon: Bell,
-    },
+const MAIN_NAV_ITEMS = [
+    { label: "Proyek", href: ROUTES.PROJECTS, icon: Folder },
+    { label: "Tugas", href: ROUTES.MY_TASK, icon: ListChecks },
+    { label: "Notifikasi", href: ROUTES.NOTIFICATION, icon: Bell },
 ];
 
 export default function MobileBottomBar() {
     const pathname = usePathname();
     const [isMoreOpen, setIsMoreOpen] = useState(false);
+    const projectId = getProjectIdFromPathname(pathname);
+
+    if (projectId) {
+        const routes = projectRoutes(projectId);
+        const PROJECT_NAV_ITEMS = [
+            { label: "Tugas", href: routes.TASK_BOARD, icon: KanbanSquare },
+            { label: "Tim", href: routes.TEAM, icon: Users },
+            { label: "Kalender", href: routes.CALENDAR, icon: Calendar },
+            { label: "Berkas", href: routes.FILES, icon: FolderOpen },
+        ];
+
+        return (
+            <nav aria-label="Navigasi proyek" className="h-16 border-t border-t-border bg-background">
+                <ul className="flex items-center justify-between h-full px-2">
+                    {PROJECT_NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+                        const isActive = pathname === href;
+
+                        return (
+                            <li key={href} className="flex-1">
+                                <Link
+                                    href={href}
+                                    aria-label={`Buka ${label}`}
+                                    aria-current={isActive ? "page" : undefined}
+                                    className="flex items-center justify-center w-full"
+                                >
+                                    <span
+                                        className={cn(
+                                            "flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors",
+                                            isActive && "bg-primary"
+                                        )}
+                                    >
+                                        <Icon
+                                            className={cn(
+                                                "size-5",
+                                                isActive ? "text-primary-foreground" : "text-muted"
+                                            )}
+                                        />
+                                        <span
+                                            className={cn(
+                                                "font-inter font-medium text-[11px] leading-none",
+                                                isActive ? "text-primary-foreground" : "text-muted"
+                                            )}
+                                        >
+                                            {label}
+                                        </span>
+                                    </span>
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </nav>
+        );
+    }
 
     return (
         <nav
@@ -36,7 +78,7 @@ export default function MobileBottomBar() {
             className="h-16 border-t border-t-border bg-background"
         >
             <ul className="flex items-center justify-between h-full px-2">
-                {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+                {MAIN_NAV_ITEMS.map(({ label, href, icon: Icon }) => {
                     const isActive = pathname === href;
 
                     return (
