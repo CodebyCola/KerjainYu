@@ -32,16 +32,19 @@ export const updateProjectSchema = z
       .string()
       .trim()
       .min(1, "Title must filled")
-      .max(150, "Title must be at most 150 characters").openapi({ example: "Website Server" }),
+      .max(150, "Title must be at most 150 characters")
+      .openapi({ example: "Website Server" }),
     allowFreeSwap: z.boolean().default(false).openapi({ example: false }),
     status: z.enum(["ongoing", "completed"]).optional(),
     deadline: z.coerce.date().optional(),
     isArchived: z.boolean().optional(),
+    isArchivedAt: z.date().optional()
   })
   .strict()
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field mut be provided to update",
-  }).openapi("UpdateProjectInput");
+  })
+  .openapi("UpdateProjectInput");
 
 export type CreateProjectWithLinksInput = z.infer<
   typeof createProjectWithLinksSchema

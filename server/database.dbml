@@ -144,7 +144,7 @@ Table task_ownership_log {
 Enum ownership_change_reason {
   assigned      // leader assigned directly
   claimed       // member claimed from open pool
-  swap          // member-to-member swap
+  swapped         // member-to-member swap
   reassigned    // leader manually reassigned
 }
 
