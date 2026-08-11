@@ -17,7 +17,7 @@ registry.registerPath({
         body: { content: { "application/json": { schema: registerSchema } } },
     },
     responses: {
-        200: { description: "User registered successfully" },
+        201: { description: "User registered successfully" },
         409: { description: "Username already taken" },
         400: { description: "Validation error" },
     },

@@ -33,9 +33,11 @@ registry.registerPath({
         },
     },
     responses: {
-        201: { description: "Project updated successfully" },
+        200: { description: "Project updated successfully" },
         400: { description: "Validation error" },
         401: { description: "Not authenticated" },
+        403: { description: "You are not a member of this project" },
+        404: { description: "Project not found" },
     },
 
 });
@@ -58,7 +60,7 @@ registry.registerPath({
 
 registry.registerPath({
     method: "get",
-    path: "/api/v1/project/",
+    path: "/api/v1/project",
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     responses: {

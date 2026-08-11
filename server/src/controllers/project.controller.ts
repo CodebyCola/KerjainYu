@@ -5,7 +5,7 @@ import { UnauthorizedError } from "../errors/AppError";
 
 
 
-//POST /api/v1/projects
+//POST /api/v1/project
 export async function createProject(
   req: AuthRequest,
   res: Response,

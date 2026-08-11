@@ -32,7 +32,9 @@ export async function updateProject(
     isArchived: boolean;
   }>,
 ) {
-  return db("projects").where({ id: projectId }).update(data).returning("*");
+  // const [updatedProject] = db("projects").where({ id: projectId }).update(data).returning("*")
+  // return updateProject
+  return db("projects").where({ id: projectId }).update(data).returning("*").then((rows) => rows[0]);
 }
 
 export async function getProjectById(id: number): Promise<Project | undefined> {

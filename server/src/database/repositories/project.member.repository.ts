@@ -35,9 +35,13 @@ export async function removeMember(projectId: number, userId: number) {
 export async function getRole(projectId: number, userId: number) {
   return db<Role>("project_members")
     .where("project_id", projectId)
-    .where("user_id", userId).select("role").first()
+    .where("user_id", userId).select("user_id", "role").first()
 }
 
 export async function getProjects(userId: number) {
-  return db("project_memebrs").where("user_id", userId).select("project_id")
+  return db("project_members").where("user_id", userId).select("project_id")
+}
+
+export async function getProjectByIdAndUser(id: number, userId: number) {
+  return db("project_members").where("project_id", id)
 }

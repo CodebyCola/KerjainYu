@@ -23,7 +23,6 @@ export async function createProjectWithLinks(
     if (linksInput.length > 0) {
       await projectLinkRepo.createLink(project.id, userId, linksInput, trx);
     }
-
     return project;
   });
 }
