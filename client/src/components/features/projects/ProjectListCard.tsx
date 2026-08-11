@@ -80,7 +80,7 @@ export default function ProjectListCard({ project }: ProjectListCardProps) {
                 {project.allowFreeSwap && (
                     <span className="flex items-center gap-1.5">
                         <Repeat className="size-3.5 sm:size-4" />
-                        Free swap
+                        Tukar Tugas
                     </span>
                 )}
             </div>
