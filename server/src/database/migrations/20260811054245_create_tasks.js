@@ -22,22 +22,27 @@ exports.up = function (knex) {
       .notNullable()
       .defaultTo("unclaimed");
 
-    table.integer("priority").notNullable();
-    table.integer("display_order")().defaultTo(0);
+    // Nullable: null berarti diurutkan berdasarkan created_at (lihat DBML)
+    table.integer("priority");
+    table.integer("display_order").defaultTo(0);
 
     table
       .bigInteger("project_id")
       .notNullable()
       .references("id")
-      .inTable("projects");
+      .inTable("projects")
+      .onDelete("CASCADE");
 
     table.dateTime("deadline");
 
+    // null = unclaimed ("war tugas"); SET NULL kalau user-nya dihapus,
+    // task balik ke pool alih-alih ikut terhapus
     table
       .bigInteger("assignee_id")
       .nullable()
       .references("id")
-      .inTable("users");
+      .inTable("users")
+      .onDelete("SET NULL");
 
     table
       .bigInteger("created_by")
@@ -48,7 +53,11 @@ exports.up = function (knex) {
     table.boolean("is_claimable").notNullable().defaultTo(false);
 
     table.timestamp("created_at").notNullable().defaultTo(knex.fn.now());
-    table.timestamp("updated_at").notNullable().defaultTo(knex.fn.now());
+    // Nullable: null sampai task pertama kali diupdate (lihat Task.updatedAt)
+    table.timestamp("updated_at");
+
+    table.index("project_id");
+    table.index("assignee_id");
   });
 };
 

@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { Project, CreateProjectPayload } from "@/types/project";
 import { apiFetch } from "../fetcher";
 
-// Server memount route project di /api/v1/project (singular) — lihat server/src/app.ts.
 const PROJECT_PATH = "/project";
 
 export function getProjectsRequest(cookie: string) {
