@@ -6,7 +6,11 @@ exports.up = function (knex) {
   return knex.schema.createTable("task_appeals", (table) => {
     table.bigIncrements("id").primary();
 
-    table.bigInteger("task_id").notNullable().references("id").inTable("tasks");
+    table
+      .bigInteger("task_id")
+      .notNullable()
+      .references("id")
+      .inTable("tasks");
 
     table
       .bigInteger("submission_id")
@@ -36,7 +40,6 @@ exports.up = function (knex) {
     table.string("resolution_note").nullable();
 
     table.timestamp("created_at").notNullable().defaultTo(knex.fn.now());
-
     table.timestamp("resolved_at").nullable();
   });
 };

@@ -25,7 +25,6 @@ export const createProjectWithLinksSchema = z
   })
   .strict()
   .openapi("CreateProjectWithLinksInput");
-
 export const updateProjectSchema = z
   .object({
     title: z
@@ -34,17 +33,22 @@ export const updateProjectSchema = z
       .min(1, "Title must filled")
       .max(150, "Title must be at most 150 characters")
       .openapi({ example: "Website Server" }),
-    allowFreeSwap: z.boolean().default(false).openapi({ example: false }),
-    status: z.enum(["ongoing", "completed"]).optional(),
-    deadline: z.coerce.date().optional(),
-    isArchived: z.boolean().optional(),
-    isArchivedAt: z.date().optional()
+    allowFreeSwap: z.boolean().openapi({ example: false }),
+    status: z.enum(["ongoing", "completed"]),
+    deadline: z.coerce.date(),
+    isArchived: z.boolean(),
+    isArchivedAt: z.date()
   })
+  .partial()
   .strict()
-  .refine((data) => Object.keys(data).length > 0, {
-    message: "At least one field mut be provided to update",
+  .refine((data) => {
+    const keys = Object.keys(data);
+    return keys.length > 0;
+  }, {
+    message: "At least one field must be provided to update",
   })
   .openapi("UpdateProjectInput");
+
 
 export type CreateProjectWithLinksInput = z.infer<
   typeof createProjectWithLinksSchema
