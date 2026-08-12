@@ -34,7 +34,7 @@ export type Project = {
 export type CreateProjectLinkPayload = {
   label: string;
   url: string;
-  category: ProjectLinkCategory;
+  category: ProjectLinkCategory; // ini juga perlu di tambahin di schema db dan di repo
 };
 
 export type CreateProjectPayload = {

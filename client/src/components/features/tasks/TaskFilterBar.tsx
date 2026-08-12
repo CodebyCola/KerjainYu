@@ -3,36 +3,36 @@
 import { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import {
-    ProjectFilters,
+    MyTaskFilters,
     STATUS_FILTER_OPTIONS,
     DEADLINE_FILTER_OPTIONS,
-    DEFAULT_PROJECT_FILTERS,
+    DEFAULT_MY_TASK_FILTERS,
     countActiveFilters,
-} from "@/app/(main)/projects/filters";
+} from "@/app/(main)/my-tasks/filters";
 import ProjectFilterGroup from "@/components/features/projects/ProjectFilterGroup";
 import FilterDropdown from "@/components/ui/FilterDropdown";
 import Modal from "@/components/ui/Modal";
 import { cn } from "@/utils/cn";
 
-type ProjectFilterBarProps = {
-    filters: ProjectFilters;
-    onChange: (filters: ProjectFilters) => void;
+type TaskFilterBarProps = {
+    filters: MyTaskFilters;
+    onChange: (filters: MyTaskFilters) => void;
 };
 
-export default function ProjectFilterBar({ filters, onChange }: ProjectFilterBarProps) {
+export default function TaskFilterBar({ filters, onChange }: TaskFilterBarProps) {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const activeCount = countActiveFilters(filters);
 
-    function updateStatus(status: ProjectFilters["status"]) {
+    function updateStatus(status: MyTaskFilters["status"]) {
         onChange({ ...filters, status });
     }
 
-    function updateDeadline(deadline: ProjectFilters["deadline"]) {
+    function updateDeadline(deadline: MyTaskFilters["deadline"]) {
         onChange({ ...filters, deadline });
     }
 
     function reset() {
-        onChange(DEFAULT_PROJECT_FILTERS);
+        onChange(DEFAULT_MY_TASK_FILTERS);
     }
 
     return (
@@ -42,7 +42,7 @@ export default function ProjectFilterBar({ filters, onChange }: ProjectFilterBar
                 <button
                     type="button"
                     onClick={() => setIsMobileOpen(true)}
-                    aria-label={`Buka filter proyek${activeCount > 0 ? `, ${activeCount} filter aktif` : ""}`}
+                    aria-label={`Buka filter tugas${activeCount > 0 ? `, ${activeCount} filter aktif` : ""}`}
                     className={cn(
                         "relative flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-inter font-medium transition-colors",
                         activeCount > 0
@@ -59,7 +59,7 @@ export default function ProjectFilterBar({ filters, onChange }: ProjectFilterBar
                     )}
                 </button>
 
-                <Modal isOpen={isMobileOpen} onClose={() => setIsMobileOpen(false)} title="Filter proyek">
+                <Modal isOpen={isMobileOpen} onClose={() => setIsMobileOpen(false)} title="Filter tugas">
                     <div className="flex flex-col gap-5">
                         <ProjectFilterGroup
                             legend="Status"
