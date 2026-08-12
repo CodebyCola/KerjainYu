@@ -6,18 +6,18 @@ export async function createTask(
     title: string;
     description?: string;
     status: string;
-    priority: number;
+    priority?: number | null;
     displayOrder: number;
     deadline: Date;
   },
-  trx: Knex.Transaction,
+  trx?: Knex.Transaction,
 ) {
   const executor = trx || db;
   return executor("tasks")
     .insert(data)
     .returning("*")
     .then((rows) => {
-      rows[0];
+      return rows[0];
     });
 }
 
@@ -31,13 +31,27 @@ export async function updateTask(
     displayOrder: number;
     deadline: Date;
   }>,
+  trx?: Knex.Transaction
 ) {
-  return db("tasks").where("id", taskId).update(data).returning("*");
+  const executor = trx || db
+  return executor("tasks").where("id", taskId).update(data).returning("*");
 }
-export async function getAllTaskByUser(userId: number) {
-  return db("tasks").where("assignee_id", userId).returning("*");
+export async function getTaskById(taskId: number) {
+  return db("tasks").where("id", taskId).first()
 }
-export async function getAllTaskByProject(projectId: number) {
-  return db("tasks").where("project_id", projectId).returning("*");
+
+
+export async function getTasksByUser(userId: number) {
+  return db("tasks").join("projects", "projects.id", "tasks.project_id").where("assignee_id", userId).where("project.status", "ongoing").select("tasks.*", "projects.title as projectTitle");
 }
-    
+export async function getTasksByProject(projectId: number, userId?: number) {
+  return await db("tasks")
+    .where("project_id", projectId)
+    .modify((queryBuilder) => {
+      if (userId) {
+        queryBuilder.where("assignee_id", userId);
+      }
+    })
+    .select("*");
+}
+

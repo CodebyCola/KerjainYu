@@ -31,6 +31,11 @@ export const createTaskSchema = z.object({
   }),
 });
 
+export const getTaskQuerySchema = z.object({
+  projectId: z.coerce.number().int().positive().optional(),
+  filter: z.enum(["assigned-me"]).optional()
+})
+
 export const updateTaskSchema = z.object({
   title: z.string().nonempty("Title must be filled").optional(),
 
@@ -45,6 +50,6 @@ export const updateTaskSchema = z.object({
   deadline: z.date().optional(),
 });
 
-
+export type GetTasksQueryInput = z.infer<typeof getTaskQuerySchema>
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTasktInput = z.infer<typeof updateTaskSchema>;
