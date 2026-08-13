@@ -14,7 +14,7 @@ import {
 } from "../errors/AppError";
 import bcrypt from "bcrypt";
 import crypto from 'crypto'
-import { generateAccessToken, generateRandomString, generateRefreshToken, hashToken } from "../lib/jwt";
+import { generateAccessToken, generateRandomString, generateRefreshToken, hashToken } from "../lib/token";
 import { createRefreshToken, findByHash, revokeByHash } from "../database/repositories/refresh.token.repository";
 
 

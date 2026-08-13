@@ -1,7 +1,7 @@
 import { JwtPayload } from "jsonwebtoken";
 import { TokenExpiredError } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { verifyAccessToken } from "../lib/jwt";
+import { verifyAccessToken } from "../lib/token";
 import { AppError, UnauthorizedError } from "../errors/AppError";
 
 export interface AuthRequest extends Request {
