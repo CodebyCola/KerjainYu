@@ -27,8 +27,7 @@ export type Project = {
   deadline: string;
   isArchived: boolean;
   createdAt: string;
-  members?: ProjectMember[]; // belum ada atau belum disertakan di endpoint jadi masih optional
-  links?: ProjectLink[]; // ini sama dengan yang atas
+  members?: ProjectMember[];
 };
 
 export type CreateProjectLinkPayload = {

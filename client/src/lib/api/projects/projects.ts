@@ -6,8 +6,13 @@ import { apiFetch } from "../fetcher";
 
 const PROJECT_PATH = "/project";
 
+// Request Url
 export function getProjectsRequest(cookie: string) {
   return apiFetch<Project[]>(PROJECT_PATH, { cookie });
+}
+
+export async function getProjectRequest(projectId: number, cookie: string) {
+  return apiFetch(`${PROJECT_PATH}/${projectId}`, { cookie });
 }
 
 export function createProjectRequest(
@@ -21,22 +26,30 @@ export function createProjectRequest(
   });
 }
 
+// Fetcher
 export const getProjects = cache(async (): Promise<Project[]> => {
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
 
   try {
     const { data } = await getProjectsRequest(cookieHeader);
-    // GET /projects saat ini belum menyertakan members/links di response-nya
-    // (lihat catatan di types/project.ts). Diisi default array kosong di sini
-    // supaya komponen yang mengonsumsi Project (mis. ProjectListCard) tidak
-    // perlu peduli soal field itu opsional atau tidak.
     return data.map((project) => ({
       ...project,
       members: project.members ?? [],
-      links: project.links ?? [],
     }));
   } catch {
     return [];
+  }
+});
+
+export const getProject = cache(async (projectId: number) => {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+  try {
+    const { data } = await getProjectRequest(projectId, cookieHeader);
+
+    return data;
+  } catch {
+    return null;
   }
 });

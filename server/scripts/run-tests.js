@@ -13,7 +13,7 @@ for (const file of testFiles) {
     try {
         execSync(`npx vitest run ${file}`, {
             stdio: "inherit",
-            env: { ...process.env, NODE_ENV: "test" }
+            env: { ...process.env.test, NODE_ENV: "test" }
         });
     } catch (err) {
         hasFailure = true;
