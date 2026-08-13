@@ -252,7 +252,7 @@ describe("PATCH /api/v1/project/:id", () => {
       .patch(`/api/v1/project/${projectId}`)
       .set("Cookie", owner.cookie)
       .send({ isArchived: true });
-    console.log(res)
+    // console.log(res)
     expect(res.status).toBe(200);
     expect(res.body.data.isArchived).toBe(true);
     // expect(res.body.data.isArchivedAt).toBe(new Date());

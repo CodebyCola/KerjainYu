@@ -27,12 +27,14 @@ registry.registerPath({
     method: "post",
     path: "/api/v1/auth/login",
     tags: ["Auth"],
+    summary: "Login and receive accessToken + refreshToken as httpOnly cookies",
     request: {
         body: { content: { "application/json": { schema: loginSchema } } },
     },
     responses: {
-        200: { description: "Login successful, cookie token is set" },
+        200: { description: "Login successful. Sets 'accessToken' (15 min) and 'refreshToken' (7 days) as httpOnly cookies." },
         401: { description: "Invalid username or password" },
+        400: { description: "Validation error" },
     },
 });
 
@@ -49,12 +51,23 @@ registry.registerPath({
 
 registry.registerPath({
     method: "post",
+    path: "/api/v1/auth/refresh",
+    tags: ["Auth"],
+    summary: "Exchange a valid refreshToken for a new accessToken (rotates refreshToken)",
+    responses: {
+        200: { description: "New 'accessToken' and 'refreshToken' cookies issued. The previous refreshToken is revoked (rotation) — reusing it will fail." },
+        401: { description: "Missing, invalid, expired, or already-revoked refreshToken. Client must login again." },
+    },
+});
+
+registry.registerPath({
+    method: "post",
     path: "/api/v1/auth/logout",
     tags: ["Auth"],
-    security: [{ cookieAuth: [] }],
+    summary: "Revoke the current refreshToken and clear auth cookies",
     responses: {
-        200: { description: "Logout Successfully" },
-        401: { description: "Not Authenticated" },
+
+        200: { description: "Logged out successfully. 'accessToken' and 'refreshToken' cookies are cleared. Idempotent — succeeds even without an active session." },
     },
 });
 
