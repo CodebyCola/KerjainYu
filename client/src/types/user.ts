@@ -6,4 +6,5 @@ export type User = {
     avatarUrl: string | null;
     createdAt: string;
     updatedAt: string | null;
+    role: string | null;
 };

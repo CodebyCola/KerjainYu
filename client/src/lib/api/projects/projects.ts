@@ -1,7 +1,11 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { Project, CreateProjectPayload } from "@/types/project";
+import {
+  Project,
+  CreateProjectPayload,
+  ProjectDetailResponse,
+} from "@/types/project";
 import { apiFetch } from "../fetcher";
 
 const PROJECT_PATH = "/project";
@@ -11,8 +15,13 @@ export function getProjectsRequest(cookie: string) {
   return apiFetch<Project[]>(PROJECT_PATH, { cookie });
 }
 
-export async function getProjectRequest(projectId: number, cookie: string) {
-  return apiFetch(`${PROJECT_PATH}/${projectId}`, { cookie });
+export async function getProjectDetailRequest(
+  projectId: string,
+  cookie: string,
+) {
+  return apiFetch<ProjectDetailResponse>(`${PROJECT_PATH}/${projectId}`, {
+    cookie,
+  });
 }
 
 export function createProjectRequest(
@@ -42,14 +51,16 @@ export const getProjects = cache(async (): Promise<Project[]> => {
   }
 });
 
-export const getProject = cache(async (projectId: number) => {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
-  try {
-    const { data } = await getProjectRequest(projectId, cookieHeader);
+export const getProject = cache(
+  async (projectId: string): Promise<ProjectDetailResponse | null> => {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+    try {
+      const { data } = await getProjectDetailRequest(projectId, cookieHeader);
 
-    return data;
-  } catch {
-    return null;
-  }
-});
+      return data;
+    } catch {
+      return null;
+    }
+  },
+);
