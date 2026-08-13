@@ -19,7 +19,7 @@ services:
   db_test:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: kerjainyu
+      POSTGRES_USER: kerjainyu_test
       POSTGRES_PASSWORD: kerjainyu123
       POSTGRES_DB: kerjainyu_test_db
     ports:

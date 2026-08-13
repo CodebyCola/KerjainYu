@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Link2, Repeat } from "lucide-react";
+import { CalendarDays, Repeat } from "lucide-react";
 import { Project } from "@/types/project";
 import { cn } from "@/utils/cn";
 import { getInitials } from "@/utils/getInitials";
@@ -32,7 +32,6 @@ function isOverdue(deadline: string, status: Project["status"]) {
 
 export default function ProjectListCard({ project }: ProjectListCardProps) {
     const members = project.members ?? [];
-    const links = project.links ?? [];
     const leader = members.find((member) => member.role === "leader");
     const overdue = isOverdue(project.deadline, project.status);
 
@@ -69,13 +68,6 @@ export default function ProjectListCard({ project }: ProjectListCardProps) {
                     {formatDeadline(project.deadline)}
                     {overdue && " · Lewat tenggat"}
                 </span>
-
-                {links.length > 0 && (
-                    <span className="flex items-center gap-1.5">
-                        <Link2 className="size-3.5 sm:size-4" />
-                        {links.length} link
-                    </span>
-                )}
 
                 {project.allowFreeSwap && (
                     <span className="flex items-center gap-1.5">
