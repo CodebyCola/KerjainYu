@@ -21,7 +21,7 @@ export default async function TaskBoardPage(props: { params: Promise<TaskBoardPa
         getProjectTasks(projectId),
     ]);
 
-    const isLeader = user?.role === "leader";
+    const isLeader = projectDetail?.membership.role === "leader";
 
     return (
         <div className="flex h-full min-h-0 flex-col">
