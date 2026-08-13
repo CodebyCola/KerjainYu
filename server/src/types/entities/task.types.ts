@@ -13,7 +13,6 @@ export interface Task {
     description: string | null;
     status: TaskStatus;
     priority: number | null;
-    displayOrder: number;
     projectId: number;
     deadline: Date | null;
     assigneeId: number | null;

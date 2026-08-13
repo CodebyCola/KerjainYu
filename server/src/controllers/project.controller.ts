@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthRequest } from "../middlewares/auth.middlewares";
 import * as projectService from "../services/project.service";
+import * as taskService from "../services/task.service";
 import { UnauthorizedError } from "../errors/AppError";
-
-
 
 //POST /api/v1/projects
 export async function createProject(
@@ -26,11 +25,35 @@ export async function createProject(
   }
 }
 
-//GET /api/v1/projects/:id
-export async function getDetailProject(req: AuthRequest, res: Response, next: NextFunction) {
+//POST /api/v1/projects/:id/tasks
+export async function createTask(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const projectId = Number(req.params.id);
-    const [project, membership, projectLinks] = await projectService.getDetailProject(projectId, req.user!.id)
+    const tasks = await taskService.createTask(
+      projectId,
+      req.user!.id,
+      req.body,
+    );
+    res.status(200).json({ success: true, data: tasks });
+  } catch (error) {
+    next(error);
+  }
+}
+
+//GET /api/v1/projects/:id
+export async function getDetailProject(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const projectId = Number(req.params.id);
+    const [project, membership, projectLinks] =
+      await projectService.getDetailProject(projectId, req.user!.id);
     res.status(200).json({
       success: true,
       data: {
@@ -38,50 +61,76 @@ export async function getDetailProject(req: AuthRequest, res: Response, next: Ne
         membership,
         links: projectLinks,
       },
-    })
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
 }
 
 //GET /api/v1/projects
-export async function getProjectsByUserId(req: AuthRequest, res: Response, next: NextFunction) {
+export async function getProjectsByUserId(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const projects = await projectService.getAllProjects(req.user!.id)
-    res.status(200).json({ success: true, data: projects })
+    const projects = await projectService.getAllProjects(req.user!.id);
+    res.status(200).json({ success: true, data: projects });
   } catch (error) {
-    next(error)
+    next(error);
   }
 }
 
 //GET /api/v1/projects/{id}/tasks
-export async function getTasksByProject(req: AuthRequest, res: Response, next: NextFunction) {
+export async function getTasksByProject(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const projectId = Number(req.params.id)
-    const tasks = await projectService.getTasksByProject(projectId, req.user!.id)
-    res.status(200).json({ success: true, data: tasks })
+    const projectId = Number(req.params.id);
+    const tasks = await projectService.getTasksByProject(
+      projectId,
+      req.user!.id,
+    );
+    res.status(200).json({ success: true, data: tasks });
   } catch (error) {
-    next(error)
+    next(error);
   }
 }
 
 //GET /api/v1/projects/{id}/members
-export async function getMembersByProject(req: AuthRequest, res: Response, next: NextFunction) {
+export async function getMembersByProject(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const projectId = Number(req.params.id)
-    const members = await projectService.getMembersByProject(projectId, req.user!.id)
-    res.status(200).json({ success: true, data: members })
+    const projectId = Number(req.params.id);
+    const members = await projectService.getMembersByProject(
+      projectId,
+      req.user!.id,
+    );
+    res.status(200).json({ success: true, data: members });
   } catch (error) {
-    next(error)
+    next(error);
   }
 }
 //PATCH /api/v1/projects/{id}
-export async function updateProject(req: AuthRequest, res: Response, next: NextFunction) {
+export async function updateProject(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const projectId = Number(req.params.id)
-    const project = await projectService.updateProject(projectId, req.user!.id, req.body)
-    res.status(200).json({ success: true, data: project })
+    const projectId = Number(req.params.id);
+    const project = await projectService.updateProject(
+      projectId,
+      req.user!.id,
+      req.body,
+    );
+    res.status(200).json({ success: true, data: project });
   } catch (error) {
-    next(error)
+    next(error);
   }
 }

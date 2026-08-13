@@ -37,29 +37,28 @@ export const updateProjectSchema = z
     status: z.enum(["ongoing", "completed"]),
     deadline: z.coerce.date(),
     isArchived: z.boolean(),
-    isArchivedAt: z.date()
+    isArchivedAt: z.date(),
   })
   .partial()
   .strict()
-  .refine((data) => {
-    const keys = Object.keys(data);
-    return keys.length > 0;
-  }, {
-    message: "At least one field must be provided to update",
-  })
+  .refine(
+    (data) => {
+      const keys = Object.keys(data);
+      return keys.length > 0;
+    },
+    {
+      message: "At least one field must be provided to update",
+    },
+  )
   .openapi("UpdateProjectInput");
-
-
 
 export const projectIdParams = z.object({
   id: z.coerce.number(),
 });
-
-export type ProjectIdParams = z.infer<typeof projectIdParams>
-
 
 export type CreateProjectWithLinksInput = z.infer<
   typeof createProjectWithLinksSchema
 >;
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+export type ProjectIdParams = z.infer<typeof projectIdParams>;
