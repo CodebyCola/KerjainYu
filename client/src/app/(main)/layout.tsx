@@ -25,7 +25,7 @@ export default async function MainLayout({
   return (
     <SessionProvider user={user}>
       <ResponsiveLayout user={user}>
-        <div className="px-4 mt-2">
+        <div className="px-4 mt-2 h-full">
           {children}
         </div>
       </ResponsiveLayout>

@@ -18,6 +18,7 @@
     "test:db:down": "docker compose stop db_test",
     "test:db:reset": "docker compose stop db_test && npm run test:db:up && npm run test:db:migrate && npm run test",
     "test:db:migrate": "cross-env DATABASE_URL=postgresql://kerjainyu:kerjainyu123@localhost:5433/kerjainyu_test_db knex migrate:latest --knexfile src/database/knexfile.js",
+    "test:db:reset": "docker compose down -v && npm run test:db:up && npm run test:db:migrate",
     "build": "tsc",
     "start": "node dist/index.js"
   },

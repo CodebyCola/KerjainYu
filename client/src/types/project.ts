@@ -27,14 +27,24 @@ export type Project = {
   deadline: string;
   isArchived: boolean;
   createdAt: string;
-  members?: ProjectMember[]; // belum ada atau belum disertakan di endpoint jadi masih optional
-  links?: ProjectLink[]; // ini sama dengan yang atas
+  members: ProjectMember[];
 };
 
 export type CreateProjectLinkPayload = {
   label: string;
   url: string;
   category: ProjectLinkCategory;
+};
+
+export type ProjectMembership = {
+  userId: number;
+  role: ProjectMemberRole;
+};
+
+export type ProjectDetailResponse = {
+  project: Project;
+  membership: ProjectMembership;
+  links: ProjectLink[];
 };
 
 export type CreateProjectPayload = {
