@@ -36,8 +36,14 @@ export type CreateProjectLinkPayload = {
   category: ProjectLinkCategory;
 };
 
+export type ProjectMembership = {
+  userId: number;
+  role: ProjectMemberRole;
+};
+
 export type ProjectDetailResponse = {
   project: Project;
+  membership: ProjectMembership;
   links: ProjectLink[];
 };
 

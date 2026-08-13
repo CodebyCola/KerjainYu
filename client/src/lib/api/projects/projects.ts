@@ -58,7 +58,13 @@ export const getProject = cache(
     try {
       const { data } = await getProjectDetailRequest(projectId, cookieHeader);
 
-      return data;
+      return {
+        ...data,
+        project: {
+          ...data.project,
+          members: data.project.members ?? [],
+        },
+      };
     } catch {
       return null;
     }
