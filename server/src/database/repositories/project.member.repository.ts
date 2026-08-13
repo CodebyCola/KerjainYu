@@ -38,10 +38,13 @@ export async function getRole(projectId: number, userId: number) {
     .where("user_id", userId).select("user_id", "role").first()
 }
 
-export async function getProjects(userId: number) {
-  return db("project_members").where("user_id", userId).select("project_id")
-}
+// export async function getProjects(userId: number) {
+//   return db("project_members").where("user_id", userId).select("project_id")
+// }
 
+export async function getMembersByProject(projectId: number) {
+  return db("project_members").where("project_id", projectId).where("status", "active")
+}
 export async function getProjectByIdAndUser(id: number, userId: number) {
   return db("project_members").where("project_id", id)
 }

@@ -13,6 +13,8 @@ router.post(
   validate(projectSchema.createProjectWithLinksSchema),
   projectController.createProject,
 );
+router.get("/:id/tasks", authenticate, validate(projectSchema.projectIdParams, 'params'), projectController.getTasksByProject)
+router.get("/:id/members", authenticate, validate(projectSchema.projectIdParams, 'params'), projectController.getMembersByProject)
 router.patch("/:id", authenticate, createLimiter, validate(projectSchema.updateProjectSchema), projectController.updateProject)
 router.get("/:id", authenticate, projectController.getDetailProject)
 router.get("/", authenticate, projectController.getProjectsByUserId)

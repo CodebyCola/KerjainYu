@@ -6,7 +6,7 @@ import { projectIdParams } from './params/project.params';
 
 registry.registerPath({
     method: "post",
-    path: "/api/v1/project",
+    path: "/api/v1/projects",
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     request: {
@@ -23,7 +23,7 @@ registry.registerPath({
 
 registry.registerPath({
     method: "patch",
-    path: "/api/v1/project/{id}",
+    path: "/api/v1/projects/{id}",
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     request: {
@@ -44,7 +44,7 @@ registry.registerPath({
 
 registry.registerPath({
     method: "get",
-    path: "/api/v1/project/{id}",
+    path: "/api/v1/projects/{id}",
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     request: {
@@ -60,7 +60,7 @@ registry.registerPath({
 
 registry.registerPath({
     method: "get",
-    path: "/api/v1/project",
+    path: "/api/v1/projects",
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     responses: {
@@ -69,3 +69,28 @@ registry.registerPath({
     },
 });
 
+registry.registerPath({
+    method: "get",
+    path: "/api/v1/projects/{id}/members",
+    tags: ["Projects"],
+    request: { params: projectIdParams },
+    security: [{ cookieAuth: [] }],
+    responses: {
+        200: { description: "Successfully fecth all members that belong to project" },
+        401: { description: "Not authenticated" },
+        403: { description: "That project does not belong to the user" },
+    }
+})
+
+registry.registerPath({
+    method: "get",
+    path: "/api/v1/projects/{id}/tasks",
+    tags: ["Projects"],
+    request: { params: projectIdParams },
+    security: [{ cookieAuth: [] }],
+    responses: {
+        200: { description: "Successfully fecth all tasks that belong to project" },
+        401: { description: "Not authenticated" },
+        403: { description: "That project does not belong to the user" },
+    }
+})
