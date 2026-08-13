@@ -27,13 +27,18 @@ export type Project = {
   deadline: string;
   isArchived: boolean;
   createdAt: string;
-  members?: ProjectMember[];
+  members: ProjectMember[];
 };
 
 export type CreateProjectLinkPayload = {
   label: string;
   url: string;
-  category: ProjectLinkCategory; // ini juga perlu di tambahin di schema db dan di repo
+  category: ProjectLinkCategory;
+};
+
+export type ProjectDetailResponse = {
+  project: Project;
+  links: ProjectLink[];
 };
 
 export type CreateProjectPayload = {

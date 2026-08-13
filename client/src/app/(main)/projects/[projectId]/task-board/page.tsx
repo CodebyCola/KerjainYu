@@ -1,14 +1,43 @@
+import { getSession } from "@/lib/api/auth/session";
+import { getProject } from "@/lib/api/projects/projects";
+import { getProjectTasks } from "@/lib/api/tasks/tasks";
+import TaskBoard from "@/components/features/tasks/TaskBoard";
+
 type TaskBoardPageProps = {
-    params: Promise<{ projectId: string }>;
+    projectId: string;
 };
 
-export default async function TaskBoardPage({ params }: TaskBoardPageProps) {
-    const { projectId } = await params;
+export default async function TaskBoardPage(props: { params: Promise<TaskBoardPageProps> }) {
+    const { projectId } = await props.params;
+
+    // Task Board butuh tiga hal dari server: sesi user saat ini, detail
+    // proyek (untuk tahu apakah user leader), dan daftar task proyek.
+    // GET /project/:projectId/tasks belum ada di server (fallback dummy
+    // dipakai di getProjectTasks, lihat catatan di file itu), sehingga
+    // halaman ini tetap bisa didesain & dites walau backend belum siap.
+    const [user, projectDetail, tasks] = await Promise.all([
+        getSession(),
+        getProject(projectId),
+        getProjectTasks(projectId),
+    ]);
+
+    const isLeader = user?.role === "leader";
 
     return (
-        <div className="flex flex-col gap-1">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold">Task Board</h2>
-            <p className="text-sm font-inter text-muted">Proyek #{projectId} — halaman ini belum diimplementasikan.</p>
+        <div className="flex h-full min-h-0 flex-col">
+            <h2 className="shrink-0 pb-3 text-xl font-semibold md:pb-4 md:text-2xl lg:text-3xl">
+                Papan Tugas
+            </h2>
+
+            <div className="min-h-0 flex-1">
+                <TaskBoard
+                    tasks={tasks}
+                    projectId={projectId}
+                    currentUserId={user?.id ?? -1}
+                    isLeader={isLeader}
+                    members={projectDetail?.project.members ?? []}
+                />
+            </div>
         </div>
     );
 }
