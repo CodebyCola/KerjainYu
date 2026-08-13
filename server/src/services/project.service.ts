@@ -1,7 +1,9 @@
 import * as projectRepo from "../database/repositories/project.repository";
 import * as projectMemberRepo from "../database/repositories/project.member.repository";
 import * as projectLinkRepo from "../database/repositories/project.link.repository";
+import * as taskRepo from "../database/repositories/task.repository"
 import * as projectSchema from "../schemas/projectSchema";
+import { assertProjectMembership } from "./helper/auhtorization.helper";
 import { db } from "../database/db";
 import {
   ConflictError,
@@ -11,7 +13,7 @@ import {
 } from "../errors/AppError";
 import { CreateProjectLinkInput } from "../schemas/projectLinkSchema";
 
-//POST /api/v1/project
+//POST /api/v1/projects
 export async function createProjectWithLinks(
   projectInput: projectSchema.CreateProjectInput,
   linksInput: CreateProjectLinkInput[],
@@ -27,29 +29,39 @@ export async function createProjectWithLinks(
   });
 }
 
-//GET /api/v1/project/:id
+//GET /api/v1/projects/:id
 export async function getDetailProject(projectId: number, userId: number) {
   const [project, membership, links] = await Promise.all([
     projectRepo.getProjectById(projectId),
     projectMemberRepo.getRole(projectId, userId),
     projectLinkRepo.getAllLinksByProject(projectId),
   ]);
-  if (!project) {
-    throw new NotFoundError("Project not found!");
-  }
-  if (!membership) {
-    throw new ForbiddenError("You're not part of this project!");
-  }
+  await assertProjectMembership(projectId, userId)
   return [project, membership, links];
 }
 
-//GET /api/v1/project
+//GET /api/v1/projects
 export async function getAllProjects(userId: number) {
   const projects = await projectRepo.getProjectsByUserId(userId);
   return projects;
 }
 
-//PATCH /api/v1/project/:id
+
+//GET /api/v1/projects/:id/tasks
+export async function getTasksByProject(projectId: number, userId: number) {
+  await assertProjectMembership(projectId, userId)
+  const tasks = await taskRepo.getTasksByProject(projectId)
+  return tasks
+}
+
+//GET /api/v1/projects/:id/members -> Returning all members that is belong to the project + active
+export async function getMembersByProject(projectId: number, userId: number) {
+  await assertProjectMembership(projectId, userId)
+  const members = await projectMemberRepo.getMembersByProject(projectId)
+  return members;
+}
+
+//PATCH /api/v1/projects/:id
 export async function updateProject(
   projectId: number,
   userId: number,

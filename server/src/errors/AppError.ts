@@ -1,3 +1,5 @@
+import fi from "zod/v4/locales/fi.js";
+
 export class AppError extends Error {
     code: string;
     httpStatus: number;
@@ -26,8 +28,10 @@ export class ForbiddenError extends AppError {
     }
 }
 export class ValidationError extends AppError {
-    constructor(message = 'Input is not valid') {
+    fields?: Record<string, string>
+    constructor(message = 'Input is not valid', fields?: Record<string, string>) {
         super('VALIDATION_ERROR', message, 400)
+        this.fields = fields
     }
 }
 export class ConflictError extends AppError {
