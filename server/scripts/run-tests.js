@@ -4,6 +4,7 @@ const testFiles = [
     "src/tests/integration/health.test.ts",
     "src/tests/integration/auth.test.ts",
     "src/tests/integration/project.test.ts",
+    "src/tests/integration/task.test.ts"
 ];
 
 let hasFailure = false;
