@@ -23,3 +23,11 @@ export function loginRequest(payload: LoginPayload) {
 export function getMeRequest(cookie: string) {
   return apiFetch<User>("/auth/me", { cookie });
 }
+
+export function refreshRequest(cookie: string) {
+  return apiFetch<null>("/auth/refresh", { method: "POST", cookie });
+}
+
+export function logoutRequest(cookie: string) {
+  return apiFetch<null>("/auth/logout", { method: "POST", cookie });
+}

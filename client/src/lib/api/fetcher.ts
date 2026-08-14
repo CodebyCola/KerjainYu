@@ -11,7 +11,7 @@ type RequestOptions = {
 
 type ApiResult<T> = {
   data: T;
-  setCookie: string | null;
+  setCookies: string[];
 };
 
 export async function apiFetch<T>(
@@ -57,6 +57,6 @@ export async function apiFetch<T>(
 
   return {
     data: json.data,
-    setCookie: response.headers.get("set-cookie"),
+    setCookies: response.headers.getSetCookie(),
   };
 }
