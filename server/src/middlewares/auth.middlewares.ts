@@ -1,7 +1,7 @@
 import { JwtPayload } from "jsonwebtoken";
 import { TokenExpiredError } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { verifyToken } from "../lib/jwt";
+import { verifyAccessToken } from "../lib/token";
 import { AppError, UnauthorizedError } from "../errors/AppError";
 
 export interface AuthRequest extends Request {
@@ -15,13 +15,12 @@ export const authenticate = (
 ) => {
   try {
     //Get token from http cookie
-    const token = req.cookies?.token;
+    const token = req.cookies?.accessToken;
     if (!token) {
       throw new UnauthorizedError("Please Login First")
     }
-
     // verify token
-    const decoded = verifyToken(token) as JwtPayload & {
+    const decoded = verifyAccessToken(token) as JwtPayload & {
       id: number;
       username: string;
     };
@@ -37,3 +36,5 @@ export const authenticate = (
     next(new UnauthorizedError("Invalid or expired token"));
   }
 };
+
+// export const authenticateAccessToken = (){ }

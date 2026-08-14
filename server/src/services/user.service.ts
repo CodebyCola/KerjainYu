@@ -1,5 +1,6 @@
 // src/services/userService.ts
-import * as userRepo from "../database/repositories/user.repository"; // sesuaikan path repo kamu
+import * as userRepo from "../database/repositories/user.repository";
+import { db } from "../database/db";
 import {
   RegisterInput,
   LoginInput,
@@ -12,7 +13,10 @@ import {
   UnauthorizedError,
 } from "../errors/AppError";
 import bcrypt from "bcrypt";
-import { generateToken } from "../lib/jwt";
+import crypto from 'crypto'
+import { generateAccessToken, generateRandomString, generateRefreshToken, hashToken } from "../lib/token";
+import { createRefreshToken, findByHash, revokeByHash } from "../database/repositories/refresh.token.repository";
+
 
 //POST /api/v1/auth/register
 export async function registerUser(input: RegisterInput) {
@@ -29,7 +33,7 @@ export async function registerUser(input: RegisterInput) {
 }
 
 //POST /api/v1/auth/login
-export async function loginUser(input: LoginInput) {
+export async function loginUser(input: LoginInput, ipAddress: string, deviceInfo: string) {
   const user = await userRepo.findByUsername(input.username)
   if (!user) {
     throw new UnauthorizedError("Invalid username or password!")
@@ -41,9 +45,38 @@ export async function loginUser(input: LoginInput) {
     throw new UnauthorizedError("Invalid username or password")
   }
 
-  const token = generateToken({ id: user.id, username: user.username })
+  const accessToken = generateAccessToken({ id: user.id, username: user.username })
+  const refreshTokenPlain = generateRandomString()
+  const refreshToken = generateRefreshToken(refreshTokenPlain);
+  await createRefreshToken(user.id, { tokenHash: refreshToken.tokenHashed, expiresAt: refreshToken.expiresAt, deviceInfo: deviceInfo, ipAddress: ipAddress }) //Menyimpan refresh token ke database
+
   const { password, ...safeUser } = user
-  return { user: safeUser, token }
+  return { user: safeUser, accessToken, refreshTokenPlain }
+}
+
+//POST /api/v1/auth/refresh
+export async function refreshAccessToken(refresHTokenPlain: string) {
+  const tokenHash = hashToken(refresHTokenPlain)
+  const stored = await findByHash(tokenHash)
+
+  if (!stored || stored.isRevoked || new Date(stored.expiresAt) < new Date()) {
+    throw new UnauthorizedError("Invalid or expired refresh token, please login again")
+  }
+
+  const user = await userRepo.findById(stored.userId)
+  if (!user) {
+    throw new UnauthorizedError("User not found")
+  }
+  return db.transaction(async (trx) => {
+    await revokeByHash(tokenHash, trx)
+    const newRefreshTokenPlain = generateRandomString()
+    const newRefreshToken = generateRefreshToken(newRefreshTokenPlain)
+    await createRefreshToken(user.id, { tokenHash: newRefreshToken.tokenHashed, expiresAt: newRefreshToken.expiresAt, deviceInfo: stored.deviceInfo, ipAddress: stored.ipAddress }, trx)
+    const newAccessToken = generateAccessToken({
+      id: user.id, username: user.username
+    })
+    return { accessToken: newAccessToken, refreshTokenPlain: newRefreshTokenPlain }
+  })
 }
 
 //GET /api/v1/auth/me
@@ -54,6 +87,12 @@ export async function getUserProfile(id: number) {
   }
   const { password, ...safeUser } = user;
   return safeUser;
+}
+
+//POST /api/v1/auth/logout
+export async function logout(refreshTokenPlain: string) {
+  const tokenHash = hashToken(refreshTokenPlain)
+  await revokeByHash(tokenHash)
 }
 
 
