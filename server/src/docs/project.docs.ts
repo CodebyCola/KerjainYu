@@ -1,7 +1,8 @@
 // Projects'
 import { createProjectWithLinksSchema, updateProjectSchema } from '../schemas/projectSchema';
 import { registry } from './components';
-import { projectIdParams } from './params/project.params';
+import { createTaskSchema } from '../schemas/task.schema';
+import { projectIdParams } from './params/id.params';
 
 
 registry.registerPath({
@@ -94,3 +95,47 @@ registry.registerPath({
         403: { description: "That project does not belong to the user" },
     }
 })
+
+// ─────────────────────────────────────────────
+// POST /api/v1/projects/{id}/tasks
+// ─────────────────────────────────────────────
+
+registry.registerPath({
+    method: "post",
+    path: "/api/v1/projects/{id}/tasks",
+    tags: ["Tasks"],
+    summary: "Create a new task within a project",
+    description: "Only the project leader can create tasks. `createdBy` is taken from the authenticated user, not from the request body.",
+    security: [{ cookieAuth: [] }],
+    request: {
+        params: projectIdParams,
+        body: { content: { "application/json": { schema: createTaskSchema } } },
+    },
+    responses: {
+        201: { description: "Task created successfully. Returns the newly created task." },
+        400: { description: "Validation error (e.g. title missing)" },
+        401: { description: "Not authenticated" },
+        403: { description: "Only the project leader can create tasks" },
+        404: { description: "Project not found" },
+    },
+});
+
+// ─────────────────────────────────────────────
+// GET /api/v1/projects/{id}/tasks
+// ─────────────────────────────────────────────
+
+registry.registerPath({
+    method: "get",
+    path: "/api/v1/projects/{id}/tasks",
+    tags: ["Tasks"],
+    summary: "Get all tasks belonging to a project",
+    description: "Accessible to any active member of the project (leader or regular member).",
+    security: [{ cookieAuth: [] }],
+    request: { params: projectIdParams },
+    responses: {
+        200: { description: "List of tasks in this project" },
+        401: { description: "Not authenticated" },
+        403: { description: "You're not a member of this project" },
+        404: { description: "Project not found" },
+    },
+});

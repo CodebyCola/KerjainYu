@@ -21,27 +21,26 @@ export const createTaskSchema = z
       example: "Buatin testing aplikasi untuk feature berikut ...",
     }),
 
-    status: taskStatusSchema.nonoptional().default("unclaimed"),
+    status: taskStatusSchema.optional().default("unclaimed"),
 
     priority: z.int().optional().openapi({ example: 1 }),
 
     isClaimable: z
       .boolean()
-      .nonoptional()
+      .optional()
       .default(true)
       .openapi({ example: true }),
     deadline: z.coerce.date().optional().openapi({
       example: "2026-09-20T00:00:00.000Z",
     }),
 
-    createdBy: z.coerce.number(),
   })
   .strict()
   .openapi("CreateTaskInput");
 
 export const updateTaskSchema = z
   .object({
-    title: z.string().nonempty("Title must be filled"),
+    title: z.string(),
 
     description: z.string(),
 

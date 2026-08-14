@@ -11,12 +11,12 @@ export async function createTask(
     priority?: number;
     isClaimable: boolean;
     deadline?: Date;
-    createdBy: number;
   },
+  createdBy: number,
   trx?: Knex.Transaction,
 ) {
   const executor = trx || db;
-  return executor("tasks").insert(data).returning("*");
+  return executor("tasks").insert({ ...data, projectId, createdBy }).returning("*").then((rows) => rows[0]);
 }
 
 export async function updateTask(
@@ -31,7 +31,7 @@ export async function updateTask(
   trx?: Knex.Transaction,
 ) {
   const executor = trx || db;
-  return executor("tasks").where("id", taskId).update(data).returning("*");
+  return executor("tasks").where("id", taskId).update(data).returning("*").then((rows) => rows[0]);
 }
 export async function getTaskById(taskId: number): Promise<Task | undefined> {
   return db<Task>("tasks").where("id", taskId).first();

@@ -16,7 +16,7 @@ export async function createTask(
   input: taskInput.CreateTaskInput,
 ) {
   await assertProjectLeader(projectId, userId);
-  const tasks = await taskRepo.createTask(projectId, input);
+  const tasks = await taskRepo.createTask(projectId, input, userId);
   return tasks;
 }
 
