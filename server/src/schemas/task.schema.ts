@@ -10,46 +10,58 @@ const taskStatusSchema = z.enum([
   "rejected",
 ]);
 
-export const createTaskSchema = z.object({
-  title: z
-    .string()
-    .nonempty("Title must be filled")
-    .openapi({ example: "Buat testing aplikasi" }),
+export const createTaskSchema = z
+  .object({
+    title: z
+      .string()
+      .nonempty("Title must be filled")
+      .openapi({ example: "Buat testing aplikasi" }),
 
-  description: z.string().openapi({
-    example: "Buatin testing aplikasi untuk feature berikut ...",
-  }),
+    description: z.string().optional().openapi({
+      example: "Buatin testing aplikasi untuk feature berikut ...",
+    }),
 
-  status: taskStatusSchema.nonoptional().default("unclaimed"),
+    status: taskStatusSchema.optional().default("unclaimed"),
 
-  priority: z.int().optional().openapi({ example: 1 }),
+    priority: z.int().optional().openapi({ example: 1 }),
 
-  displayOrder: z.int().optional().openapi({ example: 0 }),
+    isClaimable: z
+      .boolean()
+      .optional()
+      .default(true)
+      .openapi({ example: true }),
+    deadline: z.coerce.date().optional().openapi({
+      example: "2026-09-20T00:00:00.000Z",
+    }),
 
-  deadline: z.date().optional().openapi({
-    example: "2026-09-20T00:00:00.000Z",
-  }),
-});
+  })
+  .strict()
+  .openapi("CreateTaskInput");
 
-export const getTaskQuerySchema = z.object({
-  projectId: z.coerce.number().int().positive().optional(),
-  filter: z.enum(["assigned-me"]).optional()
-})
+export const updateTaskSchema = z
+  .object({
+    title: z.string(),
 
-export const updateTaskSchema = z.object({
-  title: z.string().nonempty("Title must be filled").optional(),
+    description: z.string(),
 
-  description: z.string().optional(),
+    status: taskStatusSchema,
 
-  status: taskStatusSchema.optional(),
+    priority: z.int(),
 
-  priority: z.int().optional(),
-
-  displayOrder: z.int().optional(),
-
-  deadline: z.date().optional(),
-});
-
-export type GetTasksQueryInput = z.infer<typeof getTaskQuerySchema>
+    deadline: z.coerce.date(),
+  })
+  .partial()
+  .strict()
+  .refine(
+    (data) => {
+      const keys = Object.keys(data);
+      return keys.length > 0;
+    },
+    {
+      message: "At least one field must be provided to update",
+    },
+  )
+  .openapi("UpdateTaskInput");
+export type TaskStatusSchema = z.infer<typeof taskStatusSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTasktInput = z.infer<typeof updateTaskSchema>;

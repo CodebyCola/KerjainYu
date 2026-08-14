@@ -6,7 +6,7 @@ import { registerAndLogin } from "../helpers/auth";
 
 export async function createProject(cookie: string) {
   const projectResult = await request(app)
-    .post("/api/v1/project")
+    .post("/api/v1/projects")
     .set("Cookie", cookie)
     .send({
       project: { title: "Website Redesign", deadline: "2026-09-30" },
@@ -24,7 +24,7 @@ export async function createProject(cookie: string) {
 afterAll(async () => {
   await closeDb();
 });
-describe("POST /api/v1/project", () => {
+describe("POST /api/v1/projects", () => {
   beforeEach(async () => {
     await cleanDatabase();
   });
@@ -33,7 +33,7 @@ describe("POST /api/v1/project", () => {
     const { cookie, userId, username } = await registerAndLogin("budiman");
 
     const res = await request(app)
-      .post("/api/v1/project")
+      .post("/api/v1/projects")
       .set("Cookie", cookie)
       .send({
         project: { title: "Website Redesign", deadline: "2026-09-30" },
@@ -52,7 +52,7 @@ describe("POST /api/v1/project", () => {
 
     const projectId = res.body.data.id;
     const detailRes = await request(app)
-      .get(`/api/v1/project/${projectId}`)
+      .get(`/api/v1/projects/${projectId}`)
       .set("Cookie", cookie);
 
     expect(detailRes.status).toBe(200);
@@ -64,7 +64,7 @@ describe("POST /api/v1/project", () => {
     const { cookie, userId } = await registerAndLogin("budiman");
 
     const res = await request(app)
-      .post("/api/v1/project")
+      .post("/api/v1/projects")
       .set("Cookie", cookie)
       .send({
         project: { title: "Website Redesign", deadline: "2026-09-30" },
@@ -77,7 +77,7 @@ describe("POST /api/v1/project", () => {
 
     const projectId = res.body.data.id;
     const detailRes = await request(app)
-      .get(`/api/v1/project/${projectId}`)
+      .get(`/api/v1/projects/${projectId}`)
       .set("Cookie", cookie);
 
     expect(detailRes.status).toBe(200);
@@ -88,7 +88,7 @@ describe("POST /api/v1/project", () => {
 
   it("should reject if the user have not login yet", async () => {
     const res = await request(app)
-      .post("/api/v1/project")
+      .post("/api/v1/projects")
       .send({
         project: { title: "Website Redesign", deadline: "2026-09-30" },
         links: [
@@ -106,7 +106,7 @@ describe("POST /api/v1/project", () => {
     const { cookie } = await registerAndLogin("budiman");
 
     const res = await request(app)
-      .post("/api/v1/project")
+      .post("/api/v1/projects")
       .set("Cookie", cookie)
       .send({
         project: {},
@@ -120,7 +120,7 @@ describe("POST /api/v1/project", () => {
     const { cookie } = await registerAndLogin("budiman");
 
     const res = await request(app)
-      .post("/api/v1/project")
+      .post("/api/v1/projects")
       .set("Cookie", cookie)
       .send({
         project: { title: "Website Redesign" },
@@ -134,7 +134,7 @@ describe("POST /api/v1/project", () => {
   });
 });
 
-describe("GET /api/v1/project", () => {
+describe("GET /api/v1/projects", () => {
   beforeEach(async () => {
     await cleanDatabase();
   });
@@ -142,7 +142,7 @@ describe("GET /api/v1/project", () => {
   it("should fetch project that are belong to user (wether user is the leader or member) (0 projects)", async () => {
     const { cookie, userId } = await registerAndLogin("gua_ga_punya_project");
 
-    const res = await request(app).get("/api/v1/project").set("Cookie", cookie);
+    const res = await request(app).get("/api/v1/projects").set("Cookie", cookie);
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBe(0);
   });
@@ -150,13 +150,13 @@ describe("GET /api/v1/project", () => {
     const { cookie, userId } = await registerAndLogin("gua_ga_punya_project");
     const projectResult = await createProject(cookie);
 
-    const res = await request(app).get("/api/v1/project").set("Cookie", cookie);
+    const res = await request(app).get("/api/v1/projects").set("Cookie", cookie);
     // console.log(res)
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBe(1);
   });
   it(`should reject if the user have'nt login yet`, async () => {
-    const res = await request(app).get("/api/v1/project");
+    const res = await request(app).get("/api/v1/projects");
     expect(res.status).toBe(401);
   });
   it("should not include projects the user is not a member of", async () => {
@@ -165,14 +165,14 @@ describe("GET /api/v1/project", () => {
 
     const { cookie } = await registerAndLogin("bukan_member");
 
-    const res = await request(app).get("/api/v1/project").set("Cookie", cookie);
+    const res = await request(app).get("/api/v1/projects").set("Cookie", cookie);
 
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBe(0);
   });
 });
 
-describe("PATCH /api/v1/project/:id", () => {
+describe("PATCH /api/v1/projects/:id", () => {
   beforeEach(async () => {
     await cleanDatabase();
   });
@@ -183,7 +183,7 @@ describe("PATCH /api/v1/project/:id", () => {
     const projectId = projectResult.body.data.id;
 
     const res = await request(app)
-      .patch(`/api/v1/project/${projectId}`)
+      .patch(`/api/v1/projects/${projectId}`)
       .set("Cookie", cookie)
       .send({ title: "Website Redesign v2", status: "completed" });
     // console.log(JSON.stringify(res.body, null, 2));
@@ -200,7 +200,7 @@ describe("PATCH /api/v1/project/:id", () => {
     const projectId = projectResult.body.data.id;
 
     const res = await request(app)
-      .patch(`/api/v1/project/${projectId}`)
+      .patch(`/api/v1/projects/${projectId}`)
       .set("Cookie", cookie)
       .send({});
 
@@ -212,7 +212,7 @@ describe("PATCH /api/v1/project/:id", () => {
     const { cookie } = await registerAndLogin("budiman");
 
     const res = await request(app)
-      .patch("/api/v1/project/999999")
+      .patch("/api/v1/projects/999999")
       .set("Cookie", cookie)
       .send({ title: "Updated Title" });
 
@@ -228,7 +228,7 @@ describe("PATCH /api/v1/project/:id", () => {
     const { cookie: strangerCookie } = await registerAndLogin("bukan_member");
 
     const res = await request(app)
-      .patch(`/api/v1/project/${projectId}`)
+      .patch(`/api/v1/projects/${projectId}`)
       .set("Cookie", strangerCookie)
       .send({ title: "Hacked Title" });
 
@@ -238,7 +238,7 @@ describe("PATCH /api/v1/project/:id", () => {
 
   it("should reject request without authentication", async () => {
     const res = await request(app)
-      .patch("/api/v1/project/1")
+      .patch("/api/v1/projects/1")
       .send({ title: "Updated Title" });
 
     expect(res.status).toBe(401);
@@ -249,7 +249,7 @@ describe("PATCH /api/v1/project/:id", () => {
     const { projectResult } = await createProject(owner.cookie);
     const projectId = projectResult.body.data.id;
     const res = await request(app)
-      .patch(`/api/v1/project/${projectId}`)
+      .patch(`/api/v1/projects/${projectId}`)
       .set("Cookie", owner.cookie)
       .send({ isArchived: true });
     // console.log(res)
@@ -259,7 +259,7 @@ describe("PATCH /api/v1/project/:id", () => {
   });
 });
 
-describe("GET /api/v1/project/:id", () => {
+describe("GET /api/v1/projects/:id", () => {
   beforeEach(async () => {
     await cleanDatabase();
   });
@@ -268,7 +268,7 @@ describe("GET /api/v1/project/:id", () => {
     const { cookie, userId } = await registerAndLogin("budiman");
 
     const res = await request(app)
-      .post("/api/v1/project")
+      .post("/api/v1/projects")
       .set("Cookie", cookie)
       .send({
         project: { title: "Website Redesign", deadline: "2026-09-30" },
@@ -283,7 +283,7 @@ describe("GET /api/v1/project/:id", () => {
     const projectId = res.body.data.id;
 
     const detailRes = await request(app)
-      .get(`/api/v1/project/${projectId}`)
+      .get(`/api/v1/projects/${projectId}`)
       .set("Cookie", cookie);
 
     expect(detailRes.status).toBe(200);
@@ -297,7 +297,7 @@ describe("GET /api/v1/project/:id", () => {
     const { cookie } = await registerAndLogin("budiman");
 
     const res = await request(app)
-      .get("/api/v1/project/999999")
+      .get("/api/v1/projects/999999")
       .set("Cookie", cookie);
 
     expect(res.status).toBe(404);
@@ -312,7 +312,7 @@ describe("GET /api/v1/project/:id", () => {
     const { cookie: strangerCookie } = await registerAndLogin("bukan_member");
 
     const res = await request(app)
-      .get(`/api/v1/project/${projectId}`)
+      .get(`/api/v1/projects/${projectId}`)
       .set("Cookie", strangerCookie);
 
     expect(res.status).toBe(403);
@@ -320,8 +320,165 @@ describe("GET /api/v1/project/:id", () => {
   });
 
   it("should reject request without authentication", async () => {
-    const res = await request(app).get("/api/v1/project/1");
+    const res = await request(app).get("/api/v1/projects/1");
 
     expect(res.status).toBe(401);
+  });
+});
+// ─────────────────────────────────────────────
+// GET /api/v1/projects/:id/tasks
+// ─────────────────────────────────────────────
+
+describe('GET /api/v1/projects/:id/tasks', () => {
+  beforeEach(async () => {
+    await cleanDatabase();
+  });
+
+  it('should return an empty array when the project has no tasks yet', async () => {
+    const { cookie } = await registerAndLogin("budiman");
+    const { projectResult } = await createProject(cookie);
+    const projectId = projectResult.body.data.id;
+
+    const res = await request(app)
+      .get(`/api/v1/projects/${projectId}/tasks`)
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(0);
+  });
+
+  it('should return not found for a non-existent project', async () => {
+    const { cookie } = await registerAndLogin("budiman");
+
+    const res = await request(app)
+      .get('/api/v1/projects/999999/tasks')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
+  it('should reject access from a user who is not a member', async () => {
+    const owner = await registerAndLogin("pemilik_project");
+    const { projectResult } = await createProject(owner.cookie);
+    const projectId = projectResult.body.data.id;
+
+    const { cookie: strangerCookie } = await registerAndLogin("bukan_member");
+
+    const res = await request(app)
+      .get(`/api/v1/projects/${projectId}/tasks`)
+      .set('Cookie', strangerCookie);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('should reject request without authentication', async () => {
+    const { cookie } = await registerAndLogin("budiman");
+    const { projectResult } = await createProject(cookie);
+    const projectId = projectResult.body.data.id;
+
+    const res = await request(app).get(`/api/v1/projects/${projectId}/tasks`);
+
+    expect(res.status).toBe(401);
+  });
+
+  it('should reject a non-numeric project id', async () => {
+    const { cookie } = await registerAndLogin("budiman");
+
+    const res = await request(app)
+      .get('/api/v1/projects/abc/tasks')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('GET /api/v1/projects/:id/members', () => {
+  beforeEach(async () => {
+    await cleanDatabase();
+  });
+
+  it('should return the creator as an active leader member', async () => {
+    const { cookie, userId } = await registerAndLogin("budiman");
+    const { projectResult } = await createProject(cookie);
+    const projectId = projectResult.body.data.id;
+
+    const res = await request(app)
+      .get(`/api/v1/projects/${projectId}/members`)
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.length).toBe(1);
+    expect(res.body.data[0].userId).toBe(userId);
+    expect(res.body.data[0].role).toBe('leader');
+    expect(res.body.data[0].status).toBe('active');
+  });
+
+  it.skip('should be visible to any active member, not just the leader', async () => {
+    // Catatan: test ini butuh cara menambahkan member kedua ke project.
+    // Jika endpoint "add member" / "accept invite" belum ada, skip dulu
+    // test ini (it.skip) dan tambahkan lagi begitu endpoint itu dibuat —
+    // saat ini repository addMember() sudah ada tapi belum ada endpoint HTTP-nya.
+    const { cookie } = await registerAndLogin("budiman");
+    const { projectResult } = await createProject(cookie);
+    const projectId = projectResult.body.data.id;
+
+    const res = await request(app)
+      .get(`/api/v1/projects/${projectId}/members`)
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(200);
+    // TODO: perluas assertion ini begitu endpoint tambah-member tersedia,
+    // untuk verifikasi member KEDUA (bukan cuma leader) juga bisa akses endpoint ini.
+  });
+
+  it('should return not found for a non-existent project', async () => {
+    const { cookie } = await registerAndLogin("budiman");
+
+    const res = await request(app)
+      .get('/api/v1/projects/999999/members')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
+  it('should reject access from a user who is not a member', async () => {
+    const owner = await registerAndLogin("pemilik_project");
+    const { projectResult } = await createProject(owner.cookie);
+    const projectId = projectResult.body.data.id;
+
+    const { cookie: strangerCookie } = await registerAndLogin("bukan_member");
+
+    const res = await request(app)
+      .get(`/api/v1/projects/${projectId}/members`)
+      .set('Cookie', strangerCookie);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('should reject request without authentication', async () => {
+    const { cookie } = await registerAndLogin("budiman");
+    const { projectResult } = await createProject(cookie);
+    const projectId = projectResult.body.data.id;
+
+    const res = await request(app).get(`/api/v1/projects/${projectId}/members`);
+
+    expect(res.status).toBe(401);
+  });
+
+  it('should reject a non-numeric project id', async () => {
+    const { cookie } = await registerAndLogin("budiman");
+
+    const res = await request(app)
+      .get('/api/v1/projects/abc/members')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(400);
   });
 });
