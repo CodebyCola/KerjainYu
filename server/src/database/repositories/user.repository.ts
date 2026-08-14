@@ -15,6 +15,16 @@ export async function findById(id: number) {
   return db("users").where({ id }).first();
 }
 
+export async function searchByUsername(username: string, excludeProjectId?: number) {
+  return db("users").where("username", "ilike", `%${username}%`).modify((qb) => {
+    if (excludeProjectId) {
+      qb.whereNotIn("id", function () {
+        this.select("user_id").from("project_members").where("project_id", excludeProjectId)
+      })
+    }
+  }).select("id", "username", "fullName", "avatarUrl").limit(10)
+}
+
 export async function updateUser(
   id: number,
   data: Partial<{
