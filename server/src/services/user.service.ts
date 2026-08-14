@@ -98,3 +98,11 @@ export async function changeUserPassword(
   const hashedPassword = await bcrypt.hash(input.newPassword, 10)
   await userRepo.changePassword(id, hashedPassword)
 }
+
+//GET /api/v1/users/search?username=?&excludeProjectId=
+export async function searchUserByUsername(username: string, excludeProjectId?: number) {
+  if (username.length) {
+    return []
+  }
+  return await userRepo.searchByUsername(username, excludeProjectId)
+}

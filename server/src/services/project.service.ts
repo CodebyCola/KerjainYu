@@ -3,6 +3,7 @@ import * as projectMemberRepo from "../database/repositories/project.member.repo
 import * as projectLinkRepo from "../database/repositories/project.link.repository";
 import * as taskRepo from "../database/repositories/task.repository"
 import * as projectSchema from "../schemas/projectSchema";
+import { findByUsername } from "../database/repositories/user.repository";
 import { assertProjectMembership } from "./helper/auhtorization.helper";
 import { db } from "../database/db";
 import {
@@ -27,6 +28,18 @@ export async function createProjectWithLinks(
     }
     return project;
   });
+}
+
+//POST /api/v1/projects/:id/invitations
+export async function addMember(projectId: number, leaderId: number, memberUsername: string) {
+  await assertProjectMembership(projectId, leaderId)
+  const prospectiveMember = await findByUsername(memberUsername)
+  if (!prospectiveMember) {
+    throw new NotFoundError("User is not found")
+  }
+  if (prospectiveMember.id === leaderId) {
+    throw new ConflictError("You're already part of this project")
+  }
 }
 
 //GET /api/v1/projects/:id
