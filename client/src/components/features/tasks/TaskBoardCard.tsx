@@ -48,11 +48,11 @@ export default function TaskBoardCard({
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const overdue = isOverdue(task);
-    const assignee = members.find((member) => member.userId === task.assigneeId);
+    const assignee = members.find((member) => member.userId === task.assignee?.id);
 
     const actions = getAvailableActions(task.status).filter((definition) => {
         if (definition.actor === "leader") return isLeader;
-        if (definition.actor === "assignee") return task.assigneeId === currentUserId;
+        if (definition.actor === "assignee") return task.assignee?.id === currentUserId;
         return true; // "member" — siapapun anggota project boleh klaim
     });
 
@@ -97,9 +97,9 @@ export default function TaskBoardCard({
                     <span />
                 )}
 
-                {task.assigneeId != null && (
+                {task.assignee?.id != null && (
                     <div
-                        title={assignee?.username ?? `User #${task.assigneeId}`}
+                        title={assignee?.username ?? `User #${task.assignee?.id}`}
                         className="flex size-6 items-center justify-center rounded-full bg-role-member-bg text-[10px] font-inter font-semibold text-role-member-text"
                     >
                         {assignee ? getInitials(assignee.username) : "?"}

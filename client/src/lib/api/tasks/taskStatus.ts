@@ -26,9 +26,6 @@ export const STATUS_STYLE: Record<TaskStatus, string> = {
     approved: "bg-status-done-bg text-status-done-text",
 };
 
-// Aksi yang tersedia dari tiap status, beserta siapa yang boleh melakukannya.
-// "assignee" = harus task.assigneeId === user.id. "leader" = role project
-// leader. "member" = siapapun anggota project (dipakai untuk klaim dari pool).
 export type ActorRole = "member" | "assignee" | "leader";
 
 export type ActionDefinition = {
@@ -65,11 +62,6 @@ export function getAvailableActions(status: TaskStatus): ActionDefinition[] {
     return AVAILABLE_ACTIONS[status] ?? [];
 }
 
-// Kolom papan kanban. 7 status DB digabung jadi 5 kolom yang match alur
-// kerja, supaya kolom tidak terlalu sempit/banyak (golden rule: recognition
-// over recall, progressive disclosure). "in_revision" masuk kolom Submitted
-// karena masih bagian dari siklus review; approved+rejected digabung ke
-// kolom Selesai, dibedakan lewat badge warna pada tiap card.
 export type BoardColumnId = "unclaimed" | "todo" | "ongoing" | "submitted" | "done";
 
 export type BoardColumn = {
@@ -80,7 +72,7 @@ export type BoardColumn = {
 
 export const BOARD_COLUMNS: BoardColumn[] = [
     { id: "unclaimed", label: "Belum diklaim", statuses: ["unclaimed"] },
-    { id: "todo", label: "Todo", statuses: ["todo"] },
+    { id: "todo", label: "To Do", statuses: ["todo"] },
     { id: "ongoing", label: "Dikerjakan", statuses: ["ongoing"] },
     { id: "submitted", label: "Ditinjau", statuses: ["submitted", "in_revision"] },
     { id: "done", label: "Selesai", statuses: ["approved", "rejected"] },

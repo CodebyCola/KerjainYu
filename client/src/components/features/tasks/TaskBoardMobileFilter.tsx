@@ -24,7 +24,7 @@ export default function TaskBoardMobileFilter({
     isLeader,
     members,
 }: TaskBoardMobileFilterProps) {
-    const [selectedColumn, setSelectedColumn] = useState<BoardColumnId>("todo");
+    const [selectedColumn, setSelectedColumn] = useState<BoardColumnId>("unclaimed");
     const [overrides, setOverrides] = useState<Record<number, TaskStatus>>({});
 
     const effectiveTasks = useMemo(
@@ -43,7 +43,7 @@ export default function TaskBoardMobileFilter({
 
     return (
         <div className="flex h-full min-h-0 flex-col">
-            {/* Filter status — pengganti kolom kanban di layar sempit */}
+            {/* Filter status: pengganti kolom kanban di layar sempit */}
             <div className="mb-3 flex shrink-0 items-center gap-2">
                 <TaskBoardStatusFilter
                     options={FILTER_OPTIONS}
@@ -52,7 +52,7 @@ export default function TaskBoardMobileFilter({
                 />
             </div>
 
-            {/* Isi list — satu-satunya bagian yang scroll vertikal */}
+            {/* Isi list: satu-satunya bagian yang scroll vertikal */}
             <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto">
                 {filteredTasks.length === 0 ? (
                     <p className="px-2 py-10 text-center text-sm font-inter text-muted">
