@@ -24,7 +24,7 @@ export const getMyTasks = cache(async (): Promise<MyTask[]> => {
 });
 
 function projectTasksPath(projectId: string) {
-  return `/project/${projectId}/tasks`;
+  return `/projects/${projectId}/tasks`;
 }
 
 export function getProjectTasksRequest(projectId: string, cookie: string) {
