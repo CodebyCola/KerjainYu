@@ -8,7 +8,7 @@ import {
 } from "@/types/project";
 import { apiFetch } from "../fetcher";
 
-const PROJECT_PATH = "/project";
+const PROJECT_PATH = "/projects";
 
 // Request Url
 export function getProjectsRequest(cookie: string) {

@@ -46,8 +46,17 @@ export async function getRole(projectId: number, userId: number) {
 
 export async function getMembersByProject(projectId: number) {
   return db("project_members")
-    .where("project_id", projectId)
-    .where("status", "active");
+    .join("users", "project_members.user_id", "users.id")
+    .where("project_members.project_id", projectId)
+    .where("project_members.status", "active")
+    .select([
+      "project_members.id",
+      "project_members.project_id",
+      "project_members.user_id",
+      "project_members.role",
+      "users.username",
+      "users.avatar_url",
+    ]);
 }
 export async function getProjectByIdAndUser(id: number, userId: number) {
   return db("project_members").where("project_id", id);

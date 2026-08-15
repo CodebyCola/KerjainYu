@@ -18,6 +18,10 @@ export function projectRoutes(projectId: string) {
   } as const;
 }
 
+export function taskDetailRoute(projectId: string, taskId: number): string {
+  return `/projects/${projectId}/task-board/${taskId}`;
+}
+
 const PROJECT_DETAIL_PATTERN = /^\/projects\/([^/]+)(\/.*)?$/;
 
 export function getProjectIdFromPathname(pathname: string): string | null {
