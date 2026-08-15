@@ -1,13 +1,16 @@
 import TaskList from "@/components/features/tasks/TaskList";
-import { dummyMyTasks } from "./dataDummy";
+import { getMyTasks } from "@/lib/api/tasks/tasks";
 
-export default function MyTasks() {
+export default async function MyTasks() {
+    const tasks = await getMyTasks();
+
     return (
         <>
             <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold">Tugas Saya</h2>
             <div className="mt-4">
-                <TaskList tasks={dummyMyTasks} />
+                <TaskList tasks={tasks} />
             </div>
         </>
     );
 }
+

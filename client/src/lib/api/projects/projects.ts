@@ -3,6 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import {
   Project,
+  ProjectMember,
   CreateProjectPayload,
   ProjectDetailResponse,
 } from "@/types/project";
