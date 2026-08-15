@@ -15,13 +15,13 @@ export const DEFAULT_MY_TASK_FILTERS: MyTaskFilters = {
 
 export const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
     { value: "all", label: "Semua status" },
-    { value: "unclaimed", label: "Unclaimed" },
-    { value: "todo", label: "Todo" },
-    { value: "ongoing", label: "Ongoing" },
-    { value: "submitted", label: "Submitted" },
+    { value: "unclaimed", label: "Belum Diambil" },
+    { value: "todo", label: "To Do" },
+    { value: "ongoing", label: "Dikerjakan" },
+    { value: "submitted", label: "Dikirim" },
     { value: "in_revision", label: "Revisi" },
-    { value: "approved", label: "Approved" },
-    { value: "rejected", label: "Rejected" },
+    { value: "approved", label: "Disetujui" },
+    { value: "rejected", label: "Ditolak" },
 ];
 
 export const DEADLINE_FILTER_OPTIONS: { value: DeadlineFilter; label: string }[] = [

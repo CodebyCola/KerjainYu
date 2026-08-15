@@ -15,8 +15,8 @@ export const DEFAULT_PROJECT_FILTERS: ProjectFilters = {
 
 export const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "Semua status" },
-  { value: "ongoing", label: "Ongoing" },
-  { value: "completed", label: "Completed" },
+  { value: "ongoing", label: "Berlangsung" },
+  { value: "completed", label: "Selesai" },
 ];
 
 export const DEADLINE_FILTER_OPTIONS: { value: DeadlineFilter; label: string }[] = [

@@ -14,8 +14,8 @@ const STATUS_STYLE: Record<Project["status"], string> = {
 };
 
 const STATUS_LABEL: Record<Project["status"], string> = {
-    ongoing: "Ongoing",
-    completed: "Completed",
+    ongoing: "Berlangsung",
+    completed: "Selesai",
 };
 
 function formatDeadline(deadline: string) {

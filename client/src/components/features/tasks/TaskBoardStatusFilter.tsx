@@ -16,15 +16,6 @@ type TaskBoardStatusFilterProps = {
     onChange: (value: BoardColumnId) => void;
 };
 
-// Varian FilterDropdown khusus task board mobile. Beda dari FilterDropdown
-// umum (dipakai di my-tasks) dalam dua hal yang penting untuk konteks ini:
-// 1. Task board TIDAK punya opsi "semua status" — user selalu memfilter ke
-//    satu status, jadi label terpilih harus selalu terlihat (FilterDropdown
-//    umum menyembunyikan label saat value == options[0], dengan asumsi itu
-//    berarti "belum difilter").
-// 2. Listbox dibuka rata kiri (bukan kanan) karena tombol filter ini selalu
-//    berada di tepi kiri halaman task board, sehingga dropdown rata-kanan
-//    akan terpotong keluar viewport di layar sempit.
 export default function TaskBoardStatusFilter({ options, value, onChange }: TaskBoardStatusFilterProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -60,8 +51,8 @@ export default function TaskBoardStatusFilter({ options, value, onChange }: Task
                 aria-expanded={isOpen}
                 className="flex min-h-9 items-center gap-1.5 rounded-full border border-primary bg-primary px-3.5 text-sm font-inter font-medium text-primary-foreground transition-colors"
             >
-                Status
-                <span className="opacity-80">· {selected?.label}</span>
+                Status:
+                <span className="opacity-80">{selected?.label}</span>
                 <ChevronDown className={cn("size-3.5 transition-transform", isOpen && "rotate-180")} />
             </button>
 

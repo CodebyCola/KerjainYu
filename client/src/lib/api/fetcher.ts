@@ -43,7 +43,6 @@ export async function apiFetch<T>(
   let json: ApiResponse<T>;
   try {
     json = await response.json();
-    console.log(response)
   } catch {
     throw new ApiRequestError({
       code: "INVALID_RESPONSE",
