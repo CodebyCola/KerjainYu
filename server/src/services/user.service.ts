@@ -140,7 +140,7 @@ export async function changeUserPassword(
 
 //GET /api/v1/users/search?username=?&excludeProjectId=
 export async function searchUserByUsername(username: string, excludeProjectId?: number) {
-  if (username.length) {
+  if (username.length < 2) {
     return []
   }
   return await userRepo.searchByUsername(username, excludeProjectId)

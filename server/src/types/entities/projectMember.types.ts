@@ -1,5 +1,5 @@
 export type ProjectRole = 'leader' | 'member';
-export type MemberStatus = 'invited' | 'active' | 'removed';
+export type MemberStatus = 'invited' | 'active' | 'removed' | 'rejected';
 
 export interface ProjectMember {
     id: number;
@@ -11,5 +11,5 @@ export interface ProjectMember {
 }
 
 export interface Role {
-    userId: number, role: ProjectRole
+    userId: number, role: ProjectRole, status: MemberStatus
 }

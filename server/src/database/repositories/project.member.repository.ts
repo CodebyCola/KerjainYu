@@ -1,3 +1,4 @@
+import { stat } from "node:fs";
 import { Role } from "../../types/entities/projectMember.types";
 import { db } from "../db";
 import { Knex } from "knex";
@@ -21,8 +22,18 @@ export async function addMember(projectId: number, userId: number) {
     project_id: projectId,
     user_id: userId,
     role: "member",
+    status: "invited"
   });
 }
+
+export async function updateMembershipStatus(id: number, status: string) {
+  return db("project_members")
+    .where("id", id)
+    .update({ status: status });
+}
+
+
+
 export async function removeMember(projectId: number, userId: number) {
   return db("project_members")
     .where({
@@ -36,8 +47,16 @@ export async function getRole(projectId: number, userId: number) {
   return db<Role>("project_members")
     .where("project_id", projectId)
     .where("user_id", userId)
-    .select("user_id", "role")
+    .select("user_id", "role", "status")
     .first();
+}
+
+export async function getById(id: number) {
+  return db("project_members").where({ id }).first()
+}
+
+export async function getInvitations(userId: number) {
+  return db("project_members").join("projects", "project_members.project_id", "projects.id",).where("user_id", userId).where('project_members.status', 'invited').select("project_members.id", "project_members.project_id", "projects.title as project_title")
 }
 
 // export async function getProjects(userId: number) {
