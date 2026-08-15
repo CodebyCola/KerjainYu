@@ -134,3 +134,14 @@ export async function updateProject(
     next(error);
   }
 }
+//POST /api/v1/project/{id}/invitations
+export async function inviteMember(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const projectId = Number(req.params.id)
+    const userId = Number(req.body.userId);
+    await projectService.inviteMember(projectId, req.user!.id, userId)
+    res.status(200).json({ success: true, message: "Successfuly invited user to project" })
+  } catch (error) {
+    next(error)
+  }
+}

@@ -4,10 +4,8 @@ import { AuthRequest } from "../middlewares/auth.middlewares";
 
 export async function searchUserByUsername(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-        const username = String(req.query.username)
-        const projectId = Number(req.query.excludeProjectId)
-        // const userId = req.user!.id
-        const users = await userService.searchUserByUsername(username, projectId)
+        const { username, excludeProjectId } = req.query as unknown as { username: string; excludeProjectId?: number };
+        const users = await userService.searchUserByUsername(username, excludeProjectId)
         res.status(200).json({ success: true, data: users })
     } catch (error) {
         next(error)

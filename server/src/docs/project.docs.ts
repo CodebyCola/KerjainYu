@@ -3,8 +3,10 @@ import { createProjectWithLinksSchema, updateProjectSchema } from '../schemas/pr
 import { registry } from './components';
 import { createTaskSchema } from '../schemas/task.schema';
 import { projectIdParams } from './params/id.params';
+import { z } from '../lib/zod-extended';
 
-
+import { membershipIdParams } from '../schemas/invitation.schema';
+import { userIdParams } from '../schemas/userSchema';
 registry.registerPath({
     method: "post",
     path: "/api/v1/projects",
@@ -84,23 +86,6 @@ registry.registerPath({
 })
 
 registry.registerPath({
-    method: "get",
-    path: "/api/v1/projects/{id}/tasks",
-    tags: ["Projects"],
-    request: { params: projectIdParams },
-    security: [{ cookieAuth: [] }],
-    responses: {
-        200: { description: "Successfully fecth all tasks that belong to project" },
-        401: { description: "Not authenticated" },
-        403: { description: "That project does not belong to the user" },
-    }
-})
-
-// ─────────────────────────────────────────────
-// POST /api/v1/projects/{id}/tasks
-// ─────────────────────────────────────────────
-
-registry.registerPath({
     method: "post",
     path: "/api/v1/projects/{id}/tasks",
     tags: ["Tasks"],
@@ -120,9 +105,6 @@ registry.registerPath({
     },
 });
 
-// ─────────────────────────────────────────────
-// GET /api/v1/projects/{id}/tasks
-// ─────────────────────────────────────────────
 
 registry.registerPath({
     method: "get",
@@ -137,5 +119,46 @@ registry.registerPath({
         401: { description: "Not authenticated" },
         403: { description: "You're not a member of this project" },
         404: { description: "Project not found" },
+    },
+});
+
+registry.registerPath({
+    method: "post",
+    path: "/api/v1/projects/{id}/invitations",
+    tags: ["Invitations"],
+    summary: "Invite a user to join the project",
+    description: "Only the project leader can send invitations. Creates a project_members row with status 'invited'.",
+    security: [{ cookieAuth: [] }],
+    request: {
+        params: projectIdParams,
+        body: { content: { "application/json": { schema: userIdParams } } },
+    },
+    responses: {
+        200: { description: "Invitation sent successfully" },
+        400: { description: "Validation error" },
+        401: { description: "Not authenticated" },
+        403: { description: "Only the project leader can invite members" },
+        404: { description: "Project or target user not found" },
+        409: { description: "User is already a member, already invited, or you tried to invite yourself" },
+    },
+});
+
+
+registry.registerPath({
+    method: "get",
+    path: "/api/v1/users/search",
+    tags: ["Users"],
+    summary: "Search users by username",
+    description: "Used to find users to invite to a project. Pass excludeProjectId to filter out users who are already a member/invited/rejected on that project.",
+    security: [{ cookieAuth: [] }],
+    request: {
+        query: z.object({
+            username: z.string().min(1).openapi({ example: "budi" }),
+            excludeProjectId: z.coerce.number().int().positive().optional().openapi({ example: 5 }),
+        }),
+    },
+    responses: {
+        200: { description: "List of matching users (max 10), returns only id, username, fullName, avatarUrl" },
+        401: { description: "Not authenticated" },
     },
 });

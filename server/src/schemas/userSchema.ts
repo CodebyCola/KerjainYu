@@ -84,6 +84,18 @@ export const changePasswordSchema = z
   })
   .openapi("ChangePasswordInput");
 
+export const userIdParams = z.object({
+  userId: z.coerce.number()
+})
+
+export const searchUserQuerySchema = z.object({
+  username: z.string().min(1),
+  excludeProjectId: z.coerce.number().int().positive().optional(),
+}).strict();
+
+
+export type UserIdParams = z.infer<typeof userIdParams>;
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;

@@ -8,7 +8,7 @@ exports.up = function (knex) {
         table.string("title").notNullable();
         table.enum('status', ["ongoing", "completed"]).notNullable().defaultTo("ongoing")
         table.boolean("allow_free_swap").notNullable().defaultTo(false);
-        table.dateTime("deadline").notNullable()
+        table.dateTime("deadline").nullable()
         table.boolean("is_archived").defaultTo(false)
         table.timestamp("is_archived_at").nullable()
         table.timestamp('created_at').defaultTo(knex.fn.now());

@@ -3,6 +3,7 @@ import { authenticate } from "../middlewares/auth.middlewares";
 import { createLimiter } from "../middlewares/rateLimiter";
 import { validate } from "../middlewares/validate";
 import * as projectSchema from "../schemas/projectSchema";
+import { userIdParams } from "../schemas/userSchema"
 import * as projectController from "../controllers/project.controller";
 import * as taskSchema from "../schemas/task.schema";
 const router = Router();
@@ -20,6 +21,7 @@ router.post(
   validate(projectSchema.createProjectWithLinksSchema),
   projectController.createProject,
 );
+router.post("/:id/invitations", authenticate, validate(projectSchema.projectIdParams, "params"), validate(userIdParams, "body"), projectController.inviteMember)
 router.get(
   "/:id/tasks",
   authenticate,

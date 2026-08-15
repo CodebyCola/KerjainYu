@@ -3,8 +3,8 @@ import * as projectMemberRepo from "../database/repositories/project.member.repo
 import * as projectLinkRepo from "../database/repositories/project.link.repository";
 import * as taskRepo from "../database/repositories/task.repository"
 import * as projectSchema from "../schemas/projectSchema";
-import { findByUsername } from "../database/repositories/user.repository";
-import { assertProjectMembership } from "./helper/auhtorization.helper";
+import { findById, findByUsername } from "../database/repositories/user.repository";
+import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
 import { db } from "../database/db";
 import {
   ConflictError,
@@ -13,6 +13,7 @@ import {
   UnauthorizedError,
 } from "../errors/AppError";
 import { CreateProjectLinkInput } from "../schemas/projectLinkSchema";
+import { userIdParams, UserIdParams } from "../schemas/userSchema";
 
 //POST /api/v1/projects
 export async function createProjectWithLinks(
@@ -31,15 +32,28 @@ export async function createProjectWithLinks(
 }
 
 //POST /api/v1/projects/:id/invitations
-export async function addMember(projectId: number, leaderId: number, memberUsername: string) {
-  await assertProjectMembership(projectId, leaderId)
-  const prospectiveMember = await findByUsername(memberUsername)
+export async function inviteMember(projectId: number, leaderId: number, targetUserId: number) {
+  await assertProjectLeader(projectId, leaderId)
+  const prospectiveMember = await findById(targetUserId)
   if (!prospectiveMember) {
     throw new NotFoundError("User is not found")
   }
   if (prospectiveMember.id === leaderId) {
-    throw new ConflictError("You're already part of this project")
+    throw new ConflictError("You're  can't invite yourself")
   }
+
+  const existing = await projectMemberRepo.getRole(projectId, prospectiveMember.id)
+  if (existing?.status === "active") {
+    throw new ConflictError(`${prospectiveMember.username}, already part of this project`)
+  }
+  if (existing?.status === "invited") {
+    throw new ConflictError(`${prospectiveMember.username} has already been invited`);
+  }
+  if (existing) {
+    //re-invite after the invitation before got rejected
+    return await projectMemberRepo.updateMembershipStatus(existing.id, "invited")
+  }
+  return await projectMemberRepo.addMember(projectId, prospectiveMember.id)
 }
 
 //GET /api/v1/projects/:id

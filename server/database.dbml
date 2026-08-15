@@ -26,11 +26,7 @@ Project KerjainYu {
 Table users {
   id bigint [pk, increment]
   username varchar [unique, not null]
-  email varchar [unique, notnull]
-  full_name varchar [unique] 
-  avatar_url varchar
   password varchar [not null] // renamed from hash_password
-  updated_at timestamp [default: `now()`]
   created_at timestamp [default: `now()`]
 }
 
@@ -80,7 +76,20 @@ Enum member_status {
   invited
   active
   removed
+  rejected  // ditambahkan: user menolak undangan. Row TETAP disimpan (bukan dihapus) untuk audit trail.
+            // Re-invite setelah reject dilakukan lewat UPDATE row yang ada (bukan INSERT baru),
+            // karena constraint unique(project_id, user_id) mencegah duplikat row.
 }
+
+// CATATAN ARSITEKTUR: "Invitation" bukan tabel terpisah — ia adalah VIEW/QUERY di atas
+// project_members dengan status = 'invited', discope ke user yang login (GET /api/v1/invitations)
+// atau ke project tertentu (GET /api/v1/projects/:id/invitations, jika dibuat).
+// Endpoint accept/reject (PATCH /api/v1/invitations/:id) mengubah kolom status pada row yang sama:
+//   'invited' -> 'active'   (accept)
+//   'invited' -> 'rejected' (reject)
+// Otorisasi endpoint ini BEDA dari endpoint project_members lain: yang berhak merespons
+// hanya user yang namanya tercatat di project_members.user_id pada row tersebut,
+// BUKAN leader project itu.
 
 // Workapp links (Figma, GitHub, Google Docs, etc.)
 Table project_links {
@@ -144,7 +153,7 @@ Table task_ownership_log {
 Enum ownership_change_reason {
   assigned      // leader assigned directly
   claimed       // member claimed from open pool
-  swapped         // member-to-member swap
+  swap          // member-to-member swap
   reassigned    // leader manually reassigned
 }
 
