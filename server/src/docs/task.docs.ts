@@ -34,3 +34,22 @@ registry.registerPath({
         404: { description: "Task not found" },
     },
 });
+
+registry.registerPath({
+    method: "patch",
+    path: "/api/v1/tasks/{id}/claim",
+    tags: ["Tasks"],
+    summary: "Claim an unclaimed task from the task pool",
+    description: "Only tasks with isClaimable=true and status='unclaimed' can be claimed. The claim is atomic — if two members claim the same task simultaneously, only the first one succeeds; the second receives 409. Records the claim in the task ownership log.",
+    security: [{ cookieAuth: [] }],
+    request: {
+        params: taskIdParams,
+    },
+    responses: {
+        200: { description: "Task claimed successfully. Returns the updated task (assigneeId set, status changed to 'todo')." },
+        401: { description: "Not authenticated" },
+        403: { description: "You're not a member of this task's project" },
+        404: { description: "Task not found" },
+        409: { description: "Task is not claimable, or has already been claimed by someone else" },
+    },
+});

@@ -34,8 +34,8 @@ export async function updateTask(
 export async function claimTask(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const taskId = Number(req.params.id)
-    await taskService.claimTask(taskId, req.user!.id)
-    res.status(200).json({ success: true, message: "Successfuly claimed task" })
+    const task = await taskService.claimTask(taskId, req.user!.id)
+    res.status(200).json({ success: true, message: "Successfuly claimed task", data: task })
   } catch (error) {
     next(error)
   }

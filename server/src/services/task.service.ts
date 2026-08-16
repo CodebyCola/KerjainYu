@@ -2,12 +2,14 @@ import * as taskRepo from "../database/repositories/task.repository";
 import * as projectRepo from "../database/repositories/project.repository";
 import * as projectMemberRepo from "../database/repositories/project.member.repository";
 import * as taskInput from "../schemas/task.schema";
+import * as taskOwnershipLogRepo from "../database/repositories/task_ownership_log.repository"
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
 // import { ProjectIdParams } from "../schemas/projectSchema
 import {
   assertProjectMembership,
   assertProjectLeader,
 } from "./helper/auhtorization.helper";
+import { db } from "../database/db";
 
 //POST /api/v1/projects/:id/tasks
 export async function createTask(
@@ -51,10 +53,14 @@ export async function claimTask(taskId: number, userId: number) {
   if (!task.isClaimable) {
     throw new ConflictError("This task is not claimable, only the leader who can assign the tasks")
   }
-  if (task.assigneeId !== null && task.status !== "unclaimed") {
-    throw new ConflictError("This task has been taken / assign to other member")
-  }
-  return await taskRepo.updateTask(taskId, { assigneId: userId, status: "todo" })
+  return db.transaction(async (trx) => {
+    const claimed = await taskRepo.claimTask(taskId, userId, trx)
+    if (!claimed) {
+      throw new ConflictError("This task has already been claimed by the other members")
+    }
+    await taskOwnershipLogRepo.createTaskLogOwnership({ taskId: taskId, fromUserId: null, toUserId: userId, reason: "claimed" }, trx)
+    return claimed
+  })
 }
 
 
