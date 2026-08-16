@@ -1,4 +1,4 @@
-import { TeamMember, UserSearchResult } from "@/types/project";
+import { TeamMember, UserSearchResult } from "@/types/team";
 
 // DUMMY DATA — ganti dengan fetch ke server begitu endpoint di
 // server/src/routes/member.route.ts sudah ada. Lihat README di root
@@ -50,7 +50,12 @@ export const DUMMY_TEAM_MEMBERS: TeamMember[] = [
 // GET /api/v1/users/search?q= begitu tersedia (lihat README).
 export const DUMMY_SEARCHABLE_USERS: UserSearchResult[] = [
   { id: 105, username: "farhan.ali", fullName: "Farhan Ali", avatarUrl: null },
-  { id: 106, username: "nadia.putri", fullName: "Nadia Putri", avatarUrl: null },
+  {
+    id: 106,
+    username: "nadia.putri",
+    fullName: "Nadia Putri",
+    avatarUrl: null,
+  },
   { id: 107, username: "eko.wijaya", fullName: "Eko Wijaya", avatarUrl: null },
   { id: 108, username: "citra.ayu", fullName: "Citra Ayu", avatarUrl: null },
 ];

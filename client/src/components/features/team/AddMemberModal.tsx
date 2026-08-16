@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Search, Send, Check } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { getInitials } from "@/utils/getInitials";
-import { DUMMY_SEARCHABLE_USERS } from "@/lib/api/projects/dummyTeamData";
+import { DUMMY_SEARCHABLE_USERS } from "@/app/(main)/projects/[projectId]/team/dummyTeamData";
 
 type AddMemberModalProps = {
     projectId: string;

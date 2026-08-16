@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
-import AddMemberModal from "@/components/features/projects/AddMemberModal";
+import AddMemberModal from "@/components/features/team/AddMemberModal";
 
 type AddMemberButtonProps = {
     projectId: string;

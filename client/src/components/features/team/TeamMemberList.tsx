@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { TeamMember } from "@/types/project";
-import MemberListItem from "@/components/features/projects/MemberListItem";
-import RemoveMemberDialog from "@/components/features/projects/RemoveMemberDialog";
+import { TeamMember } from "@/types/team";
+import MemberListItem from "@/components/features/team/MemberListItem";
+import RemoveMemberDialog from "@/components/features/team/RemoveMemberDialog";
 
 type TeamMemberListProps = {
     initialMembers: TeamMember[];

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MoreVertical, ShieldCheck, UserMinus, Clock } from "lucide-react";
-import { TeamMember } from "@/types/project";
+import { TeamMember } from "@/types/team";
 import { getInitials } from "@/utils/getInitials";
 import { cn } from "@/utils/cn";
 

@@ -48,7 +48,7 @@ export default function TaskListCard({ task }: TaskListCardProps) {
 
     return (
         <Link
-            href={`/projects/${task.projectId}/tasks/${task.id}`}
+            href={`/projects/${task.projectId}/task-board/${task.id}`}
             aria-label={`Buka tugas ${task.title}`}
             className="block rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary sm:p-5"
         >

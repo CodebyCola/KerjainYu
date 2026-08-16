@@ -2,7 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
-import { TeamMember } from "@/types/project";
+import { TeamMember } from "@/types/team";
 
 type RemoveMemberDialogProps = {
     member: TeamMember | null;

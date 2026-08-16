@@ -4,7 +4,6 @@ import Link from "next/link";
 import { CalendarDays, ArrowRight } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { Task } from "@/types/task";
-import { ProjectMember } from "@/types/project";
 import { STATUS_STYLE, STATUS_LABEL } from "@/lib/api/tasks/taskStatus";
 import { isTaskOverdue, formatDayLabel } from "@/utils/calendar";
 import { taskDetailRoute } from "@/lib/routes";
@@ -14,12 +13,11 @@ import { getInitials } from "@/utils/getInitials";
 type CalendarTaskDetailModalProps = {
     task: Task | null;
     projectId: string;
-    members: ProjectMember[];
     onClose: () => void;
 };
 
-export default function CalendarTaskDetailModal({ task, projectId, members, onClose }: CalendarTaskDetailModalProps) {
-    const assignee = task ? members.find((member) => member.userId === task.assigneeId) : undefined;
+export default function CalendarTaskDetailModal({ task, projectId, onClose }: CalendarTaskDetailModalProps) {
+    const assignee = task?.assignee ?? undefined;
     const overdue = task ? isTaskOverdue(task) : false;
 
     return (

@@ -1,17 +1,15 @@
 import { CalendarDays } from "lucide-react";
 import { Task } from "@/types/task";
-import { ProjectMember } from "@/types/project";
 import { formatDayLabel } from "@/utils/calendar";
 import CalendarTaskListItem from "@/components/features/calendar/CalendarTaskListItem";
 
 type CalendarDayAgendaProps = {
     selectedDate: Date | null;
     tasks: Task[];
-    members: ProjectMember[];
     onSelectTask: (task: Task) => void;
 };
 
-export default function CalendarDayAgenda({ selectedDate, tasks, members, onSelectTask }: CalendarDayAgendaProps) {
+export default function CalendarDayAgenda({ selectedDate, tasks, onSelectTask }: CalendarDayAgendaProps) {
     if (!selectedDate) {
         return (
             <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-8 text-center sm:hidden">
@@ -34,7 +32,7 @@ export default function CalendarDayAgenda({ selectedDate, tasks, members, onSele
             ) : (
                 <div className="flex flex-col gap-2">
                     {tasks.map((task) => (
-                        <CalendarTaskListItem key={task.id} task={task} members={members} onSelect={onSelectTask} />
+                        <CalendarTaskListItem key={task.id} task={task} onSelect={onSelectTask} />
                     ))}
                 </div>
             )}

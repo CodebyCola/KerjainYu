@@ -1,6 +1,6 @@
 import { Users } from "lucide-react";
-import { TeamMember } from "@/types/project";
-import AddMemberButton from "@/components/features/projects/AddMemberButton";
+import { TeamMember } from "@/types/team";
+import AddMemberButton from "@/components/features/team/AddMemberButton";
 
 type TeamHeaderProps = {
     projectId: string;
