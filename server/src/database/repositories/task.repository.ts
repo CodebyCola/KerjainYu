@@ -27,6 +27,8 @@ export async function updateTask(
     status: string;
     priority: number;
     deadline: Date;
+    assigneId?: number | null
+    isClaimable?: boolean | true,
   }>,
   trx?: Knex.Transaction,
 ) {

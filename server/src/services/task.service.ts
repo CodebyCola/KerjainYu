@@ -2,7 +2,7 @@ import * as taskRepo from "../database/repositories/task.repository";
 import * as projectRepo from "../database/repositories/project.repository";
 import * as projectMemberRepo from "../database/repositories/project.member.repository";
 import * as taskInput from "../schemas/task.schema";
-import { ForbiddenError, NotFoundError } from "../errors/AppError";
+import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
 // import { ProjectIdParams } from "../schemas/projectSchema
 import {
   assertProjectMembership,
@@ -40,3 +40,21 @@ export async function updateTask(
   const tasks = await taskRepo.updateTask(task.id, input);
   return tasks;
 }
+
+//PATCH /api/v1/tasks/:id/claim
+export async function claimTask(taskId: number, userId: number) {
+  const task = await taskRepo.getTaskById(taskId)
+  if (!task) {
+    throw new NotFoundError("Task not found")
+  }
+  await assertProjectMembership(task.projectId, userId)
+  if (!task.isClaimable) {
+    throw new ConflictError("This task is not claimable, only the leader who can assign the tasks")
+  }
+  if (task.assigneeId !== null && task.status !== "unclaimed") {
+    throw new ConflictError("This task has been taken / assign to other member")
+  }
+  return await taskRepo.updateTask(taskId, { assigneId: userId, status: "todo" })
+}
+
+

@@ -5,7 +5,7 @@ import { validate } from "../middlewares/validate";
 import * as taskInput from "../schemas/task.schema";
 const router = Router();
 
-router.get("/", authenticate, taskController.getMyTask);
+router.patch("/:id/claim", authenticate, taskController.claimTask)
 router.patch(
   "/:id",
   authenticate,
@@ -13,3 +13,4 @@ router.patch(
   taskController.updateTask,
 );
 export default router;
+router.get("/", authenticate, taskController.getMyTask);

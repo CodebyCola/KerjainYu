@@ -29,3 +29,14 @@ export async function updateTask(
     next(error);
   }
 }
+
+//PATCH api/v1/tasks/:id/claim
+export async function claimTask(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const taskId = Number(req.params.id)
+    await taskService.claimTask(taskId, req.user!.id)
+    res.status(200).json({ success: true, message: "Successfuly claimed task" })
+  } catch (error) {
+    next(error)
+  }
+}

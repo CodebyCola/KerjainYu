@@ -73,6 +73,7 @@ export async function getMembersByProject(projectId: number) {
       "project_members.project_id",
       "project_members.user_id",
       "project_members.role",
+      "project_members.status",
       "users.username",
       "users.avatar_url",
     ]);
