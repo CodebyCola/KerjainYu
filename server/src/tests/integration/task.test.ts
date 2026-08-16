@@ -15,6 +15,30 @@ export async function createProject(cookie: string) {
     return { projectResult };
 }
 
+async function inviteAndAccept(leaderCookie: string, projectId: number, inviteeUsername = 'sari') {
+    const invitee = await registerAndLogin(inviteeUsername);
+    await request(app)
+        .post(`/api/v1/projects/${projectId}/invitations`)
+        .set('Cookie', leaderCookie)
+        .send({ userId: invitee.userId });
+
+    const invitationsRes = await request(app).get('/api/v1/invitations').set('Cookie', invitee.cookie);
+    const invitationId = invitationsRes.body.data[0].id;
+    await request(app)
+        .patch(`/api/v1/invitations/${invitationId}`)
+        .set('Cookie', invitee.cookie)
+        .send({ status: 'accept' });
+
+    return invitee;
+}
+
+async function createTask(leaderCookie: string, projectId: number, overrides: Record<string, any> = {}) {
+    return request(app)
+        .post(`/api/v1/projects/${projectId}/tasks`)
+        .set('Cookie', leaderCookie)
+        .send({ title: 'Setup CI/CD pipeline', isClaimable: true, ...overrides });
+}
+
 afterAll(async () => {
     await closeDb();
 });
@@ -172,6 +196,137 @@ describe('GET /api/v1/tasks', () => {
 
     it('should reject request without authentication', async () => {
         const res = await request(app).get('/api/v1/tasks');
+
+        expect(res.status).toBe(401);
+    });
+});
+
+afterAll(async () => {
+    await closeDb();
+});
+
+describe('PATCH /api/v1/tasks/:id/claim', () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    });
+
+    it('should let a project member claim an unclaimed, claimable task', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(leader.cookie, projectId);
+
+        const taskRes = await createTask(leader.cookie, projectId);
+        const taskId = taskRes.body.data.id;
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/claim`)
+            .set('Cookie', member.cookie);
+        expect(res.status).toBe(200);
+        expect(res.body.data.assigneeId).toBe(member.userId);
+        expect(res.body.data.status).toBe('todo');
+    });
+
+    it('should reject claiming a task that is not claimable', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(leader.cookie, projectId);
+
+        const taskRes = await createTask(leader.cookie, projectId, { isClaimable: false });
+        const taskId = taskRes.body.data.id;
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/claim`)
+            .set('Cookie', member.cookie);
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('should reject claiming a task that has already been claimed', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const firstClaimer = await inviteAndAccept(leader.cookie, projectId, "sari");
+        const secondClaimer = await inviteAndAccept(leader.cookie, projectId, "citra");
+
+        const taskRes = await createTask(leader.cookie, projectId);
+        const taskId = taskRes.body.data.id;
+
+        await request(app).patch(`/api/v1/tasks/${taskId}/claim`).set('Cookie', firstClaimer.cookie);
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/claim`)
+            .set('Cookie', secondClaimer.cookie);
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('should allow only ONE claim to succeed when two members claim simultaneously (race condition)', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const claimerA = await inviteAndAccept(leader.cookie, projectId, "sari");
+        const claimerB = await inviteAndAccept(leader.cookie, projectId, "citra");
+
+        const taskRes = await createTask(leader.cookie, projectId);
+        const taskId = taskRes.body.data.id;
+
+        // fire kedua request BERSAMAAN, bukan berurutan — ini yang membuktikan
+        // atomic update di level database beneran mencegah double-claim
+        const [resA, resB] = await Promise.all([
+            request(app).patch(`/api/v1/tasks/${taskId}/claim`).set('Cookie', claimerA.cookie),
+            request(app).patch(`/api/v1/tasks/${taskId}/claim`).set('Cookie', claimerB.cookie),
+        ]);
+
+        const statuses = [resA.status, resB.status].sort();
+        expect(statuses).toEqual([200, 409]); // tepat satu sukses, satu gagal — bukan 200/200
+
+        const detailRes = await request(app)
+            .get(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', leader.cookie);
+        const claimedTask = detailRes.body.data.find((t: any) => t.id === taskId);
+        expect(claimedTask.status).toBe('todo');
+        expect([claimerA.userId, claimerB.userId]).toContain(claimedTask.assigneeId);
+    });
+
+    it('should return not found for a non-existent task', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .patch('/api/v1/tasks/999999/claim')
+            .set('Cookie', cookie);
+
+        expect(res.status).toBe(404);
+        expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('should reject claiming from a user who is not a project member', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const taskRes = await createTask(leader.cookie, projectId);
+        const taskId = taskRes.body.data.id;
+
+        const { cookie: strangerCookie } = await registerAndLogin("bukan_member");
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/claim`)
+            .set('Cookie', strangerCookie);
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('should reject request without authentication', async () => {
+        const res = await request(app).patch('/api/v1/tasks/1/claim');
 
         expect(res.status).toBe(401);
     });
