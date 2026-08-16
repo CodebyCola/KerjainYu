@@ -1,6 +1,5 @@
 import { CalendarDays } from "lucide-react";
 import { Task } from "@/types/task";
-import { ProjectMember } from "@/types/project";
 import { STATUS_STYLE, STATUS_LABEL } from "@/lib/api/tasks/taskStatus";
 import { isTaskOverdue, formatShortDayLabel } from "@/utils/calendar";
 import { cn } from "@/utils/cn";
@@ -8,12 +7,11 @@ import { getInitials } from "@/utils/getInitials";
 
 type CalendarTaskListItemProps = {
     task: Task;
-    members: ProjectMember[];
     onSelect: (task: Task) => void;
 };
 
-export default function CalendarTaskListItem({ task, members, onSelect }: CalendarTaskListItemProps) {
-    const assignee = members.find((member) => member.userId === task.assigneeId);
+export default function CalendarTaskListItem({ task, onSelect }: CalendarTaskListItemProps) {
+    const assignee = task.assignee;
     const overdue = isTaskOverdue(task);
 
     return (

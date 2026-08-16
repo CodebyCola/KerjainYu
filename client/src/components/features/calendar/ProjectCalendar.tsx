@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { Task } from "@/types/task";
-import { ProjectMember } from "@/types/project";
 import {
     getMonthGrid,
     groupTasksByDate,
@@ -19,10 +18,9 @@ import CalendarTaskDetailModal from "@/components/features/calendar/CalendarTask
 type ProjectCalendarProps = {
     projectId: string;
     tasks: Task[];
-    members: ProjectMember[];
 };
 
-export default function ProjectCalendar({ projectId, tasks, members }: ProjectCalendarProps) {
+export default function ProjectCalendar({ projectId, tasks }: ProjectCalendarProps) {
     const [monthAnchor, setMonthAnchor] = useState(() => new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -51,16 +49,14 @@ export default function ProjectCalendar({ projectId, tasks, members }: ProjectCa
             <CalendarDayAgenda
                 selectedDate={selectedDate}
                 tasks={selectedDayTasks}
-                members={members}
                 onSelectTask={setSelectedTask}
             />
 
-            <CalendarUnscheduledSection tasks={unscheduledTasks} members={members} onSelectTask={setSelectedTask} />
+            <CalendarUnscheduledSection tasks={unscheduledTasks} onSelectTask={setSelectedTask} />
 
             <CalendarTaskDetailModal
                 task={selectedTask}
                 projectId={projectId}
-                members={members}
                 onClose={() => setSelectedTask(null)}
             />
         </div>

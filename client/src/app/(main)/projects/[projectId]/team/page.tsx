@@ -1,3 +1,9 @@
+import { notFound } from "next/navigation";
+import { getProject } from "@/lib/api/projects/projects";
+import { DUMMY_TEAM_MEMBERS } from "./dummyTeamData";
+import TeamHeader from "@/components/features/team/TeamHeader";
+import TeamMemberList from "@/components/features/team/TeamMemberList";
+
 type TeamPageProps = {
     params: Promise<{ projectId: string }>;
 };
@@ -5,10 +11,26 @@ type TeamPageProps = {
 export default async function TeamPage({ params }: TeamPageProps) {
     const { projectId } = await params;
 
+    const detail = await getProject(projectId);
+
+    if (!detail) {
+        notFound();
+    }
+
+    // TODO: DUMMY_TEAM_MEMBERS diganti dengan fetch ke
+    // GET /api/v1/project/:id/members begitu endpoint tersedia — lihat README.
+    const members = DUMMY_TEAM_MEMBERS;
+    const canManage = detail.membership.role === "leader";
+
     return (
-        <div className="flex flex-col gap-1">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold">Team</h2>
-            <p className="text-sm font-inter text-muted">Proyek #{projectId} — halaman ini belum diimplementasikan.</p>
+        <div className="flex flex-col gap-5">
+            <TeamHeader
+                projectId={projectId}
+                projectTitle={detail.project.title}
+                members={members}
+                canManage={canManage}
+            />
+            <TeamMemberList initialMembers={members} canManage={canManage} />
         </div>
     );
 }

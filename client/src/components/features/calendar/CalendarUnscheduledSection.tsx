@@ -1,15 +1,13 @@
 import { ListTodo } from "lucide-react";
 import { Task } from "@/types/task";
-import { ProjectMember } from "@/types/project";
 import CalendarTaskListItem from "@/components/features/calendar/CalendarTaskListItem";
 
 type CalendarUnscheduledSectionProps = {
     tasks: Task[];
-    members: ProjectMember[];
     onSelectTask: (task: Task) => void;
 };
 
-export default function CalendarUnscheduledSection({ tasks, members, onSelectTask }: CalendarUnscheduledSectionProps) {
+export default function CalendarUnscheduledSection({ tasks, onSelectTask }: CalendarUnscheduledSectionProps) {
     if (tasks.length === 0) return null;
 
     return (
@@ -24,7 +22,7 @@ export default function CalendarUnscheduledSection({ tasks, members, onSelectTas
 
             <div className="flex flex-col gap-2">
                 {tasks.map((task) => (
-                    <CalendarTaskListItem key={task.id} task={task} members={members} onSelect={onSelectTask} />
+                    <CalendarTaskListItem key={task.id} task={task} onSelect={onSelectTask} />
                 ))}
             </div>
         </div>
