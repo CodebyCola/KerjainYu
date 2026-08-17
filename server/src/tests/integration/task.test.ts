@@ -16,6 +16,8 @@ afterAll(async () => {
     await closeDb();
 });
 
+
+
 describe('GET /api/v1/projects/:id/tasks', () => {
     beforeEach(async () => {
         await cleanDatabase();
@@ -147,9 +149,48 @@ describe('POST /api/v1/projects/:id/tasks', () => {
     // NOTE: test ini butuh cara menambahkan member NON-leader ke project
     // (endpoint invite/add-member belum ada saat ini). Aktifkan begitu tersedia.
     it.skip('should reject task creation from a member who is not the leader', async () => {
-        // TODO: setup member biasa, lalu assert 403 FORBIDDEN
     });
 });
+
+describe('GET /api/v1/tasks/:id', () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    })
+
+    it('should return detail task by id where the user is belong to the project', async () => {
+        const { cookie } = await registerAndLogin("budiman")
+        const { projectResult } = await createProject(cookie)
+        const projectId = projectResult.body.data.id
+        const task = await request(app).post(`/api/v1/projects/${projectId}/tasks`).set('Cookie', cookie).send({ title: 'Some task' });
+        const res = await request(app).get(`/api/v1/tasks/${task.body.data.id}`).set('Cookie', cookie)
+
+        expect(res.status).toBe(200)
+        expect(res.body.data.id).toBe(task.body.data.id)
+    });
+
+    it('should reject return detail task by id where the user is NOT belong to the project', async () => {
+        const { cookie } = await registerAndLogin("budiman")
+        const { cookie: stranger_cookie } = await registerAndLogin("stranger")
+        const { projectResult } = await createProject(cookie)
+        const projectId = projectResult.body.data.id
+        const task = await request(app).post(`/api/v1/projects/${projectId}/tasks`).set('Cookie', cookie).send({ title: 'Some task' });
+        const res = await request(app).get(`/api/v1/tasks/${task.body.data.id}`).set('Cookie', stranger_cookie)
+        // console.log(res.body.data)
+
+        expect(res.status).toBe(403)
+    })
+
+    it('should return 404 Not Found error for task that is not exist', async () => {
+        const { cookie } = await registerAndLogin("budiman")
+        const { projectResult } = await createProject(cookie)
+        const projectId = projectResult.body.data.id
+        const task = await request(app).post(`/api/v1/projects/${projectId}/tasks`).set('Cookie', cookie).send({ title: 'Some task' });
+        const res = await request(app).get(`/api/v1/tasks/124141523`).set('Cookie', cookie)
+
+        expect(res.status).toBe(404)
+    })
+})
+
 
 describe('PATCH /api/v1/tasks/:id', () => {
     beforeEach(async () => {

@@ -14,6 +14,25 @@ registry.registerPath({
         401: { description: "Not authenticated" },
     },
 });
+registry.registerPath({
+    method: "get",
+    path: "/api/v1/tasks/{id}",
+    tags: ["Tasks"],
+    summary: "Show detail task",
+    description: "Only the leader & Member of the project can see it.",
+    security: [{ cookieAuth: [] }],
+    request: {
+        params: taskIdParams,
+    },
+    responses: {
+        200: { description: "Task retieved successfully" },
+        400: { description: "Validation error" },
+        401: { description: "Not authenticated" },
+        403: { description: "Only the project member can see this task" },
+        404: { description: "Task not found" },
+    },
+});
+
 
 registry.registerPath({
     method: "patch",

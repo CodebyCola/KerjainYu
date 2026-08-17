@@ -1,7 +1,10 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../middlewares/auth.middlewares";
 import * as taskService from "../services/task.service";
+import { success } from "zod";
 
+
+//GET api/v1/tasks/me
 export async function getMyTask(
   req: AuthRequest,
   res: Response,
@@ -12,6 +15,17 @@ export async function getMyTask(
     res.status(200).json({ success: true, data: tasks });
   } catch (error) {
     next(error);
+  }
+}
+
+//GET api/v1/tasks/:id
+export async function getDetailTask(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const taskId = Number(req.params.id)
+    const task = await taskService.getTaskDetail(taskId, req.user!.id)
+    res.status(200).json({ success: true, data: task })
+  } catch (error) {
+    next(error)
   }
 }
 
