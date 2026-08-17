@@ -1,4 +1,4 @@
-import { type ProjectMemberRole} from "./project";
+import { type ProjectMemberRole } from "./project";
 
 export type ProjectMemberStatus = "invited" | "active" | "removed";
 
@@ -10,7 +10,7 @@ export type TeamMember = {
   avatarUrl: string | null;
   role: ProjectMemberRole;
   status: ProjectMemberStatus;
-  joinedAt: string;
+  joinedAt: string | null;
 };
 
 export type UserSearchResult = {

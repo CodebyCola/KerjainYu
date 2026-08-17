@@ -8,6 +8,10 @@ function projectMembersPath(projectId: string) {
   return `/projects/${projectId}/members`;
 }
 
+function projectInvitationsPath(projectId: string) {
+  return `/projects/${projectId}/invitations`;
+}
+
 export function getProjectMembersRequest(projectId: string, cookie: string) {
   return apiFetch<ProjectMember[]>(projectMembersPath(projectId), { cookie });
 }
@@ -25,3 +29,15 @@ export const getProjectMembers = cache(
     }
   },
 );
+
+export function inviteMemberRequest(
+  projectId: string,
+  userId: number,
+  cookie: string,
+) {
+  return apiFetch<null>(projectInvitationsPath(projectId), {
+    method: "POST",
+    body: { userId },
+    cookie,
+  });
+}

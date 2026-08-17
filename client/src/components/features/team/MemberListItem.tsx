@@ -13,7 +13,8 @@ type MemberListItemProps = {
     onRemove: (member: TeamMember) => void;
 };
 
-function formatJoinedAt(joinedAt: string) {
+function formatJoinedAt(joinedAt: string | null) {
+    if (!joinedAt) return null;
     return new Date(joinedAt).toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",
@@ -80,7 +81,8 @@ export default function MemberListItem({ member, canManage, onMakeLeader, onRemo
                     )}
                 </div>
                 <p className="truncate text-xs font-inter text-muted">
-                    @{member.username} · Bergabung {formatJoinedAt(member.joinedAt)}
+                    @{member.username}
+                    {formatJoinedAt(member.joinedAt) && ` · Bergabung ${formatJoinedAt(member.joinedAt)}`}
                 </p>
             </div>
 
