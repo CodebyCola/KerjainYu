@@ -3,34 +3,7 @@ import request from 'supertest';
 import app from '../../app';
 import { cleanDatabase, closeDb } from '../helpers/testDb';
 import { registerAndLogin } from '../helpers/auth';
-
-export async function createProject(cookie: string) {
-    const projectResult = await request(app)
-        .post('/api/v1/projects')
-        .set('Cookie', cookie)
-        .send({
-            project: { title: 'Website Redesign', deadline: '2026-09-30' },
-            links: [],
-        });
-    return { projectResult };
-}
-
-async function inviteAndAccept(leaderCookie: string, projectId: number, inviteeUsername = 'sari') {
-    const invitee = await registerAndLogin(inviteeUsername);
-    await request(app)
-        .post(`/api/v1/projects/${projectId}/invitations`)
-        .set('Cookie', leaderCookie)
-        .send({ userId: invitee.userId });
-
-    const invitationsRes = await request(app).get('/api/v1/invitations').set('Cookie', invitee.cookie);
-    const invitationId = invitationsRes.body.data[0].id;
-    await request(app)
-        .patch(`/api/v1/invitations/${invitationId}`)
-        .set('Cookie', invitee.cookie)
-        .send({ status: 'accept' });
-
-    return invitee;
-}
+import { createProject, inviteAndAccept } from '../helpers/project';
 
 async function createTask(leaderCookie: string, projectId: number, overrides: Record<string, any> = {}) {
     return request(app)
@@ -42,6 +15,74 @@ async function createTask(leaderCookie: string, projectId: number, overrides: Re
 afterAll(async () => {
     await closeDb();
 });
+
+describe('GET /api/v1/projects/:id/tasks', () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    });
+
+    it('should return an empty array when the project has no tasks yet', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const res = await request(app)
+            .get(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie);
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.data.length).toBe(0);
+    });
+
+    it('should return not found for a non-existent project', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .get('/api/v1/projects/999999/tasks')
+            .set('Cookie', cookie);
+
+        expect(res.status).toBe(404);
+        expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('should reject access from a user who is not a member', async () => {
+        const owner = await registerAndLogin("pemilik_project");
+        const { projectResult } = await createProject(owner.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const { cookie: strangerCookie } = await registerAndLogin("bukan_member");
+
+        const res = await request(app)
+            .get(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', strangerCookie);
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('should reject request without authentication', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const res = await request(app).get(`/api/v1/projects/${projectId}/tasks`);
+
+        expect(res.status).toBe(401);
+    });
+
+    it('should reject a non-numeric project id', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .get('/api/v1/projects/abc/tasks')
+            .set('Cookie', cookie);
+
+        expect(res.status).toBe(400);
+    });
+});
+
 
 describe('POST /api/v1/projects/:id/tasks', () => {
     beforeEach(async () => {

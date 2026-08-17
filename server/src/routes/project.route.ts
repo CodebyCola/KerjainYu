@@ -5,6 +5,7 @@ import { validate } from "../middlewares/validate";
 import * as projectSchema from "../schemas/projectSchema";
 import { userIdParams } from "../schemas/userSchema"
 import * as projectController from "../controllers/project.controller";
+import * as projectMemberController from "../controllers/project.member.controller"
 import * as taskSchema from "../schemas/task.schema";
 const router = Router();
 
@@ -32,8 +33,9 @@ router.get(
   "/:id/members",
   authenticate,
   validate(projectSchema.projectIdParams, "params"),
-  projectController.getMembersByProject,
+  projectMemberController.getMembersByProject,
 );
+router.patch("/:id/leader", authenticate, createLimiter, validate(userIdParams, "body"), projectMemberController.promoteToLeader)
 router.patch(
   "/:id",
   authenticate,

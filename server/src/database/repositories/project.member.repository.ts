@@ -16,6 +16,16 @@ export async function setLeader(
     role: "leader",
   });
 }
+export async function updateMemberRole(projectId: number, userId: number, role: string = "member", trx?: Knex.Transaction) {
+  const executor = trx || db;
+  return executor("project_members")
+    .where("project_id", projectId)
+    .andWhere("user_id", userId)
+    .update({
+      role: role,
+    })
+    .returning(["user_id", "role", "status"]);
+}
 
 export async function addMember(projectId: number, userId: number) {
   return db("project_members").insert({
