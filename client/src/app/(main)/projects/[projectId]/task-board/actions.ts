@@ -2,11 +2,9 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { apiFetch } from "@/lib/api/fetcher";
 import { ApiRequestError } from "@/lib/api/apiRequestError";
-import { Task } from "@/types/task";
 import { TaskAction } from "@/lib/api/tasks/taskStatus";
-import { createTaskRequest } from "@/lib/api/tasks/tasks";
+import { claimTaskRequest, createTaskRequest } from "@/lib/api/tasks/tasks";
 import { TaskFormState } from "@/lib/api/tasks/taskFormState";
 import { validateCreateTaskFields } from "@/lib/validation/taskSchema";
 import { projectRoutes } from "@/lib/routes";
@@ -16,21 +14,26 @@ export type TransitionTaskState = {
   error: string | null;
 };
 
-const ACTION_PATH: Record<TaskAction, string> = {
-  claim: "claim",
-  start: "start",
-  submit: "submit",
-  resume: "start",
-  approve: "review",
-  requestRevision: "review",
-  reject: "review",
-};
-
-function buildBody(action: TaskAction): Record<string, string> | undefined {
-  if (action === "approve") return { decision: "approved" };
-  if (action === "requestRevision") return { decision: "in_revision" };
-  if (action === "reject") return { decision: "rejected" };
-  return undefined;
+async function runTaskAction(
+  taskId: number,
+  action: TaskAction,
+  cookie: string,
+) {
+  switch (action) {
+    case "claim":
+      return claimTaskRequest(taskId, cookie);
+    case "start":
+    case "submit":
+    case "resume":
+    case "approve":
+    case "requestRevision":
+    case "reject":
+      throw new ApiRequestError({
+        code: "NOT_IMPLEMENTED",
+        message: "Aksi ini belum didukung oleh server.",
+        httpStatus: 501,
+      });
+  }
 }
 
 export async function transitionTaskAction(
@@ -42,11 +45,7 @@ export async function transitionTaskAction(
     const cookieStore = await cookies();
     const cookieHeader = cookieStore.toString();
 
-    await apiFetch<Task>(`/tasks/${taskId}/${ACTION_PATH[action]}`, {
-      method: "POST",
-      body: buildBody(action),
-      cookie: cookieHeader,
-    });
+    await runTaskAction(taskId, action, cookieHeader);
   } catch (err) {
     if (err instanceof ApiRequestError) {
       return { success: false, error: err.message };
