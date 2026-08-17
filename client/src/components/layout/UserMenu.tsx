@@ -7,7 +7,7 @@ import { cn } from "@/utils/cn";
 import { getInitials } from "@/utils/getInitials";
 import { type User } from "@/types/user";
 import { useSession } from "@/contexts/SessionContext";
-import { logoutAction } from "@/lib/api/auth/logoutAction";
+import { logoutAction } from "@/app/(main)/actions";
 
 type UserMenuProps = {
     user?: User;

@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROUTES } from "@/lib/routes";
-import { logoutRequest } from "./auth";
+import { logoutRequest } from "../../lib/api/auth/auth";
 
 export async function logoutAction() {
   const cookieStore = await cookies();

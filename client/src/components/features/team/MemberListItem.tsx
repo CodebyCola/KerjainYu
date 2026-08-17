@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoreVertical, ShieldCheck, UserMinus, Clock } from "lucide-react";
+import { MoreVertical, ShieldCheck, UserMinus, Clock, Loader2 } from "lucide-react";
 import { TeamMember } from "@/types/team";
 import { getInitials } from "@/utils/getInitials";
 import { cn } from "@/utils/cn";
@@ -9,11 +9,13 @@ import { cn } from "@/utils/cn";
 type MemberListItemProps = {
     member: TeamMember;
     canManage: boolean;
+    isPromoting: boolean;
     onMakeLeader: (member: TeamMember) => void;
     onRemove: (member: TeamMember) => void;
 };
 
-function formatJoinedAt(joinedAt: string) {
+function formatJoinedAt(joinedAt: string | null) {
+    if (!joinedAt) return null;
     return new Date(joinedAt).toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",
@@ -21,7 +23,7 @@ function formatJoinedAt(joinedAt: string) {
     });
 }
 
-export default function MemberListItem({ member, canManage, onMakeLeader, onRemove }: MemberListItemProps) {
+export default function MemberListItem({ member, canManage, isPromoting, onMakeLeader, onRemove }: MemberListItemProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +74,12 @@ export default function MemberListItem({ member, canManage, onMakeLeader, onRemo
                             Ketua
                         </span>
                     )}
+                    {isPromoting && (
+                        <span className="flex items-center gap-1 text-[11px] font-inter font-medium text-muted">
+                            <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                            Menjadikan ketua...
+                        </span>
+                    )}
                     {isPending && (
                         <span className="flex items-center gap-1 rounded-full bg-status-progress-bg px-2 py-0.5 text-[11px] font-inter font-medium text-status-progress-text">
                             <Clock className="size-3" />
@@ -80,7 +88,8 @@ export default function MemberListItem({ member, canManage, onMakeLeader, onRemo
                     )}
                 </div>
                 <p className="truncate text-xs font-inter text-muted">
-                    @{member.username} · Bergabung {formatJoinedAt(member.joinedAt)}
+                    @{member.username}
+                    {formatJoinedAt(member.joinedAt) && ` · Bergabung ${formatJoinedAt(member.joinedAt)}`}
                 </p>
             </div>
 
