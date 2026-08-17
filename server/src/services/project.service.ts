@@ -81,12 +81,6 @@ export async function getTasksByProject(projectId: number, userId: number) {
   return tasks
 }
 
-//GET /api/v1/projects/:id/members -> Returning all members that is belong to the project + active
-export async function getMembersByProject(projectId: number, userId: number) {
-  await assertProjectMembership(projectId, userId)
-  const members = await projectMemberRepo.getMembersByProject(projectId)
-  return members;
-}
 
 //PATCH /api/v1/projects/:id
 export async function updateProject(

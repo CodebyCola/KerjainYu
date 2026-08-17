@@ -19,5 +19,5 @@ export async function respondToInvitation(membershipId: number, userId: number, 
     }
 
     const newStatus = response === 'accept' ? 'active' : 'rejected'
-    return projectMemberRepo.updateMembershipStatus(membership.id, newStatus)
+    return await projectMemberRepo.updateMembershipStatus(membership.id, newStatus)
 }

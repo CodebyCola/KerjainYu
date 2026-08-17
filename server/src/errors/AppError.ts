@@ -1,5 +1,3 @@
-import fi from "zod/v4/locales/fi.js";
-
 export class AppError extends Error {
     code: string;
     httpStatus: number;

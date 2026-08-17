@@ -1,0 +1,32 @@
+
+import * as projectRepo from "../database/repositories/project.repository";
+import * as projectMemberRepo from "../database/repositories/project.member.repository";
+import * as projectSchema from "../schemas/projectSchema";
+import { findById, findByUsername } from "../database/repositories/user.repository";
+import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
+import { ConflictError } from "../errors/AppError";
+import { db } from "../database/db";
+
+//GET /api/v1/projects/:id/members -> Returning all members that is belong to the project + active
+export async function getMembersByProject(projectId: number, userId: number) {
+    await assertProjectMembership(projectId, userId)
+    const members = await projectMemberRepo.getMembersByProject(projectId)
+    return members;
+}
+
+//PATCH /api/v1/projects/:id/leader
+export async function promoteToLeader(projectId: number, currentLeaderId: number, prospectiveLeaderId: number) {
+    await assertProjectLeader(projectId, currentLeaderId)
+    const { membership: prospectiveMembership } = await assertProjectMembership(projectId, prospectiveLeaderId)
+    if (prospectiveMembership.status !== "active") {
+        throw new ConflictError("Only active member can be promoted to leader")
+    }
+    if (currentLeaderId == prospectiveLeaderId) {
+        throw new ConflictError("You are already the leader of this project")
+    }
+    return db.transaction(async (trx) => {
+        const [newLeader] = await projectMemberRepo.updateMemberRole(projectId, prospectiveLeaderId, "leader", trx)
+        await projectMemberRepo.updateMemberRole(projectId, currentLeaderId, "member", trx)
+        return newLeader
+    })
+}

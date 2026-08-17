@@ -3,10 +3,9 @@ import { createProjectWithLinksSchema, updateProjectSchema } from '../schemas/pr
 import { registry } from './components';
 import { createTaskSchema } from '../schemas/task.schema';
 import { projectIdParams } from './params/id.params';
-import { z } from '../lib/zod-extended';
-
-import { membershipIdParams } from '../schemas/invitation.schema';
 import { userIdParams } from '../schemas/userSchema';
+
+
 registry.registerPath({
     method: "post",
     path: "/api/v1/projects",
@@ -72,18 +71,6 @@ registry.registerPath({
     },
 });
 
-registry.registerPath({
-    method: "get",
-    path: "/api/v1/projects/{id}/members",
-    tags: ["Projects"],
-    request: { params: projectIdParams },
-    security: [{ cookieAuth: [] }],
-    responses: {
-        200: { description: "Successfully fecth all members that belong to project" },
-        401: { description: "Not authenticated" },
-        403: { description: "That project does not belong to the user" },
-    }
-})
 
 registry.registerPath({
     method: "post",
@@ -144,21 +131,3 @@ registry.registerPath({
 });
 
 
-registry.registerPath({
-    method: "get",
-    path: "/api/v1/users/search",
-    tags: ["Users"],
-    summary: "Search users by username",
-    description: "Used to find users to invite to a project. Pass excludeProjectId to filter out users who are already a member/invited/rejected on that project.",
-    security: [{ cookieAuth: [] }],
-    request: {
-        query: z.object({
-            username: z.string().min(1).openapi({ example: "budi" }),
-            excludeProjectId: z.coerce.number().int().positive().optional().openapi({ example: 5 }),
-        }),
-    },
-    responses: {
-        200: { description: "List of matching users (max 10), returns only id, username, fullName, avatarUrl" },
-        401: { description: "Not authenticated" },
-    },
-});

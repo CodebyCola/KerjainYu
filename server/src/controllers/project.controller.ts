@@ -99,23 +99,6 @@ export async function getTasksByProject(
   }
 }
 
-//GET /api/v1/projects/{id}/members
-export async function getMembersByProject(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) {
-  try {
-    const projectId = Number(req.params.id);
-    const members = await projectService.getMembersByProject(
-      projectId,
-      req.user!.id,
-    );
-    res.status(200).json({ success: true, data: members });
-  } catch (error) {
-    next(error);
-  }
-}
 //PATCH /api/v1/projects/{id}
 export async function updateProject(
   req: AuthRequest,
@@ -137,7 +120,7 @@ export async function updateProject(
 //POST /api/v1/project/{id}/invitations
 export async function inviteMember(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const projectId = Number(req.params.id)
+    const projectId = Number(req.params.id);
     const userId = Number(req.body.userId);
     await projectService.inviteMember(projectId, req.user!.id, userId)
     res.status(200).json({ success: true, message: "Successfuly invited user to project" })
