@@ -12,11 +12,12 @@ disembunyikan), member `invited` tidak muncul sama sekali di list.
 
 ---
 
-## 1. Sertakan `fullName` di response `GET /projects/:id/members`
+## 1. Sertakan `fullName` di response `GET /projects/:id/members` -> DONE
 
 **File**: `database/repositories/project.member.repository.ts` fungsi `getMembersByProject`
 
 Query saat ini:
+
 ```ts
 .select([
   "project_members.id",
@@ -32,13 +33,13 @@ Query saat ini:
 Tambahkan `"users.full_name"` ke `select`, lalu map ke `fullName` (camelCase) di response —
 ikuti konvensi camelCase yang sudah dipakai field lain di endpoint ini.
 
-## 2. Sertakan `joined_at` di response `GET /projects/:id/members`
+## 2. Sertakan `joined_at` di response `GET /projects/:id/members` ->DONE
 
 Kolom `joined_at` sudah ada di tabel `project_members` (`database.dbml` baris 62), tapi
 tidak ikut di-`select()`. Tambahkan `"project_members.joined_at"` ke query yang sama di atas,
 map ke `joinedAt` (ISO string).
 
-## 3. Sertakan member berstatus `invited` di response `GET /projects/:id/members`
+## 3. Sertakan member berstatus `invited` di response `GET /projects/:id/members` -> No need
 
 Query saat ini punya filter `.where("project_members.status", "active")` yang membuang
 member yang sedang pending undangan. Untuk halaman Team menampilkan badge "menunggu
@@ -46,7 +47,7 @@ konfirmasi" dan jumlah pending yang akurat, endpoint ini perlu **juga** mengemba
 member berstatus `invited` (field `status` yang sudah ada di response akan membedakannya
 di sisi client).
 
-**Perlu dikonfirmasi ke produk**: apakah member `invited` boleh dilihat oleh *semua* member
+**Perlu dikonfirmasi ke produk**: apakah member `invited` boleh dilihat oleh _semua_ member
 project (siapapun yang buka halaman Team), atau cuma leader? Kalau perlu dibatasi, mungkin
 lebih aman jadi query param opsional, misal `?includeInvited=true` yang cuma diizinkan kalau
 requester adalah leader (`assertProjectLeader`), supaya default response tidak berubah untuk

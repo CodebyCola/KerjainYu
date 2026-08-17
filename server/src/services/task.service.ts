@@ -22,6 +22,16 @@ export async function createTask(
   return tasks;
 }
 
+//GET api/v1/tasks/:id
+export async function getTaskDetail(taskId: number, userId: number) {
+  const task = await taskRepo.getTaskById(taskId)
+  if (!task) {
+    throw new NotFoundError("Task Not Found")
+  }
+  await assertProjectMembership(task!.projectId, userId)
+  return task;
+}
+
 //GET api/v1/tasks/me -> Showing all tasks that are belong to user
 export async function getTasksByUser(userId: number) {
   const tasks = await taskRepo.getTasksByUser(userId);
