@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Folder, ListChecks, Bell, List, Users, KanbanSquare, Calendar, FolderOpen } from "lucide-react";
+import { Folder, ListChecks, List, Users, KanbanSquare, Calendar, FolderOpen } from "lucide-react";
 import { cn } from "@/utils/cn";
 import Link from "next/link";
 import { ROUTES, projectRoutes, getProjectIdFromPathname } from "@/lib/routes";
@@ -11,7 +11,6 @@ import MoreSheet from "@/components/layout/mobile/MoreSheet";
 const MAIN_NAV_ITEMS = [
     { label: "Proyek", href: ROUTES.PROJECTS, icon: Folder },
     { label: "Tugas", href: ROUTES.MY_TASK, icon: ListChecks },
-    { label: "Notifikasi", href: ROUTES.NOTIFICATION, icon: Bell },
 ];
 
 export default function MobileBottomBar() {

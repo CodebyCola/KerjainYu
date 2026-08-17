@@ -4,7 +4,10 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { ApiRequestError } from "@/lib/api/apiRequestError";
 import { searchUsersRequest } from "@/lib/api/users/users";
-import { inviteMemberRequest } from "@/lib/api/members/members";
+import {
+  inviteMemberRequest,
+  promoteToLeaderRequest,
+} from "@/lib/api/members/members";
 import { UserSearchResult } from "@/types/team";
 import { projectRoutes } from "@/lib/routes";
 
@@ -56,6 +59,34 @@ export async function inviteMemberAction(
     const cookieHeader = cookieStore.toString();
 
     await inviteMemberRequest(projectId, userId, cookieHeader);
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message };
+    }
+    return {
+      success: false,
+      error: "Terjadi kesalahan tak terduga. Coba lagi.",
+    };
+  }
+
+  revalidatePath(projectRoutes(projectId).TEAM);
+  return { success: true, error: null };
+}
+
+export type PromoteLeaderState = {
+  success: boolean;
+  error: string | null;
+};
+
+export async function promoteToLeaderAction(
+  projectId: string,
+  userId: number,
+): Promise<PromoteLeaderState> {
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    await promoteToLeaderRequest(projectId, userId, cookieHeader);
   } catch (err) {
     if (err instanceof ApiRequestError) {
       return { success: false, error: err.message };

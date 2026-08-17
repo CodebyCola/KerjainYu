@@ -5,6 +5,9 @@ import { ArrowLeft } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { ROUTES, getProjectIdFromPathname } from "@/lib/routes";
 import UserMenu from "@/components/layout/UserMenu";
+import InvitationBell from "@/components/features/invitations/InvitationBell";
+import Skeleton from "@/components/ui/Skeleton";
+import { useProjectTitle } from "@/contexts/ProjectTitleContext";
 import { type User } from "@/types/user";
 import { getInitials } from "@/utils/getInitials";
 
@@ -12,12 +15,11 @@ type MobileTopBarProps = {
     user?: User;
 };
 
-const PROJECT_TITLE_PLACEHOLDER = "Proyek"; // Ganti ini dengan title project yang asli nanti!
-
 export default function MobileTopBar({ user }: MobileTopBarProps) {
     const router = useRouter();
     const pathname = usePathname();
     const projectId = getProjectIdFromPathname(pathname);
+    const { title } = useProjectTitle();
 
     return (
         <header className="h-16 border-b border-b-border bg-background">
@@ -30,9 +32,17 @@ export default function MobileTopBar({ user }: MobileTopBarProps) {
                         className="flex items-center gap-2 min-w-0"
                     >
                         <ArrowLeft className="size-5 text-foreground shrink-0" />
-                        <span className="text-sm font-inter font-semibold text-foreground truncate">
-                            {PROJECT_TITLE_PLACEHOLDER}
-                        </span>
+                        {/* aria-live: screen reader tetap announce judul begitu selesai
+                            disinkronkan dari ProjectTitleSync (bisa sedikit delay dari server). */}
+                        <div aria-live="polite" className="min-w-0 truncate">
+                            {title ? (
+                                <span className="text-sm font-inter font-semibold text-foreground">
+                                    {title}
+                                </span>
+                            ) : (
+                                <Skeleton className="h-4 w-24" />
+                            )}
+                        </div>
                     </button>
                 ) : (
                     <div className="flex flex-row items-center gap-1">
@@ -43,6 +53,7 @@ export default function MobileTopBar({ user }: MobileTopBarProps) {
                 )}
 
                 <div className="flex items-center gap-4 shrink-0">
+                    <InvitationBell />
                     <UserMenu user={user} align="right" />
                 </div>
             </div>

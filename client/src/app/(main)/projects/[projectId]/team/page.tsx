@@ -49,7 +49,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
                 members={members}
                 canManage={canManage}
             />
-            <TeamMemberList initialMembers={members} canManage={canManage} />
+            <TeamMemberList projectId={projectId} initialMembers={members} canManage={canManage} />
         </div>
     );
 }

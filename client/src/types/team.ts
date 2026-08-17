@@ -19,3 +19,9 @@ export type UserSearchResult = {
   fullName: string | null;
   avatarUrl: string | null;
 };
+
+export type Invitation = {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+};
