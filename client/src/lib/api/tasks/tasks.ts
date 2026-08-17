@@ -26,6 +26,10 @@ function projectTasksPath(projectId: string) {
   return `/projects/${projectId}/tasks`;
 }
 
+function taskPath(taskId: number) {
+  return `/tasks/${taskId}`;
+}
+
 export function getProjectTasksRequest(projectId: string, cookie: string) {
   return apiFetch<Task[]>(projectTasksPath(projectId), { cookie });
 }
@@ -59,6 +63,13 @@ export function createTaskRequest(
   return apiFetch<Task>(projectTasksPath(projectId), {
     method: "POST",
     body: payload,
+    cookie,
+  });
+}
+
+export function claimTaskRequest(taskId: number, cookie: string) {
+  return apiFetch<Task>(`${taskPath(taskId)}/claim`, {
+    method: "PATCH",
     cookie,
   });
 }
