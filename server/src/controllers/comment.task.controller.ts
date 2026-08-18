@@ -24,3 +24,14 @@ export async function createCommentToTask(req: AuthRequest, res: Response, next:
         next(error)
     }
 }
+
+//DELETE /api/v1/comments/:id
+export async function deleteComment(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+        const id = Number(req.params.id)
+        await commentTaskService.deleteComment(id, req.user!.id)
+        res.status(200).json({ success: true, message: "Successfully deleted comment" })
+    } catch (error) {
+        next(error)
+    }
+}

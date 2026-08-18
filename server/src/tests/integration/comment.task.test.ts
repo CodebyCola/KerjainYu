@@ -385,3 +385,188 @@ describe("POST /api/v1/tasks/:id/comments", () => {
         expect(res.status).toBe(401);
     });
 });
+
+describe("DELETE /api/v1/comments/:id", () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    });
+
+    it("should delete a comment successfully", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const taskResult = await createTask(cookie, projectId);
+        const taskId = taskResult.body.data.id;
+
+        const commentResult = await request(app)
+            .post(`/api/v1/tasks/${taskId}/comments`)
+            .set("Cookie", cookie)
+            .send({
+                comment: "This comment will be deleted",
+            });
+
+        expect(commentResult.status).toBe(201);
+
+        const commentId = commentResult.body.data.id;
+
+        const res = await request(app)
+            .delete(`/api/v1/comments/${commentId}`)
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.message).toBe("Successfully deleted comment");
+    });
+
+    it("should soft delete the comment instead of hard deleting it", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const taskResult = await createTask(cookie, projectId);
+        const taskId = taskResult.body.data.id;
+
+        const commentResult = await request(app)
+            .post(`/api/v1/tasks/${taskId}/comments`)
+            .set("Cookie", cookie)
+            .send({
+                comment: "This comment should remain in database",
+            });
+
+        const commentId = commentResult.body.data.id;
+
+        const deleteRes = await request(app)
+            .delete(`/api/v1/comments/${commentId}`)
+            .set("Cookie", cookie);
+
+        expect(deleteRes.status).toBe(200);
+
+        // Comment should still be retrievable through the comments endpoint
+        // if deleted comments are intentionally shown as "deleted".
+        const commentsRes = await request(app)
+            .get(`/api/v1/tasks/${taskId}/comments`)
+            .set("Cookie", cookie);
+
+        expect(commentsRes.status).toBe(200);
+
+        const deletedComment = commentsRes.body.data.find(
+            (comment: any) => comment.id === commentId
+        );
+
+        expect(deletedComment).toBeDefined();
+    });
+
+    it("should reject deleting a comment that does not exist", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .delete("/api/v1/comments/999999")
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(404);
+        expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("should reject deleting a comment owned by another user", async () => {
+        const owner = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(owner.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const taskResult = await createTask(owner.cookie, projectId);
+        const taskId = taskResult.body.data.id;
+
+        const commentResult = await request(app)
+            .post(`/api/v1/tasks/${taskId}/comments`)
+            .set("Cookie", owner.cookie)
+            .send({
+                comment: "This comment belongs to Budiman",
+            });
+
+        const commentId = commentResult.body.data.id;
+
+        const stranger = await registerAndLogin("sari");
+
+        const res = await request(app)
+            .delete(`/api/v1/comments/${commentId}`)
+            .set("Cookie", stranger.cookie);
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("should reject deleting an already deleted comment", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const taskResult = await createTask(cookie, projectId);
+        const taskId = taskResult.body.data.id;
+
+        const commentResult = await request(app)
+            .post(`/api/v1/tasks/${taskId}/comments`)
+            .set("Cookie", cookie)
+            .send({
+                comment: "This comment will be deleted",
+            });
+
+        const commentId = commentResult.body.data.id;
+
+        const firstDelete = await request(app)
+            .delete(`/api/v1/comments/${commentId}`)
+            .set("Cookie", cookie);
+
+        expect(firstDelete.status).toBe(200);
+
+        const secondDelete = await request(app)
+            .delete(`/api/v1/comments/${commentId}`)
+            .set("Cookie", cookie);
+
+        expect(secondDelete.status).toBe(404);
+        expect(secondDelete.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("should reject a non-numeric comment id", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .delete("/api/v1/comments/abc")
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("should reject a zero comment id", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .delete("/api/v1/comments/0")
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("should reject a negative comment id", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .delete("/api/v1/comments/-1")
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("should reject request without authentication", async () => {
+        const res = await request(app)
+            .delete("/api/v1/comments/1");
+
+        expect(res.status).toBe(401);
+    });
+});

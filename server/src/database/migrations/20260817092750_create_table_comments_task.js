@@ -9,6 +9,7 @@ exports.up = function (knex) {
         table.bigInteger("user_id").references("id").inTable("users").notNullable()
         table.string("comment").notNullable()
         table.timestamp('created_at').defaultTo(knex.fn.now());
+        table.timestamp('deleted_at').nullable().defaultTo(null)
     })
 };
 

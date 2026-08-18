@@ -1,8 +1,29 @@
 import { db } from "../db";
-import { Knex } from "knex";
 
+export async function getCommentById(id: number) {
+    return db("comments_task")
+        .where({ id })
+        .whereNull('deleted_at')
+        .first()
+        .select([
+            "id",
+            "task_id",
+            "user_id",
+            "comment",
+        ]);
+}
 export async function createComment(taskId: number, userId: number, comment: string) {
     return db("comments_task").insert({ task_id: taskId, user_id: userId, comment: comment }).returning("*")
+}
+export async function deleteComment(id: number) {
+    return db("comments_task")
+        .where({
+            id,
+        })
+        .whereNull("deleted_at")
+        .update({
+            deleted_at: db.fn.now(),
+        });
 }
 export async function getCommentsByTask(taskId: number) {
     return db("comments_task")

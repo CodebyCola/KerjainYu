@@ -8,6 +8,7 @@ import projectRoutes from "./routes/project.route";
 import taskRoutes from "./routes/task.route";
 import userRoutes from "./routes/user.routes";
 import invitationRoutes from "./routes/invitations.route"
+import commentTaskRoutes from "./routes/comment.task.route"
 import { swaggerSpec } from "./docs/swagger";
 
 const app = express();
@@ -24,7 +25,7 @@ app.use("/api/v1/users", userRoutes)
 app.use("/api/v1/projects", projectRoutes);
 app.use("/api/v1/tasks", taskRoutes);
 app.use("/api/v1/invitations", invitationRoutes)
-
+app.use("/api/v1/comments", commentTaskRoutes)
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(errorHandler);
