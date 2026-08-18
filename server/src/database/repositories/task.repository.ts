@@ -64,3 +64,7 @@ export async function getTasksByProject(projectId: number, userId?: number) {
     })
     .select("*");
 }
+
+export async function doTask(taskId: number) {
+  return db("tasks").where({ id: taskId, status: "todo" }).update({ status: "ongoing" }).returning("*").then((rows) => rows[0])
+}

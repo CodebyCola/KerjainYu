@@ -74,3 +74,46 @@ registry.registerPath({
         409: { description: "Task is not claimable, or has already been claimed by someone else" },
     },
 });
+
+registry.registerPath({
+    method: "patch",
+    path: "/api/v1/tasks/{id}/ongoing",
+    tags: ["Tasks"],
+    summary: "Start working on a task",
+    description:
+        "Changes a task status from 'todo' to 'ongoing'. Only the user assigned to the task can perform this action.",
+
+    security: [{ cookieAuth: [] }],
+
+    request: {
+        params: idParams,
+    },
+
+    responses: {
+        200: {
+            description: "Task successfully changed to ongoing",
+        },
+
+        400: {
+            description: "Validation error",
+        },
+
+        401: {
+            description: "Not authenticated",
+        },
+
+        403: {
+            description:
+                "User is not a member of the project or is not the task assignee",
+        },
+
+        404: {
+            description: "Task not found",
+        },
+
+        409: {
+            description:
+                "Task cannot be started because its current status is not 'todo'",
+        },
+    },
+});

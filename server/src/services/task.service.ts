@@ -70,4 +70,20 @@ export async function claimTask(taskId: number, userId: number) {
   })
 }
 
+//PATCH /api/v1/tasks/:id/ongoing
+export async function doTask(taskId: number, userId: number) {
+  const task = await taskRepo.getTaskById(taskId)
+  if (!task) {
+    throw new NotFoundError("Task not found")
+  }
+  await assertProjectMembership(task.projectId, userId)
+  if (task.assigneeId !== userId) {
+    throw new ForbiddenError("Only the assignee can perform this action")
+  }
 
+  const updated = await taskRepo.doTask(taskId)
+  if (!updated) {
+    throw new ConflictError(`Task must be in 'todo' status to start working on it (current status: ${task.status})`)
+  }
+  return updated
+}

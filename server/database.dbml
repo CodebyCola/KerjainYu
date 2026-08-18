@@ -251,6 +251,7 @@ Table comments_task {
   task_id bigint [not null, ref: > tasks.id]
   comment varchar [not null]
   created_at timestamp [default: `now()`]
+  deleted_at timestamp 
 }
 
 // ---------------------------------------------------------

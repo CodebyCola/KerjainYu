@@ -54,3 +54,14 @@ export async function claimTask(req: AuthRequest, res: Response, next: NextFunct
     next(error)
   }
 }
+
+//PATCH api/v1/tasks/:id/ongoing
+export async function doTask(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const taskId = Number(req.params.id)
+    const task = await taskService.doTask(taskId, req.user!.id)
+    res.status(200).json({ success: true, message: "Successfuly update status task", data: task })
+  } catch (error) {
+    next(error)
+  }
+}
