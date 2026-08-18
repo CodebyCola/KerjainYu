@@ -1,6 +1,6 @@
 import { registry } from './components';
-import { createTaskSchema, updateTaskSchema } from '../schemas/task.schema';
-import { projectIdParams, taskIdParams } from './params/id.params';
+import { updateTaskSchema } from '../schemas/task.schema';
+import { taskIdParams } from './params/id.params';
 
 registry.registerPath({
     method: "get",
@@ -14,6 +14,8 @@ registry.registerPath({
         401: { description: "Not authenticated" },
     },
 });
+
+
 registry.registerPath({
     method: "get",
     path: "/api/v1/tasks/{id}",
