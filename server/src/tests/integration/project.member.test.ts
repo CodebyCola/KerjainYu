@@ -182,7 +182,6 @@ describe('PATCH /api/v1/projects/:id/leader', () => {
             .patch(`/api/v1/projects/${projectId}/leader`)
             .set('Cookie', leader.cookie)
             .send({ userId: leader.userId });
-        console.log(res)
 
         expect(res.status).toBe(409);
         expect(res.body.error.code).toBe('CONFLICT');
@@ -200,7 +199,7 @@ describe('PATCH /api/v1/projects/:id/leader', () => {
             .set('Cookie', leader.cookie)
             .send({ userId: strangerId });
 
-        console.log(res)
+
         expect(res.status).toBe(403);
     });
 

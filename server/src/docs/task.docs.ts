@@ -1,6 +1,6 @@
 import { registry } from './components';
 import { updateTaskSchema } from '../schemas/task.schema';
-import { taskIdParams } from './params/id.params';
+import { idParams } from '../schemas/id.schema';
 
 registry.registerPath({
     method: "get",
@@ -24,7 +24,7 @@ registry.registerPath({
     description: "Only the leader & Member of the project can see it.",
     security: [{ cookieAuth: [] }],
     request: {
-        params: taskIdParams,
+        params: idParams,
     },
     responses: {
         200: { description: "Task retieved successfully" },
@@ -44,7 +44,7 @@ registry.registerPath({
     description: "Only the leader of the task's project can update it.",
     security: [{ cookieAuth: [] }],
     request: {
-        params: taskIdParams,
+        params: idParams,
         body: { content: { "application/json": { schema: updateTaskSchema } } },
     },
     responses: {
@@ -64,7 +64,7 @@ registry.registerPath({
     description: "Only tasks with isClaimable=true and status='unclaimed' can be claimed. The claim is atomic — if two members claim the same task simultaneously, only the first one succeeds; the second receives 409. Records the claim in the task ownership log.",
     security: [{ cookieAuth: [] }],
     request: {
-        params: taskIdParams,
+        params: idParams,
     },
     responses: {
         200: { description: "Task claimed successfully. Returns the updated task (assigneeId set, status changed to 'todo')." },

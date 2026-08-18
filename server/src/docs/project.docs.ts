@@ -2,8 +2,8 @@
 import { createProjectWithLinksSchema, updateProjectSchema } from '../schemas/projectSchema';
 import { registry } from './components';
 import { createTaskSchema } from '../schemas/task.schema';
-import { projectIdParams } from './params/id.params';
 import { userIdParams } from '../schemas/userSchema';
+import { idParams } from '../schemas/id.schema';
 
 
 registry.registerPath({
@@ -29,7 +29,7 @@ registry.registerPath({
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     request: {
-        params: projectIdParams,
+        params: idParams,
         body: {
             content: { "application/json": { schema: updateProjectSchema } },
         },
@@ -50,7 +50,7 @@ registry.registerPath({
     tags: ["Projects"],
     security: [{ cookieAuth: [] }],
     request: {
-        params: projectIdParams,
+        params: idParams,
     },
     responses: {
         200: { description: "Successfully fetched project detail" },
@@ -80,7 +80,7 @@ registry.registerPath({
     description: "Only the project leader can create tasks. `createdBy` is taken from the authenticated user, not from the request body.",
     security: [{ cookieAuth: [] }],
     request: {
-        params: projectIdParams,
+        params: idParams,
         body: { content: { "application/json": { schema: createTaskSchema } } },
     },
     responses: {
@@ -100,7 +100,7 @@ registry.registerPath({
     summary: "Get all tasks belonging to a project",
     description: "Accessible to any active member of the project (leader or regular member).",
     security: [{ cookieAuth: [] }],
-    request: { params: projectIdParams },
+    request: { params: idParams },
     responses: {
         200: { description: "List of tasks in this project" },
         401: { description: "Not authenticated" },
@@ -117,7 +117,7 @@ registry.registerPath({
     description: "Only the project leader can send invitations. Creates a project_members row with status 'invited'.",
     security: [{ cookieAuth: [] }],
     request: {
-        params: projectIdParams,
+        params: idParams,
         body: { content: { "application/json": { schema: userIdParams } } },
     },
     responses: {
