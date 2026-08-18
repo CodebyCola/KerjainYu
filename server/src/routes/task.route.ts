@@ -11,7 +11,8 @@ const router = Router();
 router.get("/:id/comments", authenticate, validate(idParams, 'params'), commentTaskController.getCommentsByTask)
 router.post("/:id/comments", authenticate, validate(idParams, 'params'), validate(createCommentSchema, "body"), commentTaskController.createCommentToTask)
 router.get("/:id", authenticate, validate(idParams, "params"), taskController.getDetailTask)
-router.patch("/:id/claim", authenticate, taskController.claimTask)
+router.patch("/:id/claim", authenticate, validate(idParams, 'params'), taskController.claimTask)
+router.patch("/:id/ongoing", authenticate, validate(idParams, 'params'), taskController.doTask)
 router.patch(
   "/:id",
   authenticate,

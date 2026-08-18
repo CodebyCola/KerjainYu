@@ -413,3 +413,175 @@ describe('PATCH /api/v1/tasks/:id/claim', () => {
         expect(res.status).toBe(401);
     });
 });
+
+describe("PATCH /api/v1/tasks/:id/ongoing", () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    });
+
+    it("should change task status to ongoing for the assignee", async () => {
+        const { cookie, userId } = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        // Create task
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", cookie)
+            .send({
+                title: "Implement authentication",
+                description: "Implement JWT authentication",
+                deadline: "2026-09-30",
+            });
+
+        expect(taskRes.status).toBe(201);
+
+        const taskId = taskRes.body.data.id;
+
+        // Claim task so user becomes assignee
+        const claimRes = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/claim`)
+            .set("Cookie", cookie);
+
+        expect(claimRes.status).toBe(200);
+
+        // Start working on task
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/ongoing`)
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data.id).toBe(taskId);
+        expect(res.body.data.status).toBe("ongoing");
+    });
+
+    it("should return not found for non-existent task", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .patch("/api/v1/tasks/999999/ongoing")
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(404);
+        expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("should reject a user who is not a member of the project", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", leader.cookie)
+            .send({
+                title: "Implement authentication",
+                description: "Implement JWT authentication",
+                deadline: "2026-09-30",
+            });
+
+        const taskId = taskRes.body.data.id;
+
+        const stranger = await registerAndLogin("stranger");
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/ongoing`)
+            .set("Cookie", stranger.cookie);
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("should reject a project member who is not the assignee", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", leader.cookie)
+            .send({
+                title: "Implement authentication",
+                description: "Implement JWT authentication",
+                deadline: "2026-09-30",
+            });
+
+        const taskId = taskRes.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari",
+        );
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/ongoing`)
+            .set("Cookie", member.cookie);
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("should reject a task that is not in todo status", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", cookie)
+            .send({
+                title: "Implement authentication",
+                description: "Implement JWT authentication",
+                deadline: "2026-09-30",
+            });
+
+        const taskId = taskRes.body.data.id;
+
+        // Claim → user becomes assignee
+        const claimRes = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/claim`)
+            .set("Cookie", cookie);
+
+        expect(claimRes.status).toBe(200);
+
+        // First request changes todo → ongoing
+        const firstRes = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/ongoing`)
+            .set("Cookie", cookie);
+
+        expect(firstRes.status).toBe(200);
+        expect(firstRes.body.data.status).toBe("ongoing");
+
+        // Second request should fail
+        const secondRes = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/ongoing`)
+            .set("Cookie", cookie);
+
+        expect(secondRes.status).toBe(409);
+        expect(secondRes.body.error.code).toBe("CONFLICT");
+    });
+
+    it("should reject request without authentication", async () => {
+        const res = await request(app)
+            .patch("/api/v1/tasks/1/ongoing");
+
+        expect(res.status).toBe(401);
+    });
+
+    it("should reject invalid task id", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .patch("/api/v1/tasks/abc/ongoing")
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+});
