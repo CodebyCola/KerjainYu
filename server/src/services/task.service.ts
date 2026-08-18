@@ -10,6 +10,7 @@ import {
   assertProjectLeader,
 } from "./helper/auhtorization.helper";
 import { db } from "../database/db";
+import { assertTaskAccess } from "./helper/task.helper";
 
 //POST /api/v1/projects/:id/tasks
 export async function createTask(
@@ -24,11 +25,7 @@ export async function createTask(
 
 //GET api/v1/tasks/:id
 export async function getTaskDetail(taskId: number, userId: number) {
-  const task = await taskRepo.getTaskById(taskId)
-  if (!task) {
-    throw new NotFoundError("Task Not Found")
-  }
-  await assertProjectMembership(task!.projectId, userId)
+  const task = await assertTaskAccess(taskId, userId)
   return task;
 }
 
