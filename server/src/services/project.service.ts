@@ -25,7 +25,7 @@ export async function createProjectWithLinks(
     const project = await projectRepo.createProject(projectInput, trx);
     await projectMemberRepo.setLeader(project.id, userId, trx);
     if (linksInput.length > 0) {
-      await projectLinkRepo.createLink(project.id, userId, linksInput, trx);
+      await projectLinkRepo.createLinks(project.id, userId, linksInput, trx);
     }
     return project;
   });

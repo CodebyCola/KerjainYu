@@ -52,13 +52,9 @@ export const updateProjectSchema = z
   )
   .openapi("UpdateProjectInput");
 
-export const projectIdParams = z.object({
-  id: z.coerce.number(),
-});
 
 export type CreateProjectWithLinksInput = z.infer<
   typeof createProjectWithLinksSchema
 >;
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
-export type ProjectIdParams = z.infer<typeof projectIdParams>;

@@ -1,8 +1,8 @@
 
 import z from 'zod';
-import { commentIdParams, createCommentSchema } from '../schemas/comment.task.schema';
+import { createCommentSchema } from '../schemas/comment.task.schema';
 import { registry } from './components';
-import { taskIdParams } from './params/id.params';
+import { idParams } from '../schemas/id.schema';
 
 
 registry.registerPath({
@@ -12,7 +12,7 @@ registry.registerPath({
     summary: "Get all comments on a task",
     description: "Accessible to any active member of the task's project.",
     security: [{ cookieAuth: [] }],
-    request: { params: taskIdParams },
+    request: { params: idParams },
     responses: {
         200: { description: "List of comments, ordered chronologically" },
         401: { description: "Not authenticated" },
@@ -29,7 +29,7 @@ registry.registerPath({
     description: "Accessible to any active member of the task's project.",
     security: [{ cookieAuth: [] }],
     request: {
-        params: taskIdParams,
+        params: idParams,
         body: { content: { "application/json": { schema: createCommentSchema } } },
     },
     responses: {
@@ -49,7 +49,7 @@ registry.registerPath({
     description: "Soft deletes a comment. Only the owner of the comment can delete it.",
     security: [{ cookieAuth: [] }],
     request: {
-        params: commentIdParams,
+        params: idParams,
     },
     responses: {
         200: {

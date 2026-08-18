@@ -7,6 +7,9 @@ import { userIdParams } from "../schemas/userSchema"
 import * as projectController from "../controllers/project.controller";
 import * as projectMemberController from "../controllers/project.member.controller"
 import * as taskSchema from "../schemas/task.schema";
+import { createProjectLinkSchema, updateProjectLinkSchema } from "../schemas/projectLinkSchema";
+import * as projectLinkController from "../controllers/project.link.controller"
+import { idParams } from "../schemas/id.schema";
 const router = Router();
 
 router.post(
@@ -22,17 +25,18 @@ router.post(
   validate(projectSchema.createProjectWithLinksSchema),
   projectController.createProject,
 );
-router.post("/:id/invitations", authenticate, validate(projectSchema.projectIdParams, "params"), validate(userIdParams, "body"), projectController.inviteMember)
+router.post("/:id/links", authenticate, validate(idParams, "params"), validate(createProjectLinkSchema, "body"), projectLinkController.createLink)
+router.post("/:id/invitations", authenticate, validate(idParams, "params"), validate(userIdParams, "body"), projectController.inviteMember)
 router.get(
   "/:id/tasks",
   authenticate,
-  validate(projectSchema.projectIdParams, "params"),
+  validate(idParams, "params"),
   projectController.getTasksByProject,
 );
 router.get(
   "/:id/members",
   authenticate,
-  validate(projectSchema.projectIdParams, "params"),
+  validate(idParams, "params"),
   projectMemberController.getMembersByProject,
 );
 router.patch("/:id/leader", authenticate, createLimiter, validate(userIdParams, "body"), projectMemberController.promoteToLeader)
