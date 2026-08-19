@@ -5,7 +5,6 @@ import { createTaskSchema } from '../schemas/task.schema';
 import { userIdParams } from '../schemas/userSchema';
 import { idParams } from '../schemas/id.schema';
 
-
 registry.registerPath({
     method: "post",
     path: "/api/v1/projects",
