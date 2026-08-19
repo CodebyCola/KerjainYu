@@ -1,8 +1,6 @@
 
-import * as projectRepo from "../database/repositories/project.repository";
+import * as taskRepo from "../database/repositories/task.repository"
 import * as projectMemberRepo from "../database/repositories/project.member.repository";
-import * as projectSchema from "../schemas/projectSchema";
-import { findById, findByUsername } from "../database/repositories/user.repository";
 import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
 import { ConflictError } from "../errors/AppError";
 import { db } from "../database/db";
@@ -28,5 +26,32 @@ export async function promoteToLeader(projectId: number, currentLeaderId: number
         const [newLeader] = await projectMemberRepo.updateMemberRole(projectId, prospectiveLeaderId, "leader", trx)
         await projectMemberRepo.updateMemberRole(projectId, currentLeaderId, "member", trx)
         return newLeader
+    })
+}
+
+//DELETE /api/v1/projects/:id/members/:userId
+export async function removeMember(projectId: number, leaderId: number, targetUserId: number) {
+    await assertProjectLeader(projectId, leaderId)
+    if (targetUserId == leaderId) {
+        throw new ConflictError("Leader cannot remove themselves, Transfer leadership first")
+    }
+    const { membership } = await assertProjectMembership(projectId, targetUserId)
+    if (membership.status !== "active") {
+        throw new ConflictError("That member is not active on that projecr")
+    }
+    return db.transaction(async (trx) => {
+        await projectMemberRepo.removeMember(projectId, targetUserId, trx)
+        await taskRepo.unassignTask(projectId, targetUserId, trx)
+    })
+}
+//POST /api/v1/projects/:id/leave
+export async function leaveProject(projectId: number, userId: number) {
+    const { membership } = await assertProjectMembership(projectId, userId)
+    if (membership.status !== "active") {
+        throw new ConflictError("Active member not found in this project")
+    }
+    return db.transaction(async (trx) => {
+        await projectMemberRepo.removeMember(projectId, userId, trx)
+        await taskRepo.unassignTask(projectId, userId, trx)
     })
 }

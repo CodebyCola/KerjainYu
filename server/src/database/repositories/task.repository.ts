@@ -68,3 +68,8 @@ export async function getTasksByProject(projectId: number, userId?: number) {
 export async function doTask(taskId: number) {
   return db("tasks").where({ id: taskId, status: "todo" }).update({ status: "ongoing" }).returning("*").then((rows) => rows[0])
 }
+
+export async function unassignTask(projectId: number, assigneeId: number, trx?: Knex.Transaction) {
+  const executor = trx || db
+  return executor("tasks").where({ project_id: projectId, assignee_id: assigneeId }).whereIn("status", ['todo', 'ongoing']).update({ assignee_id: null, status: "unclaimed" })
+}

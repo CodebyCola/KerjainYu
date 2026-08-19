@@ -10,6 +10,7 @@ import * as taskSchema from "../schemas/task.schema";
 import { createProjectLinkSchema, updateProjectLinkSchema } from "../schemas/projectLinkSchema";
 import * as projectLinkController from "../controllers/project.link.controller"
 import { idParams } from "../schemas/id.schema";
+import { removeMemberParams } from "../schemas/project.member.schema";
 const router = Router();
 
 router.post(
@@ -33,6 +34,8 @@ router.get(
   validate(idParams, "params"),
   projectController.getTasksByProject,
 );
+router.delete("/:id/members/:userId", authenticate, validate(removeMemberParams, "params"), projectMemberController.removeMember)
+router.post("/:id/leave", authenticate, validate(idParams, 'params'), projectMemberController.leaveProject)
 router.get(
   "/:id/members",
   authenticate,

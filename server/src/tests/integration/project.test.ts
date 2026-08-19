@@ -5,7 +5,6 @@ import { cleanDatabase, closeDb } from "../helpers/testDb";
 import { registerAndLogin } from "../helpers/auth";
 import { createProject } from "../helpers/project"
 
-
 afterAll(async () => {
   await closeDb();
 });
