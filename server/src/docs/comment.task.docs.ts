@@ -8,7 +8,7 @@ import { idParams } from '../schemas/id.schema';
 registry.registerPath({
     method: "get",
     path: "/api/v1/tasks/{id}/comments",
-    tags: ["Tasks"],
+    tags: ["Comment Tasks"],
     summary: "Get all comments on a task",
     description: "Accessible to any active member of the task's project.",
     security: [{ cookieAuth: [] }],
@@ -24,7 +24,7 @@ registry.registerPath({
 registry.registerPath({
     method: "post",
     path: "/api/v1/tasks/{id}/comments",
-    tags: ["Tasks"],
+    tags: ["Comment Tasks"],
     summary: "Add a comment to a task",
     description: "Accessible to any active member of the task's project.",
     security: [{ cookieAuth: [] }],
@@ -44,7 +44,7 @@ registry.registerPath({
 registry.registerPath({
     method: "delete",
     path: "/api/v1/comments/{id}",
-    tags: ["Tasks"],
+    tags: ["Comment Tasks"],
     summary: "Delete a comment",
     description: "Soft deletes a comment. Only the owner of the comment can delete it.",
     security: [{ cookieAuth: [] }],

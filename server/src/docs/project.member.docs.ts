@@ -44,7 +44,7 @@ registry.registerPath({
 registry.registerPath({
     method: "delete",
     path: "/api/v1/projects/{id}/members/{userId}",
-    tags: ["Projects"],
+    tags: ["Projects Members"],
     summary: "Remove a member from a project",
     description:
         "Allows the project leader to remove an active member from the project. All tasks assigned to the removed member in the project are automatically unassigned.",
@@ -84,7 +84,7 @@ registry.registerPath({
 registry.registerPath({
     method: "post",
     path: "/api/v1/projects/{id}/leave",
-    tags: ["Projects"],
+    tags: ["Projects Members"],
     summary: "Leave a project",
     description:
         "Allows an active project member to leave the project. All tasks assigned to the member in the project are automatically unassigned.",

@@ -2,5 +2,10 @@
 import { registry } from './components';
 import './auth.docs';
 import './project.docs';
-
+import './comment.task.docs'
+import './invitation.docs'
+import './project.link.docs'
+import './project.member.docs'
+import './user.docs'
+import './task.docs'
 export { registry };

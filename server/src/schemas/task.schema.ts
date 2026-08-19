@@ -62,6 +62,8 @@ export const updateTaskSchema = z
     },
   )
   .openapi("UpdateTaskInput");
+
+
 export type TaskStatusSchema = z.infer<typeof taskStatusSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTasktInput = z.infer<typeof updateTaskSchema>;
