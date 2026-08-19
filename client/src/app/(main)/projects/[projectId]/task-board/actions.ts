@@ -10,6 +10,7 @@ import {
   startTaskRequest,
   submitTaskRequest,
   reviewTaskRequest,
+  assignTaskRequest,
   createTaskCommentRequest,
   deleteTaskCommentRequest,
 } from "@/lib/api/tasks/tasks";
@@ -22,8 +23,6 @@ export type TransitionTaskState = {
   error: string | null;
 };
 
-// Payload opsional dipakai untuk "resume" (submit ulang setelah revisi tanpa
-// endpoint /start terpisah) dan "requestRevision"/"reject" (wajib catatan).
 export type TransitionTaskPayload = {
   note?: string;
   reviewNote?: string;
@@ -63,6 +62,36 @@ export async function transitionTaskAction(
     const cookieHeader = cookieStore.toString();
 
     await runTaskAction(taskId, action, cookieHeader, payload);
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message };
+    }
+    return {
+      success: false,
+      error: "Terjadi kesalahan tak terduga. Coba lagi.",
+    };
+  }
+
+  revalidatePath(projectRoutes(projectId).TASK_BOARD);
+  revalidatePath(taskDetailRoute(projectId, taskId));
+  return { success: true, error: null };
+}
+
+export type AssignTaskState = {
+  success: boolean;
+  error: string | null;
+};
+
+export async function assignTaskAction(
+  projectId: string,
+  taskId: number,
+  targetUserId: number,
+): Promise<AssignTaskState> {
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    await assignTaskRequest(taskId, targetUserId, cookieHeader);
   } catch (err) {
     if (err instanceof ApiRequestError) {
       return { success: false, error: err.message };

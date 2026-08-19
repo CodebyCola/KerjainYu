@@ -30,14 +30,12 @@ export default async function TaskDetailPage(props: { params: Promise<TaskDetail
         getTaskComments(taskId),
     ]);
 
-    // Task tidak ditemukan, atau ditemukan tapi milik project lain — di
-    // kedua kasus ini halaman detail dianggap tidak ada di route ini.
     if (!projectDetail || !task || String(task.projectId) !== String(projectId)) {
         notFound();
     }
 
     const isLeader = projectDetail.membership.role === "leader";
-    const assignee = members.find((member) => member.userId === task.assignee?.id);
+    const assignee = members.find((member) => String(member.userId) === String(task.assignee?.id));
 
     return (
         <div className="flex flex-col gap-4 pb-6">
@@ -50,6 +48,7 @@ export default async function TaskDetailPage(props: { params: Promise<TaskDetail
                 projectId={projectId}
                 currentUserId={user?.id ?? -1}
                 isLeader={isLeader}
+                members={members}
             />
 
             {task.latestSubmission && <TaskSubmissionPanel submission={task.latestSubmission} />}

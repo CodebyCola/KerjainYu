@@ -26,7 +26,7 @@ export default function TaskCommentItem({ comment, projectId, taskId }: TaskComm
     const user = useSession();
     const [isPending, startTransition] = useTransition();
     const [confirmingDelete, setConfirmingDelete] = useState(false);
-    const isOwner = user?.id === comment.userId;
+    const isOwner = user != null && String(user.id) === String(comment.userId);
 
     function handleDelete() {
         startTransition(async () => {

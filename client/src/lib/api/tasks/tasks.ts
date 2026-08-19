@@ -74,6 +74,18 @@ export function claimTaskRequest(taskId: number, cookie: string) {
   });
 }
 
+export function assignTaskRequest(
+  taskId: number,
+  userId: number,
+  cookie: string,
+) {
+  return apiFetch<Task>(`${taskPath(taskId)}/assign`, {
+    method: "PATCH",
+    body: { userId },
+    cookie,
+  });
+}
+
 export function startTaskRequest(taskId: number, cookie: string) {
   return apiFetch<Task>(`${taskPath(taskId)}/start`, {
     method: "POST",

@@ -59,12 +59,12 @@ export default function TaskBoardCard({
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const overdue = isOverdue(task);
-    const assignee = members.find((member) => member.userId === task.assignee?.id);
+    const assignee = members.find((member) => String(member.userId) === String(task.assignee?.id));
     const detailHref = taskDetailRoute(projectId, task.id);
 
     const actions = getAvailableActions(task.status).filter((definition) => {
         if (definition.actor === "leader") return isLeader;
-        if (definition.actor === "assignee") return task.assignee?.id === currentUserId;
+        if (definition.actor === "assignee") return String(task.assignee?.id) === String(currentUserId);
         return true; // "member" — siapapun anggota project boleh klaim
     });
 

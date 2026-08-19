@@ -8,7 +8,6 @@ type ProjectOverviewPageProps = {
 export default async function ProjectOverviewPage({ params }: ProjectOverviewPageProps) {
     const { projectId } = await params;
     const detail = await getProject(projectId);
-    console.log(detail);
     if (!detail) {
         notFound();
     }
