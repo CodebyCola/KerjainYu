@@ -16,7 +16,6 @@ registry.registerPath({
     }
 })
 
-
 registry.registerPath({
     method: "patch",
     path: "/api/v1/projects/{id}/leader",

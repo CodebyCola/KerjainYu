@@ -36,7 +36,7 @@ export async function updateTask(
   return executor("tasks").where("id", taskId).update(data).returning("*").then((rows) => rows[0]);
 }
 
-export async function claimTask(taskId: number, assigneeId: number, trx?: Knex.Transaction) {
+export async function assignTask(taskId: number, assigneeId: number, trx?: Knex.Transaction) {
   const executor = trx || db;
   return executor("tasks").where({ id: taskId, status: "unclaimed" }).update({ assigneeId: assigneeId, status: "todo" }).select("id,assignee_id,status").returning("*")
     .then((rows) => rows[0]);
