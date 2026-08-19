@@ -1,13 +1,23 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CalendarDays, Loader2 } from "lucide-react";
 import { Task } from "@/types/task";
 import { ProjectMember } from "@/types/project";
 import { STATUS_STYLE, STATUS_LABEL, getAvailableActions, ActionDefinition } from "@/lib/api/tasks/taskStatus";
 import { cn } from "@/utils/cn";
 import { getInitials } from "@/utils/getInitials";
+import { taskDetailRoute } from "@/lib/routes";
 import { transitionTaskAction } from "@/app/(main)/projects/[projectId]/task-board/actions";
+
+const ACTIONS_REQUIRING_DETAIL: ActionDefinition["action"][] = [
+    "submit",
+    "resume",
+    "requestRevision",
+    "reject",
+];
 
 type TaskBoardCardProps = {
     task: Task;
@@ -45,10 +55,12 @@ export default function TaskBoardCard({
     members,
     onOptimisticAction,
 }: TaskBoardCardProps) {
+    const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const overdue = isOverdue(task);
     const assignee = members.find((member) => member.userId === task.assignee?.id);
+    const detailHref = taskDetailRoute(projectId, task.id);
 
     const actions = getAvailableActions(task.status).filter((definition) => {
         if (definition.actor === "leader") return isLeader;
@@ -57,6 +69,11 @@ export default function TaskBoardCard({
     });
 
     function handleAction(definition: ActionDefinition) {
+        if (ACTIONS_REQUIRING_DETAIL.includes(definition.action)) {
+            router.push(detailHref);
+            return;
+        }
+
         setError(null);
         onOptimisticAction?.(task.id, definition.nextStatus);
 
@@ -70,8 +87,8 @@ export default function TaskBoardCard({
 
     return (
         <div className="rounded-xl border border-border bg-card p-3.5 transition-colors hover:border-primary">
-            <div className="flex items-start justify-between gap-2">
-                <h4 className="font-inter text-sm font-medium text-foreground">{task.title}</h4>
+            <Link href={detailHref} className="flex items-start justify-between gap-2">
+                <h4 className="font-inter text-sm font-medium text-foreground hover:underline">{task.title}</h4>
                 <span
                     className={cn(
                         "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-inter font-medium",
@@ -80,7 +97,7 @@ export default function TaskBoardCard({
                 >
                     {STATUS_LABEL[task.status]}
                 </span>
-            </div>
+            </Link>
 
             <div className="mt-2.5 flex items-center justify-between gap-2">
                 {task.deadline ? (
