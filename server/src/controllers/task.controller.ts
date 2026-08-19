@@ -65,3 +65,15 @@ export async function doTask(req: AuthRequest, res: Response, next: NextFunction
     next(error)
   }
 }
+
+//PATCH /api/v1/tasks/:id/assign
+export async function assignTask(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const taskId = Number(req.params.id)
+    const targetUserId = Number(req.body.userId)
+    const task = await taskService.assignTask(taskId, req.user!.id, targetUserId)
+    res.status(200).json({ success: true, message: "Successfuly assign task to member", data: task })
+  } catch (error) {
+    next(error)
+  }
+}

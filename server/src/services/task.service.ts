@@ -61,13 +61,52 @@ export async function claimTask(taskId: number, userId: number) {
     throw new ConflictError("This task is not claimable, only the leader who can assign the tasks")
   }
   return db.transaction(async (trx) => {
-    const claimed = await taskRepo.claimTask(taskId, userId, trx)
+    const claimed = await taskRepo.assignTask(taskId, userId, trx)
     if (!claimed) {
       throw new ConflictError("This task has already been claimed by the other members")
     }
     await taskOwnershipLogRepo.createTaskLogOwnership({ taskId: taskId, fromUserId: null, toUserId: userId, reason: "claimed" }, trx)
     return claimed
   })
+}
+
+//PATCH /api/v1/tasks/:id/assign
+export async function assignTask(taskId: number, leaderId: number, targetUserId: number) {
+  const task = await taskRepo.getTaskById(taskId)
+  if (!task) {
+    throw new NotFoundError("Task is not found")
+  }
+  if (task.assigneeId !== null) {
+    throw new ConflictError("This task is already assign to other member")
+  }
+  await assertProjectLeader(task.projectId, leaderId)
+  await assertProjectMembership(task.projectId, targetUserId)
+  return db.transaction(async (trx) => {
+
+    const assigned = await taskRepo.assignTask(
+      taskId,
+      targetUserId,
+      trx
+    );
+
+    if (!assigned) {
+      throw new ConflictError(
+        "This task has already been assigned to another member"
+      );
+    }
+
+    await taskOwnershipLogRepo.createTaskLogOwnership(
+      {
+        taskId,
+        fromUserId: null,
+        toUserId: targetUserId,
+        reason: "assigned",
+      },
+      trx
+    );
+
+    return assigned;
+  });
 }
 
 //PATCH /api/v1/tasks/:id/ongoing

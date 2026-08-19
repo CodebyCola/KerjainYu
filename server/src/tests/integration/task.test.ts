@@ -4,6 +4,7 @@ import app from '../../app';
 import { cleanDatabase, closeDb } from '../helpers/testDb';
 import { registerAndLogin } from '../helpers/auth';
 import { createProject, inviteAndAccept } from '../helpers/project';
+import { db } from '../../database/db';
 
 async function createTask(leaderCookie: string, projectId: number, overrides: Record<string, any> = {}) {
     return request(app)
@@ -584,4 +585,282 @@ describe("PATCH /api/v1/tasks/:id/ongoing", () => {
         expect(res.status).toBe(400);
         expect(res.body.error.code).toBe("VALIDATION_ERROR");
     });
+});
+
+describe("PATCH /api/v1/tasks/:id/assign", () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    });
+
+    it("should allow the project leader to assign an unclaimed task", async () => {
+        const leader = await registerAndLogin("leader");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", leader.cookie)
+            .send({
+                title: "Implement login",
+                description: "Create authentication flow",
+            });
+
+        expect(taskRes.status).toBe(201);
+
+        const taskId = taskRes.body.data.id;
+
+        const assignRes = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/assign`)
+            .set("Cookie", leader.cookie)
+            .send({
+                userId: member.userId,
+            });
+
+        expect(assignRes.status).toBe(200);
+        expect(assignRes.body.success).toBe(true);
+
+        const task = await db("tasks")
+            .where({ id: taskId })
+            .first();
+
+        expect(task.assigneeId).toBe(member.userId);
+        expect(task.status).toBe("todo");
+    });
+
+    it("should reject assignment from a non-leader member", async () => {
+        const leader = await registerAndLogin("leader");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        const target = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "budi"
+        );
+
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", leader.cookie)
+            .send({
+                title: "Implement login",
+                description: "Create authentication flow",
+            });
+
+        const taskId = taskRes.body.data.id;
+
+        const assignRes = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/assign`)
+            .set("Cookie", member.cookie)
+            .send({
+                userId: target.userId,
+            });
+
+        expect(assignRes.status).toBe(403);
+        expect(assignRes.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("should reject assigning a task to a non-member", async () => {
+        const leader = await registerAndLogin("leader");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const stranger = await registerAndLogin("stranger");
+
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", leader.cookie)
+            .send({
+                title: "Implement login",
+                description: "Create authentication flow",
+            });
+
+        const taskId = taskRes.body.data.id;
+
+        const assignRes = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/assign`)
+            .set("Cookie", leader.cookie)
+            .send({
+                userId: stranger.userId,
+            });
+
+        expect(assignRes.status).toBe(403);
+        expect(assignRes.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("should reject assigning an already assigned task", async () => {
+        const leader = await registerAndLogin("leader");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const sari = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        const budi = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "budi"
+        );
+
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", leader.cookie)
+            .send({
+                title: "Implement login",
+                description: "Create authentication flow",
+            });
+
+        const taskId = taskRes.body.data.id;
+
+        const firstAssign = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/assign`)
+            .set("Cookie", leader.cookie)
+            .send({
+                userId: sari.userId,
+            });
+
+        expect(firstAssign.status).toBe(200);
+
+        const secondAssign = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/assign`)
+            .set("Cookie", leader.cookie)
+            .send({
+                userId: budi.userId,
+            });
+
+        expect(secondAssign.status).toBe(409);
+        expect(secondAssign.body.error.code).toBe("CONFLICT");
+
+        const task = await db("tasks")
+            .where({ id: taskId })
+            .first();
+
+        expect(task.assigneeId).toBe(sari.userId);
+    });
+
+    it("should reject assigning a non-existent task", async () => {
+        const { cookie } = await registerAndLogin("leader");
+
+        const res = await request(app)
+            .patch("/api/v1/tasks/999999/assign")
+            .set("Cookie", cookie)
+            .send({
+                userId: 123,
+            });
+
+        expect(res.status).toBe(404);
+        expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("should reject an invalid task id", async () => {
+        const { cookie } = await registerAndLogin("leader");
+
+        const res = await request(app)
+            .patch("/api/v1/tasks/abc/assign")
+            .set("Cookie", cookie)
+            .send({
+                userId: 123,
+            });
+
+        expect(res.status).toBe(400);
+    });
+
+    it("should reject invalid request body", async () => {
+        const { cookie } = await registerAndLogin("leader");
+
+        const res = await request(app)
+            .patch("/api/v1/tasks/1/assign")
+            .set("Cookie", cookie)
+            .send({
+                userId: "not-a-number",
+            });
+
+        expect(res.status).toBe(400);
+    });
+
+    it("should reject assignment without authentication", async () => {
+        const res = await request(app)
+            .patch("/api/v1/tasks/1/assign")
+            .send({
+                userId: 1,
+            });
+
+        expect(res.status).toBe(401);
+    });
+    it("should allow only one operation when claim and assign happen concurrently", async () => {
+        const leader = await registerAndLogin("leader");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const sari = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        const budi = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "budi"
+        );
+
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", leader.cookie)
+            .send({
+                title: "Implement authentication",
+                description: "Build authentication system",
+            });
+
+        const taskId = taskRes.body.data.id;
+
+        const [assignRes, claimRes] = await Promise.all([
+            request(app)
+                .patch(`/api/v1/tasks/${taskId}/assign`)
+                .set("Cookie", leader.cookie)
+                .send({
+                    userId: sari.userId,
+                }),
+
+            request(app)
+                .patch(`/api/v1/tasks/${taskId}/claim`)
+                .set("Cookie", budi.cookie),
+        ]);
+
+        const successful = [assignRes, claimRes]
+            .filter((res) => res.status === 200);
+
+        const conflicts = [assignRes, claimRes]
+            .filter((res) => res.status === 409);
+
+        expect(successful).toHaveLength(1);
+        expect(conflicts).toHaveLength(1);
+
+        const task = await db("tasks")
+            .where({ id: taskId })
+            .first();
+
+        expect(task.status).toBe("todo");
+        expect([sari.userId, budi.userId]).toContain(task.assigneeId);
+    });
+
 });
