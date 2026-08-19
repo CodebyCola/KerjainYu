@@ -5,7 +5,7 @@ import { registry } from './components';
 registry.registerPath({
     method: "post",
     path: "/api/v1/projects/{id}/links",
-    tags: ["Projects"],
+    tags: ["Project Links"],
     summary: "Add a link to a project",
     description: "Only the project leader can add a link to the project.",
     security: [{ cookieAuth: [] }],
@@ -46,7 +46,7 @@ registry.registerPath({
 registry.registerPath({
     method: "patch",
     path: "/api/v1/links/{id}",
-    tags: ["Projects"],
+    tags: ["Project Links"],
     summary: "Update a project link",
     description: "Only the project leader can update a project link.",
     security: [{ cookieAuth: [] }],
@@ -87,7 +87,7 @@ registry.registerPath({
 registry.registerPath({
     method: "delete",
     path: "/api/v1/links/{id}",
-    tags: ["Projects"],
+    tags: ["Project Links"],
     summary: "Delete a project link",
     description: "Only the project leader can delete a project link.",
     security: [{ cookieAuth: [] }],

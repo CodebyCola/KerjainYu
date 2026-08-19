@@ -1,6 +1,6 @@
 import { registry } from './components';
 import { updateInvitationSchema } from '../schemas/invitation.schema';
-import { membershipIdParams } from '../schemas/invitation.schema';
+import { idParams } from '../schemas/id.schema';
 
 registry.registerPath({
     method: "get",
@@ -22,7 +22,7 @@ registry.registerPath({
     description: "Only the invited user may respond. Responding twice to the same invitation returns 409.",
     security: [{ cookieAuth: [] }],
     request: {
-        params: membershipIdParams,
+        params: idParams,
         body: { content: { "application/json": { schema: updateInvitationSchema } } },
     },
     responses: {
