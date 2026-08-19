@@ -3,6 +3,7 @@ import { getSession } from "@/lib/api/auth/session";
 import { getProject } from "@/lib/api/projects/projects";
 import { getProjectMembers } from "@/lib/api/members/members";
 import { getTaskDetailData, getTaskComments } from "@/lib/api/tasks/tasks";
+import { findTaskAssignee } from "@/lib/api/tasks/taskAssignee";
 import TaskDetailHeader from "@/components/features/task-detail/TaskDetailHeader";
 import TaskDetailInfo from "@/components/features/task-detail/TaskDetailInfo";
 import TaskDetailActions from "@/components/features/task-detail/TaskDetailActions";
@@ -29,13 +30,13 @@ export default async function TaskDetailPage(props: { params: Promise<TaskDetail
         getTaskDetailData(taskId),
         getTaskComments(taskId),
     ]);
-
+    
     if (!projectDetail || !task || String(task.projectId) !== String(projectId)) {
         notFound();
     }
 
     const isLeader = projectDetail.membership.role === "leader";
-    const assignee = members.find((member) => String(member.userId) === String(task.assignee?.id));
+    const assignee = findTaskAssignee(task, members);
 
     return (
         <div className="flex flex-col gap-4 pb-6">

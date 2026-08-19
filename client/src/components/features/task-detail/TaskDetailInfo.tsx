@@ -1,6 +1,7 @@
 import { CalendarDays, ListOrdered, User } from "lucide-react";
 import { Task } from "@/types/task";
 import { ProjectMember } from "@/types/project";
+import { resolveTaskAssigneeId } from "@/lib/api/tasks/taskAssignee";
 import { cn } from "@/utils/cn";
 import { getInitials } from "@/utils/getInitials";
 
@@ -25,6 +26,9 @@ function isOverdue(task: Task) {
 
 export default function TaskDetailInfo({ task, assignee }: TaskDetailInfoProps) {
     const overdue = isOverdue(task);
+    const assigneeId = resolveTaskAssigneeId(task);
+    const hasAssignee = assigneeId !== null;
+    const assigneeName = assignee?.username ?? task.assignee?.username;
 
     return (
         <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
@@ -73,9 +77,9 @@ export default function TaskDetailInfo({ task, assignee }: TaskDetailInfoProps) 
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                    {task.assignee ? (
+                    {hasAssignee ? (
                         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-role-member-bg text-[11px] font-inter font-semibold text-role-member-text">
-                            {getInitials(assignee?.username ?? task.assignee.username)}
+                            {getInitials(assigneeName ?? `#${assigneeId}`)}
                         </div>
                     ) : (
                         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-status-todo-bg">
@@ -85,7 +89,7 @@ export default function TaskDetailInfo({ task, assignee }: TaskDetailInfoProps) 
                     <div className="flex min-w-0 flex-col">
                         <span className="text-[11px] font-inter text-muted">Penanggung jawab</span>
                         <span className="truncate text-sm font-inter font-medium text-foreground">
-                            {task.assignee ? (assignee?.username ?? task.assignee.username) : "Belum diklaim"}
+                            {hasAssignee ? (assigneeName ?? `User #${assigneeId}`) : "Belum diklaim"}
                         </span>
                     </div>
                 </div>

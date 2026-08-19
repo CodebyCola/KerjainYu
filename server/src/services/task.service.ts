@@ -10,7 +10,7 @@ import {
   assertProjectLeader,
 } from "./helper/auhtorization.helper";
 import { db } from "../database/db";
-import { assertTaskAccess } from "./helper/task.helper";
+import { assertTaskAccess, assertTaskDetailAccess } from "./helper/task.helper";
 
 //POST /api/v1/projects/:id/tasks
 export async function createTask(
@@ -25,7 +25,7 @@ export async function createTask(
 
 //GET api/v1/tasks/:id
 export async function getTaskDetail(taskId: number, userId: number) {
-  const task = await assertTaskAccess(taskId, userId)
+  const task = await assertTaskDetailAccess(taskId, userId)
   return task;
 }
 
@@ -126,4 +126,3 @@ export async function doTask(taskId: number, userId: number) {
   }
   return updated
 }
-

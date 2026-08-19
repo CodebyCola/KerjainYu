@@ -45,6 +45,49 @@ export async function getTaskById(taskId: number): Promise<Task | undefined> {
   return db<Task>("tasks").where("id", taskId).first();
 }
 
+export async function getTaskDetailWithRelations(taskId: number) {
+  const task = await db("tasks")
+    .leftJoin("users", "tasks.assignee_id", "users.id")
+    .where("tasks.id", taskId)
+    .select([
+      "tasks.id",
+      "tasks.title",
+      "tasks.description",
+      "tasks.status",
+      "tasks.priority",
+      "tasks.display_order",
+      "tasks.project_id",
+      "tasks.deadline",
+      "tasks.assignee_id",
+      "tasks.created_by",
+      "tasks.is_claimable",
+      "tasks.created_at",
+      "tasks.updated_at",
+      db.raw('"users"."id" as "assigneeUserId"'),
+      db.raw('"users"."username" as "assigneeUsername"'),
+      db.raw('"users"."avatar_url" as "assigneeAvatarUrl"'),
+    ])
+    .first();
+
+  if (!task) return undefined;
+
+  const latestSubmission = await db("task_submissions")
+    .where("task_id", taskId)
+    .orderBy("submitted_at", "desc")
+    .first();
+
+  const { assigneeUserId, assigneeUsername, assigneeAvatarUrl, ...taskFields } = task;
+
+  return {
+    ...taskFields,
+    assignee:
+      assigneeUserId != null
+        ? { id: assigneeUserId, username: assigneeUsername, avatarUrl: assigneeAvatarUrl }
+        : null,
+    latestSubmission: latestSubmission ?? null,
+  };
+}
+
 export async function getTasksByUser(userId: number) {
   return db("tasks")
     .join("projects", "projects.id", "tasks.project_id")

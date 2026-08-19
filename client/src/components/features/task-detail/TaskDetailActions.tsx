@@ -6,6 +6,7 @@ import { Loader2, UserPlus } from "lucide-react";
 import { Task } from "@/types/task";
 import { ProjectMember } from "@/types/project";
 import { getAvailableActions, ActionDefinition } from "@/lib/api/tasks/taskStatus";
+import { isTaskAssignee, resolveTaskAssigneeId } from "@/lib/api/tasks/taskAssignee";
 import { cn } from "@/utils/cn";
 import { transitionTaskAction } from "@/app/(main)/projects/[projectId]/task-board/actions";
 import TaskActionModal from "@/components/features/task-detail/TaskActionModal";
@@ -44,11 +45,10 @@ export default function TaskDetailActions({ task, projectId, currentUserId, isLe
 
     const actions = getAvailableActions(task.status).filter((definition) => {
         if (definition.actor === "leader") return isLeader;
-        if (definition.actor === "assignee") return String(task.assignee?.id) === String(currentUserId);
+        if (definition.actor === "assignee") return isTaskAssignee(task, currentUserId);
         return true; // "member" — siapapun anggota project boleh klaim
     });
-
-    const canAssign = isLeader && !task.assignee;
+    const canAssign = isLeader && resolveTaskAssigneeId(task) === null;
 
     if (actions.length === 0 && !canAssign) return null;
 

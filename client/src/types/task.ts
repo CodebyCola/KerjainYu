@@ -42,6 +42,7 @@ export type Task = {
   displayOrder: number;
   projectId: number;
   deadline: string | null;
+  assigneeId?: number | null;
   assignee?: TaskAssignee | null;
   createdBy: number;
   isClaimable: boolean;

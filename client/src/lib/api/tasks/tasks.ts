@@ -87,8 +87,8 @@ export function assignTaskRequest(
 }
 
 export function startTaskRequest(taskId: number, cookie: string) {
-  return apiFetch<Task>(`${taskPath(taskId)}/start`, {
-    method: "POST",
+  return apiFetch<Task>(`${taskPath(taskId)}/ongoing`, {
+    method: "PATCH",
     cookie,
   });
 }
@@ -99,7 +99,7 @@ export function submitTaskRequest(
   cookie: string,
 ) {
   return apiFetch<TaskDetail>(`${taskPath(taskId)}/submit`, {
-    method: "POST",
+    method: "PATCH",
     body: { note: note || undefined },
     cookie,
   });
@@ -114,7 +114,7 @@ export function reviewTaskRequest(
   cookie: string,
 ) {
   return apiFetch<TaskDetail>(`${taskPath(taskId)}/review`, {
-    method: "POST",
+    method: "PATCH",
     body: { decision, reviewNote: reviewNote || undefined },
     cookie,
   });

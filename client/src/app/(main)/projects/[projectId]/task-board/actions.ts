@@ -37,7 +37,7 @@ async function runTaskAction(
   switch (action) {
     case "claim":
       return claimTaskRequest(taskId, cookie);
-    case "start":
+    case "ongoing":
       return startTaskRequest(taskId, cookie);
     case "submit":
     case "resume":

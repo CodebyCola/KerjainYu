@@ -7,6 +7,7 @@ import { CalendarDays, Loader2 } from "lucide-react";
 import { Task } from "@/types/task";
 import { ProjectMember } from "@/types/project";
 import { STATUS_STYLE, STATUS_LABEL, getAvailableActions, ActionDefinition } from "@/lib/api/tasks/taskStatus";
+import { isTaskAssignee, findTaskAssignee, resolveTaskAssigneeId } from "@/lib/api/tasks/taskAssignee";
 import { cn } from "@/utils/cn";
 import { getInitials } from "@/utils/getInitials";
 import { taskDetailRoute } from "@/lib/routes";
@@ -59,12 +60,13 @@ export default function TaskBoardCard({
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const overdue = isOverdue(task);
-    const assignee = members.find((member) => String(member.userId) === String(task.assignee?.id));
+    const assignee = findTaskAssignee(task, members);
+    const assigneeId = resolveTaskAssigneeId(task);
     const detailHref = taskDetailRoute(projectId, task.id);
 
     const actions = getAvailableActions(task.status).filter((definition) => {
         if (definition.actor === "leader") return isLeader;
-        if (definition.actor === "assignee") return String(task.assignee?.id) === String(currentUserId);
+        if (definition.actor === "assignee") return isTaskAssignee(task, currentUserId);
         return true; // "member" — siapapun anggota project boleh klaim
     });
 
@@ -114,9 +116,9 @@ export default function TaskBoardCard({
                     <span />
                 )}
 
-                {task.assignee?.id != null && (
+                {assigneeId !== null && (
                     <div
-                        title={assignee?.username ?? `User #${task.assignee?.id}`}
+                        title={assignee?.username ?? `User #${assigneeId}`}
                         className="flex size-6 items-center justify-center rounded-full bg-role-member-bg text-[10px] font-inter font-semibold text-role-member-text"
                     >
                         {assignee ? getInitials(assignee.username) : "?"}

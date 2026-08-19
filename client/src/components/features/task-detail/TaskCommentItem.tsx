@@ -26,6 +26,8 @@ export default function TaskCommentItem({ comment, projectId, taskId }: TaskComm
     const user = useSession();
     const [isPending, startTransition] = useTransition();
     const [confirmingDelete, setConfirmingDelete] = useState(false);
+    // Bandingkan sebagai string — kolom bigint dari backend bisa berupa
+    // string di JSON walau tipe TS-nya `number`.
     const isOwner = user != null && String(user.id) === String(comment.userId);
 
     function handleDelete() {
