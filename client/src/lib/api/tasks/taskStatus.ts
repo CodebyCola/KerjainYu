@@ -2,7 +2,7 @@ import { TaskStatus } from "@/types/task";
 
 // Alur status task (state machine). Lihat server/TASK_BOARD_BACKEND.md §1
 // untuk kontrak lengkap dengan backend — daftar ini harus tetap sinkron.
-export type TaskAction = "claim" | "start" | "submit" | "resume" | "approve" | "requestRevision" | "reject";
+export type TaskAction = "claim" | "ongoing" | "submit" | "resume" | "approve" | "requestRevision" | "reject";
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
     unclaimed: "Unclaimed",
@@ -41,7 +41,7 @@ export const AVAILABLE_ACTIONS: Record<TaskStatus, ActionDefinition[]> = {
         { action: "claim", label: "Klaim tugas", actor: "member", nextStatus: "todo", variant: "primary" },
     ],
     todo: [
-        { action: "start", label: "Mulai kerjakan", actor: "assignee", nextStatus: "ongoing", variant: "primary" },
+        { action: "ongoing", label: "Mulai kerjakan", actor: "assignee", nextStatus: "ongoing", variant: "primary" },
     ],
     ongoing: [
         { action: "submit", label: "Submit hasil", actor: "assignee", nextStatus: "submitted", variant: "primary" },

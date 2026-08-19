@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { MyTask, Task } from "@/types/task";
+import { MyTask, Task, TaskDetail, TaskComment } from "@/types/task";
 import { apiFetch } from "../fetcher";
 
 const MY_TASKS_PATH = "/tasks";
@@ -70,6 +70,111 @@ export function createTaskRequest(
 export function claimTaskRequest(taskId: number, cookie: string) {
   return apiFetch<Task>(`${taskPath(taskId)}/claim`, {
     method: "PATCH",
+    cookie,
+  });
+}
+
+export function assignTaskRequest(
+  taskId: number,
+  userId: number,
+  cookie: string,
+) {
+  return apiFetch<Task>(`${taskPath(taskId)}/assign`, {
+    method: "PATCH",
+    body: { userId },
+    cookie,
+  });
+}
+
+export function startTaskRequest(taskId: number, cookie: string) {
+  return apiFetch<Task>(`${taskPath(taskId)}/ongoing`, {
+    method: "PATCH",
+    cookie,
+  });
+}
+
+export function submitTaskRequest(
+  taskId: number,
+  note: string | undefined,
+  cookie: string,
+) {
+  return apiFetch<TaskDetail>(`${taskPath(taskId)}/submit`, {
+    method: "PATCH",
+    body: { note: note || undefined },
+    cookie,
+  });
+}
+
+export type ReviewDecision = "approved" | "in_revision" | "rejected";
+
+export function reviewTaskRequest(
+  taskId: number,
+  decision: ReviewDecision,
+  reviewNote: string | undefined,
+  cookie: string,
+) {
+  return apiFetch<TaskDetail>(`${taskPath(taskId)}/review`, {
+    method: "PATCH",
+    body: { decision, reviewNote: reviewNote || undefined },
+    cookie,
+  });
+}
+
+export function getTaskDetailRequest(taskId: number, cookie: string) {
+  return apiFetch<TaskDetail>(taskPath(taskId), { cookie });
+}
+
+export const getTaskDetailData = cache(
+  async (taskId: number): Promise<TaskDetail | null> => {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    try {
+      const { data } = await getTaskDetailRequest(taskId, cookieHeader);
+      return data;
+    } catch {
+      return null;
+    }
+  },
+);
+
+function taskCommentsPath(taskId: number) {
+  return `${taskPath(taskId)}/comments`;
+}
+
+export function getTaskCommentsRequest(taskId: number, cookie: string) {
+  return apiFetch<TaskComment[]>(taskCommentsPath(taskId), { cookie });
+}
+
+export const getTaskComments = cache(
+  async (taskId: number): Promise<TaskComment[]> => {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    try {
+      const { data } = await getTaskCommentsRequest(taskId, cookieHeader);
+      return data;
+    } catch {
+      return [];
+    }
+  },
+);
+
+export function createTaskCommentRequest(
+  taskId: number,
+  comment: string,
+  cookie: string,
+) {
+  return apiFetch<TaskComment>(taskCommentsPath(taskId), {
+    method: "POST",
+    body: { comment },
+    cookie,
+  });
+}
+
+export function deleteTaskCommentRequest(commentId: number, cookie: string) {
+  return apiFetch<null>(`/comments/${commentId}`, {
+    method: "DELETE",
     cookie,
   });
 }

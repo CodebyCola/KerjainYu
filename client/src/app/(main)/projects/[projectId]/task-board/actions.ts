@@ -4,35 +4,50 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { ApiRequestError } from "@/lib/api/apiRequestError";
 import { TaskAction } from "@/lib/api/tasks/taskStatus";
-import { claimTaskRequest, createTaskRequest } from "@/lib/api/tasks/tasks";
+import {
+  claimTaskRequest,
+  createTaskRequest,
+  startTaskRequest,
+  submitTaskRequest,
+  reviewTaskRequest,
+  assignTaskRequest,
+  createTaskCommentRequest,
+  deleteTaskCommentRequest,
+} from "@/lib/api/tasks/tasks";
 import { TaskFormState } from "@/lib/api/tasks/taskFormState";
 import { validateCreateTaskFields } from "@/lib/validation/taskSchema";
-import { projectRoutes } from "@/lib/routes";
+import { projectRoutes, taskDetailRoute } from "@/lib/routes";
 
 export type TransitionTaskState = {
   success: boolean;
   error: string | null;
 };
 
+export type TransitionTaskPayload = {
+  note?: string;
+  reviewNote?: string;
+};
+
 async function runTaskAction(
   taskId: number,
   action: TaskAction,
   cookie: string,
+  payload?: TransitionTaskPayload,
 ) {
   switch (action) {
     case "claim":
       return claimTaskRequest(taskId, cookie);
-    case "start":
+    case "ongoing":
+      return startTaskRequest(taskId, cookie);
     case "submit":
     case "resume":
+      return submitTaskRequest(taskId, payload?.note, cookie);
     case "approve":
+      return reviewTaskRequest(taskId, "approved", payload?.reviewNote, cookie);
     case "requestRevision":
+      return reviewTaskRequest(taskId, "in_revision", payload?.reviewNote, cookie);
     case "reject":
-      throw new ApiRequestError({
-        code: "NOT_IMPLEMENTED",
-        message: "Aksi ini belum didukung oleh server.",
-        httpStatus: 501,
-      });
+      return reviewTaskRequest(taskId, "rejected", payload?.reviewNote, cookie);
   }
 }
 
@@ -40,12 +55,13 @@ export async function transitionTaskAction(
   projectId: string,
   taskId: number,
   action: TaskAction,
+  payload?: TransitionTaskPayload,
 ): Promise<TransitionTaskState> {
   try {
     const cookieStore = await cookies();
     const cookieHeader = cookieStore.toString();
 
-    await runTaskAction(taskId, action, cookieHeader);
+    await runTaskAction(taskId, action, cookieHeader, payload);
   } catch (err) {
     if (err instanceof ApiRequestError) {
       return { success: false, error: err.message };
@@ -57,6 +73,37 @@ export async function transitionTaskAction(
   }
 
   revalidatePath(projectRoutes(projectId).TASK_BOARD);
+  revalidatePath(taskDetailRoute(projectId, taskId));
+  return { success: true, error: null };
+}
+
+export type AssignTaskState = {
+  success: boolean;
+  error: string | null;
+};
+
+export async function assignTaskAction(
+  projectId: string,
+  taskId: number,
+  targetUserId: number,
+): Promise<AssignTaskState> {
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    await assignTaskRequest(taskId, targetUserId, cookieHeader);
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message };
+    }
+    return {
+      success: false,
+      error: "Terjadi kesalahan tak terduga. Coba lagi.",
+    };
+  }
+
+  revalidatePath(projectRoutes(projectId).TASK_BOARD);
+  revalidatePath(taskDetailRoute(projectId, taskId));
   return { success: true, error: null };
 }
 
@@ -102,5 +149,68 @@ export async function createTaskAction(
   }
 
   revalidatePath(projectRoutes(projectId).TASK_BOARD);
+  return { success: true, error: null };
+}
+
+export type CommentActionState = {
+  success: boolean;
+  error: string | null;
+};
+
+export async function createTaskCommentAction(
+  projectId: string,
+  taskId: number,
+  _prevState: CommentActionState,
+  formData: FormData,
+): Promise<CommentActionState> {
+  const comment = String(formData.get("comment") ?? "").trim();
+
+  if (!comment) {
+    return { success: false, error: "Komentar tidak boleh kosong." };
+  }
+  if (comment.length > 1000) {
+    return { success: false, error: "Komentar maksimal 1000 karakter." };
+  }
+
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    await createTaskCommentRequest(taskId, comment, cookieHeader);
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message };
+    }
+    return {
+      success: false,
+      error: "Terjadi kesalahan tak terduga. Coba lagi.",
+    };
+  }
+
+  revalidatePath(taskDetailRoute(projectId, taskId));
+  return { success: true, error: null };
+}
+
+export async function deleteTaskCommentAction(
+  projectId: string,
+  taskId: number,
+  commentId: number,
+): Promise<CommentActionState> {
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    await deleteTaskCommentRequest(commentId, cookieHeader);
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message };
+    }
+    return {
+      success: false,
+      error: "Terjadi kesalahan tak terduga. Coba lagi.",
+    };
+  }
+
+  revalidatePath(taskDetailRoute(projectId, taskId));
   return { success: true, error: null };
 }
