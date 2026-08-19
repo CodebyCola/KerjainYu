@@ -30,3 +30,26 @@ export async function promoteToLeader(req: AuthRequest, res: Response, next: Nex
         next(error)
     }
 }
+
+//POST /api/v1/projects/:id/leave
+export async function leaveProject(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+        const projectId = Number(req.params.id)
+        await projectMemberService.leaveProject(projectId, req.user!.id)
+        res.status(204).send()
+    } catch (error) {
+        next(error)
+    }
+}
+
+//DELETE /api/v1/projects/:id/members/:userId
+export async function removeMember(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+        const projectId = Number(req.params.id)
+        const targetUserId = Number(req.params.userId)
+        await projectMemberService.removeMember(projectId, req.user!.id, targetUserId)
+        res.status(204).send()
+    } catch (error) {
+        next(error)
+    }
+}

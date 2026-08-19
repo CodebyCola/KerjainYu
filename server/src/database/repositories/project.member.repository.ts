@@ -44,14 +44,14 @@ export async function updateMembershipStatus(id: number, status: string) {
 
 
 
-export async function removeMember(projectId: number, userId: number) {
-  return db("project_members")
-    .where({
-      project_id: projectId,
-      user_id: userId,
-    })
-    .del();
-}
+// export async function removeMember(projectId: number, userId: number) {
+//   return db("project_members")
+//     .where({
+//       project_id: projectId,
+//       user_id: userId,
+//     })
+//     .del();
+// }
 
 export async function getRole(projectId: number, userId: number) {
   return db<Role>("project_members")
@@ -92,4 +92,9 @@ export async function getMembersByProject(projectId: number) {
 }
 export async function getProjectByIdAndUser(id: number, userId: number) {
   return db("project_members").where("project_id", id);
+}
+
+export async function removeMember(projectId: number, userId: number, trx?: Knex.Transaction) {
+  const executor = trx || db
+  return executor("project_members").where({ project_id: projectId, user_id: userId }).update({ status: "removed" })
 }

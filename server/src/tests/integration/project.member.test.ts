@@ -4,6 +4,7 @@ import app from "../../app";
 import { cleanDatabase, closeDb } from "../helpers/testDb";
 import { registerAndLogin } from "../helpers/auth";
 import { createProject, inviteAndAccept, getMembers } from "../helpers/project"
+import { db } from "../../database/db";
 
 afterAll(async () => {
     await closeDb();
@@ -238,6 +239,405 @@ describe('PATCH /api/v1/projects/:id/leader', () => {
         const res = await request(app)
             .patch('/api/v1/projects/1/leader')
             .send({ userId: 2 });
+
+        expect(res.status).toBe(401);
+    });
+});
+
+describe("POST /api/v1/projects/:id/leave", () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    });
+
+    it("should allow an active member to leave the project", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/leave`)
+            .set("Cookie", member.cookie);
+
+        expect(res.status).toBe(204);
+
+        const members = await getMembers(
+            leader.cookie,
+            projectId
+        );
+
+        expect(
+            members.some((m) => m.userId === member.userId)
+        ).toBe(false);
+    });
+
+    it("should unassign the member's tasks when leaving the project", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", leader.cookie)
+            .send({
+                title: "Task assigned to Sari",
+                description: "Test task",
+                deadline: "2026-09-30",
+            });
+
+        expect(taskRes.status).toBe(201);
+
+        const taskId = taskRes.body.data.id;
+
+        // Assign task to member
+        // const assignRes = await request(app)
+        //     .patch(`/api/v1/tasks/${taskId}/assign`)
+        //     .set("Cookie", leader.cookie)
+        //     .send({
+        //         userId: member.userId,
+        //     });
+        const claimTask = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/claim`)
+            .set('Cookie', member.cookie);
+        expect(claimTask.status).toBe(200);
+
+        // Member leaves project
+        const leaveRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/leave`)
+            .set("Cookie", member.cookie);
+
+        expect(leaveRes.status).toBe(204);
+
+        // Verify task is unassigned
+        const taskAfterLeave = await db("tasks")
+            .where({ id: taskId })
+            .first();
+        expect(taskAfterLeave.assigneeId).toBeNull();
+        expect(taskAfterLeave.status).toBe("unclaimed");
+    });
+
+    it("should reject leaving when user is not a project member", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const stranger = await registerAndLogin("stranger");
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/leave`)
+            .set("Cookie", stranger.cookie);
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("should reject leaving an already inactive membership", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        // Leave once
+        const firstLeave = await request(app)
+            .post(`/api/v1/projects/${projectId}/leave`)
+            .set("Cookie", member.cookie);
+
+        expect(firstLeave.status).toBe(204);
+
+        // Try leaving again
+        const secondLeave = await request(app)
+            .post(`/api/v1/projects/${projectId}/leave`)
+            .set("Cookie", member.cookie);
+
+        expect(secondLeave.status).toBe(409);
+        expect(secondLeave.body.error.code).toBe("CONFLICT");
+    });
+
+    it("should reject when project does not exist", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .post("/api/v1/projects/999999/leave")
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(404);
+        expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("should reject request without authentication", async () => {
+        const res = await request(app)
+            .post("/api/v1/projects/1/leave");
+
+        expect(res.status).toBe(401);
+    });
+
+    it("should reject invalid project id", async () => {
+        const { cookie } = await registerAndLogin("budiman");
+
+        const res = await request(app)
+            .post("/api/v1/projects/abc/leave")
+            .set("Cookie", cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+});
+
+describe("DELETE /api/v1/projects/:id/members/:userId", () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    });
+
+    it("should allow the project leader to remove an active member", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        const res = await request(app)
+            .delete(
+                `/api/v1/projects/${projectId}/members/${member.userId}`
+            )
+            .set("Cookie", leader.cookie);
+
+        expect(res.status).toBe(204);
+
+        const members = await getMembers(
+            leader.cookie,
+            projectId
+        );
+
+        expect(
+            members.some((m) => m.userId === member.userId)
+        ).toBe(false);
+    });
+
+    it("should unassign the removed member's tasks", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        /*
+         * Create task.
+         * Sesuaikan endpoint ini dengan task API kamu.
+         */
+        const taskRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set("Cookie", leader.cookie)
+            .send({
+                title: "Task assigned to Sari",
+                description: "Test task",
+                deadline: "2026-09-30",
+            });
+
+        expect(taskRes.status).toBe(201);
+
+        const taskId = taskRes.body.data.id;
+
+        // Assign task to Sari
+        // const assignRes = await request(app)
+        //     .patch(`/api/v1/tasks/${taskId}/assign`)
+        //     .set("Cookie", leader.cookie)
+        //     .send({
+        //         userId: member.userId,
+        //     });
+        const claimTask = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/claim`)
+            .set('Cookie', member.cookie);
+
+        expect(claimTask.status).toBe(200);
+
+        // Remove Sari from project
+        const removeRes = await request(app)
+            .delete(
+                `/api/v1/projects/${projectId}/members/${member.userId}`
+            )
+            .set("Cookie", leader.cookie);
+
+        expect(removeRes.status).toBe(204);
+
+        // Task must be unassigned
+        const task = await db("tasks")
+            .where({ id: taskId })
+            .first();
+
+        expect(task.assigneeId).toBeNull();
+        expect(task.status).toBe("unclaimed")
+    });
+
+    it("should reject a non-leader member from removing another member", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member1 = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        const member2 = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "joko"
+        );
+
+        const res = await request(app)
+            .delete(
+                `/api/v1/projects/${projectId}/members/${member2.userId}`
+            )
+            .set("Cookie", member1.cookie);
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("should reject removing the project leader", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const res = await request(app)
+            .delete(
+                `/api/v1/projects/${projectId}/members/${leader.userId}`
+            )
+            .set("Cookie", leader.cookie);
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe("CONFLICT");
+    });
+
+    it("should reject removing a user who is not a project member", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const stranger = await registerAndLogin("stranger");
+
+        const res = await request(app)
+            .delete(
+                `/api/v1/projects/${projectId}/members/${stranger.userId}`
+            )
+            .set("Cookie", leader.cookie);
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("should reject removing an already inactive member", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "sari"
+        );
+
+        // Remove once
+        const firstRemove = await request(app)
+            .delete(
+                `/api/v1/projects/${projectId}/members/${member.userId}`
+            )
+            .set("Cookie", leader.cookie);
+
+        expect(firstRemove.status).toBe(204);
+
+        // Try removing again
+        const secondRemove = await request(app)
+            .delete(
+                `/api/v1/projects/${projectId}/members/${member.userId}`
+            )
+            .set("Cookie", leader.cookie);
+
+        expect(secondRemove.status).toBe(409);
+        expect(secondRemove.body.error.code).toBe("CONFLICT");
+    });
+
+    it("should reject when project does not exist", async () => {
+        const leader = await registerAndLogin("budiman");
+        const target = await registerAndLogin("sari");
+
+        const res = await request(app)
+            .delete(
+                `/api/v1/projects/999999/members/${target.userId}`
+            )
+            .set("Cookie", leader.cookie);
+
+        expect(res.status).toBe(404);
+        expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("should reject invalid project id", async () => {
+        const leader = await registerAndLogin("budiman");
+        const target = await registerAndLogin("sari");
+
+        const res = await request(app)
+            .delete(
+                `/api/v1/projects/abc/members/${target.userId}`
+            )
+            .set("Cookie", leader.cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("should reject invalid user id", async () => {
+        const leader = await registerAndLogin("budiman");
+
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const res = await request(app)
+            .delete(
+                `/api/v1/projects/${projectId}/members/abc`
+            )
+            .set("Cookie", leader.cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("should reject request without authentication", async () => {
+        const res = await request(app)
+            .delete("/api/v1/projects/1/members/2");
 
         expect(res.status).toBe(401);
     });
