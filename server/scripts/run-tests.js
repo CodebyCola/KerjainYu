@@ -8,7 +8,8 @@ const testFiles = [
     "src/tests/integration/task.test.ts",
     "src/tests/integration/invitation.test.ts",
     "src/tests/integration/comment.task.test.ts",
-    "src/tests/integration/project.link.test.ts"
+    "src/tests/integration/project.link.test.ts",
+    "src/tests/integration/task.swap.request.test.ts",
 ];
 
 let hasFailure = false;
