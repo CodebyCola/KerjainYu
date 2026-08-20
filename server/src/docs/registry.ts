@@ -8,4 +8,5 @@ import './project.link.docs'
 import './project.member.docs'
 import './user.docs'
 import './task.docs'
+import './task.swap.request.docs'
 export { registry };
