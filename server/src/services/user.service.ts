@@ -13,7 +13,6 @@ import {
   UnauthorizedError,
 } from "../errors/AppError";
 import bcrypt from "bcrypt";
-import crypto from 'crypto'
 import { generateAccessToken, generateRandomString, generateRefreshToken, hashToken } from "../lib/token";
 import { createRefreshToken, findByHash, revokeByHash } from "../database/repositories/refresh.token.repository";
 
@@ -55,8 +54,8 @@ export async function loginUser(input: LoginInput, ipAddress: string, deviceInfo
 }
 
 //POST /api/v1/auth/refresh
-export async function refreshAccessToken(refresHTokenPlain: string) {
-  const tokenHash = hashToken(refresHTokenPlain)
+export async function refreshAccessToken(refreshTokenPlain: string) {
+  const tokenHash = hashToken(refreshTokenPlain)
   const stored = await findByHash(tokenHash)
 
   if (!stored || stored.isRevoked || new Date(stored.expiresAt) < new Date()) {

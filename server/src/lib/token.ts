@@ -3,6 +3,8 @@ import { AppError } from "../errors/AppError";
 import crypto from 'crypto';
 import { findByHash } from "../database/repositories/refresh.token.repository"
 
+export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60; // 15 menit
+
 export function generateRandomString() {
   return crypto.randomBytes(40).toString('hex')
 }
@@ -17,7 +19,7 @@ export const generateAccessToken = (payload: { id: number, username: string }) =
   if (!secret) {
     throw new AppError("ACCESS_TOKEN_SECRET_NOT_DEFINE", "ACCESS TOKEN SECRET is not defined", 500)
   }
-  return jwt.sign(payload, secret, { expiresIn: "15min" })
+  return jwt.sign(payload, secret, { expiresIn: ACCESS_TOKEN_TTL_SECONDS })
 }
 
 export const generateRefreshToken = (tokenPlain: string) => {

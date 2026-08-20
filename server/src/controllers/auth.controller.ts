@@ -3,6 +3,10 @@ import * as userService from "../services/user.service";
 import { AuthRequest } from "../middlewares/auth.middlewares";
 import { baseCookieOptions, authCookieOptions } from "../lib/cookies";
 import { UnauthorizedError } from "../errors/AppError";
+import { ACCESS_TOKEN_TTL_SECONDS } from "../lib/token";
+
+const ACCESS_TOKEN_MAX_AGE_MS = ACCESS_TOKEN_TTL_SECONDS * 1000;
+const REFRESH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 //POST /api/v1/auth/register
 export async function register(
@@ -28,13 +32,13 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 15 * 60 * 1000,
+      maxAge: ACCESS_TOKEN_MAX_AGE_MS,
     });
     res.cookie("refreshToken", refreshTokenPlain, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      maxAge: REFRESH_TOKEN_MAX_AGE_MS
     })
     // res.cookie("token", token, authCookieOptions);
     res.status(200).json({ success: true, data: user });
@@ -55,13 +59,13 @@ export async function refresh(req: AuthRequest, res: Response, next: NextFunctio
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 15 * 60 * 1000,
+      maxAge: ACCESS_TOKEN_MAX_AGE_MS,
     });
     res.cookie("refreshToken", newRefreshTokenPlain, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      maxAge: REFRESH_TOKEN_MAX_AGE_MS
     })
     res.status(200).json({ success: true })
   } catch (error) {
