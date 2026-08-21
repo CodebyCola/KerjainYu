@@ -47,6 +47,14 @@ export type ProjectDetailResponse = {
   links: ProjectLink[];
 };
 
+export type UpdateProjectPayload = Partial<{
+  title: string;
+  allowFreeSwap: boolean;
+  status: ProjectStatus;
+  deadline: string;
+  isArchived: boolean;
+}>;
+
 export type CreateProjectPayload = {
   project: {
     title: string;

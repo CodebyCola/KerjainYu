@@ -33,3 +33,7 @@ export function validateCreateProjectFields(title: string, deadline: string): Fi
 
   return errors;
 }
+
+export function validateProjectSettingsFields(title: string, deadline: string): FieldErrors {
+  return validateCreateProjectFields(title, deadline);
+}

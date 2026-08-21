@@ -15,6 +15,7 @@ export function projectRoutes(projectId: string) {
     TASK_BOARD: `/projects/${projectId}/task-board`,
     CALENDAR: `/projects/${projectId}/calendar`,
     FILES: `/projects/${projectId}/files`,
+    SETTINGS: `/projects/${projectId}/settings`,
   } as const;
 }
 
