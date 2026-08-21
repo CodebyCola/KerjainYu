@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, KanbanSquare, Calendar, FolderOpen } from "lucide-react";
+import { Users, KanbanSquare, Calendar, FolderOpen, Settings } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { projectRoutes } from "@/lib/routes";
 
@@ -19,6 +19,7 @@ export default function ProjectSubNav({ projectId }: ProjectSubNavProps) {
         { label: "Tim", href: routes.TEAM, icon: Users },
         { label: "Kalender", href: routes.CALENDAR, icon: Calendar },
         { label: "Berkas", href: routes.FILES, icon: FolderOpen },
+        { label: "Pengaturan", href: routes.SETTINGS, icon: Settings },
     ];
 
     return (

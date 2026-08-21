@@ -1,21 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, HelpCircle, X } from "lucide-react";
-import { ROUTES } from "@/lib/routes";
+import { Archive, HelpCircle, Settings, X, FolderOpen } from "lucide-react";
+import { ROUTES, projectRoutes } from "@/lib/routes";
 
 type MoreSheetProps = {
     isOpen: boolean;
     onClose: () => void;
+    projectId?: string;
 };
 
-const SHEET_ITEMS = [
+const MAIN_SHEET_ITEMS = [
     { label: "Archive", href: ROUTES.ARCHIVE, icon: Archive },
     { label: "Help Center", href: ROUTES.HELP_CENTER, icon: HelpCircle },
 ];
 
-export default function MoreSheet({ isOpen, onClose }: MoreSheetProps) {
+function getProjectSheetItems(projectId: string) {
+    const routes = projectRoutes(projectId);
+    return [
+    { label: "Berkas", href: routes.FILES, icon: FolderOpen },
+    { label: "Pengaturan", href: routes.SETTINGS, icon: Settings },
+    ];
+}
+
+export default function MoreSheet({ isOpen, onClose, projectId }: MoreSheetProps) {
     if (!isOpen) return null;
+
+    const items = projectId ? getProjectSheetItems(projectId) : MAIN_SHEET_ITEMS;
 
     return (
         <div className="fixed inset-0 z-50">
@@ -43,7 +54,7 @@ export default function MoreSheet({ isOpen, onClose }: MoreSheetProps) {
                 </div>
 
                 <div className="flex flex-col">
-                    {SHEET_ITEMS.map(({ label, href, icon: Icon }) => (
+                    {items.map(({ label, href, icon: Icon }) => (
                         <Link
                             key={href}
                             href={href}

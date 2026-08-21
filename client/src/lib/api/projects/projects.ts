@@ -4,9 +4,11 @@ import { cookies } from "next/headers";
 import {
   Project,
   CreateProjectPayload,
+  UpdateProjectPayload,
   ProjectDetailResponse,
 } from "@/types/project";
 import { apiFetch } from "../fetcher";
+import { ApiRequestError } from "../apiRequestError";
 
 const PROJECT_PATH = "/projects";
 
@@ -30,6 +32,18 @@ export function createProjectRequest(
 ) {
   return apiFetch<Project>(PROJECT_PATH, {
     method: "POST",
+    body: payload,
+    cookie,
+  });
+}
+
+export function updateProjectRequest(
+  projectId: string,
+  payload: UpdateProjectPayload,
+  cookie: string,
+) {
+  return apiFetch<Project>(`${PROJECT_PATH}/${projectId}`, {
+    method: "PATCH",
     body: payload,
     cookie,
   });
@@ -70,3 +84,31 @@ export const getProject = cache(
     }
   },
 );
+
+export async function updateProject(
+  projectId: string,
+  payload: UpdateProjectPayload,
+): Promise<{ project: Project | null; error: string | null }> {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+
+  try {
+    const { data } = await updateProjectRequest(projectId, payload, cookieHeader);
+    return { project: data, error: null };
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { project: null, error: err.message };
+    }
+    return { project: null, error: "Terjadi kesalahan tak terduga. Coba lagi." };
+  }
+}
+
+export async function deleteProject(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  projectId: string,
+): Promise<{ success: boolean; error: string | null }> {
+  return {
+    success: false,
+    error: "Hapus proyek belum didukung oleh server. Fitur ini akan aktif setelah endpoint dibuat.",
+  };
+}
