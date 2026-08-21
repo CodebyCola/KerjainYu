@@ -49,17 +49,42 @@ export function updateProjectRequest(
   });
 }
 
+
+
 // Fetcher
-export const getProjects = cache(async (): Promise<Project[]> => {
+export const getProjects = cache(
+  async (includeArchived = false): Promise<Project[]> => {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    try {
+      const { data } = await getProjectsRequest(cookieHeader);
+
+      return data
+        .filter((project) => includeArchived || !project.isArchived)
+        .map((project) => ({
+          ...project,
+          members: project.members ?? [],
+        }));
+    } catch {
+      return [];
+    }
+  }
+);
+
+export const getArchivedProjects = cache(async (): Promise<Project[]> => {
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
 
   try {
     const { data } = await getProjectsRequest(cookieHeader);
-    return data.map((project) => ({
-      ...project,
-      members: project.members ?? [],
-    }));
+
+    return data
+      .filter((project) => project.isArchived)
+      .map((project) => ({
+        ...project,
+        members: project.members ?? [],
+      }));
   } catch {
     return [];
   }
