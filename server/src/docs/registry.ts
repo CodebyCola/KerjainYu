@@ -9,4 +9,5 @@ import './project.member.docs'
 import './user.docs'
 import './task.docs'
 import './task.swap.request.docs'
+import './submission.docs'
 export { registry };

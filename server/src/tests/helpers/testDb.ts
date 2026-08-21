@@ -3,6 +3,7 @@ import { db } from '../../database/db';
 
 export async function cleanDatabase() {
     // console.log(`[${new Date().toISOString()}] cleanDatabase() START`);
+    await db('submission_attachments').del();
     await db('comments_task').del();
     await db('task_ownership_log').del();
     await db('task_appeals').del();

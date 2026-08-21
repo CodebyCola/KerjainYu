@@ -15,3 +15,15 @@ export async function createTask(leaderCookie: string, projectId: number, overri
         .set('Cookie', leaderCookie)
         .send({ title: 'Setup CI/CD pipeline', isClaimable: true, ...overrides });
 }
+export async function assignTask(
+    leaderCookie: string,
+    taskId: number,
+    userId: number,
+) {
+    return request(app)
+        .patch(`/api/v1/tasks/${taskId}/assign`)
+        .set("Cookie", leaderCookie)
+        .send({
+            userId,
+        });
+}

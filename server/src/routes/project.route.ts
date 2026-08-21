@@ -5,6 +5,7 @@ import { validate } from "../middlewares/validate";
 import * as projectSchema from "../schemas/projectSchema";
 import { userIdParams } from "../schemas/userSchema"
 import * as projectController from "../controllers/project.controller";
+import * as submissionController from "../controllers/submission.controller";
 import * as projectMemberController from "../controllers/project.member.controller"
 import * as taskSchema from "../schemas/task.schema";
 import { createProjectLinkSchema, updateProjectLinkSchema } from "../schemas/projectLinkSchema";
@@ -33,6 +34,12 @@ router.get(
   authenticate,
   validate(idParams, "params"),
   projectController.getTasksByProject,
+);
+router.get(
+  "/:id/pending-submissions",
+  authenticate,
+  validate(idParams, "params"),
+  submissionController.pendingSubmissionsByProject,
 );
 router.delete("/:id/members/:userId", authenticate, validate(removeMemberParams, "params"), projectMemberController.removeMember)
 router.post("/:id/leave", authenticate, validate(idParams, 'params'), projectMemberController.leaveProject)

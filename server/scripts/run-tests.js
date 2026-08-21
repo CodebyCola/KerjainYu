@@ -10,6 +10,7 @@ const testFiles = [
     "src/tests/integration/comment.task.test.ts",
     "src/tests/integration/project.link.test.ts",
     "src/tests/integration/task.swap.request.test.ts",
+    "src/tests/integration/submission.test.ts",
 ];
 
 let hasFailure = false;

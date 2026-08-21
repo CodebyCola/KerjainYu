@@ -116,3 +116,23 @@ export async function unassignTask(projectId: number, assigneeId: number, trx?: 
   const executor = trx || db
   return executor("tasks").where({ project_id: projectId, assignee_id: assigneeId }).whereIn("status", ['todo', 'ongoing']).update({ assignee_id: null, status: "unclaimed" })
 }
+
+export async function updateTaskStatusIfAllowed(
+  taskId: number,
+  statuses: TaskStatusSchema[],
+  newStatus: TaskStatusSchema,
+  trx?: Knex.Transaction,
+) {
+  const executor = trx || db;
+
+  const [updated] = await executor("tasks")
+    .where("id", taskId)
+    .whereIn("status", statuses)
+    .update({
+      status: newStatus,
+      updatedAt: new Date(),
+    })
+    .returning("*");
+
+  return updated;
+}
