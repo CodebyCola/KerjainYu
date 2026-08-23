@@ -6,7 +6,18 @@ import { idParams } from "../schemas/id.schema";
 import { respondSwapRequestSchema } from "../schemas/task.swap.request.schema";
 const router = Router();
 
-
+//GET /api/v1/swap-requests/incoming
+router.get(
+    "/incoming",
+    authenticate,
+    taskSwapRequestController.getIncomingSwapRequests
+)
+//GET /api/v1/swap-requests/outgoing
+router.get(
+    "/outgoing",
+    authenticate,
+    taskSwapRequestController.getOutgoingSwapRequests
+)
 router.patch(
     "/:id/respond",
     authenticate,

@@ -66,6 +66,26 @@ export type TaskComment = {
   avatarUrl: string | null;
 };
 
+export type TaskSwapRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
+
+export type TaskSwapRequest = {
+  id: number;
+  taskId: number;
+  targetTaskId: number | null;
+  requestedBy: number;
+  requestedTo: number;
+  status: TaskSwapRequestStatus;
+  resolvedBy: number | null;
+  resolvedAt: string | null;
+  createdAt: string;
+};
+
+// Payload untuk membuat swap request baru dari task detail.
+export type CreateSwapRequestPayload = {
+  requestedTo: number;
+  targetTaskId?: number;
+};
+
 // Task + nama proyeknya, buat ditampilkan di card "My Tasks" tanpa
 // komponen perlu join manual ke daftar project setiap kali render.
 export type MyTask = Task & {

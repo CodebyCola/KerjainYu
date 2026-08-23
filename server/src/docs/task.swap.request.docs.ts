@@ -143,3 +143,45 @@ registry.registerPath({
         },
     },
 });
+
+// GET /api/v1/swap-requests/incoming
+registry.registerPath({
+    method: "get",
+    path: "/api/v1/swap-requests/incoming",
+    tags: ["Task Swap Requests"],
+    summary: "Get pending swap requests addressed to the current user",
+    description:
+        "Returns pending swap requests where the authenticated user is the requestedTo, joined with task, target task, and sender/receiver info.",
+    security: [{ cookieAuth: [] }],
+
+    responses: {
+        200: {
+            description: "List of pending swap requests addressed to the current user",
+        },
+
+        401: {
+            description: "Not authenticated",
+        },
+    },
+});
+
+// GET /api/v1/swap-requests/outgoing
+registry.registerPath({
+    method: "get",
+    path: "/api/v1/swap-requests/outgoing",
+    tags: ["Task Swap Requests"],
+    summary: "Get swap requests created by the current user",
+    description:
+        "Returns all swap requests (any status) created by the authenticated user, joined with task, target task, and sender/receiver info.",
+    security: [{ cookieAuth: [] }],
+
+    responses: {
+        200: {
+            description: "List of swap requests created by the current user",
+        },
+
+        401: {
+            description: "Not authenticated",
+        },
+    },
+});

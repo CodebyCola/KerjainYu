@@ -14,6 +14,8 @@ import {
   createTaskCommentRequest,
   deleteTaskCommentRequest,
 } from "@/lib/api/tasks/tasks";
+import { createSwapRequestRequest } from "@/lib/api/tasks/swapRequests";
+import { CreateSwapRequestPayload } from "@/types/task";
 import { TaskFormState } from "@/lib/api/tasks/taskFormState";
 import { validateCreateTaskFields } from "@/lib/validation/taskSchema";
 import { projectRoutes, taskDetailRoute } from "@/lib/routes";
@@ -92,6 +94,39 @@ export async function assignTaskAction(
     const cookieHeader = cookieStore.toString();
 
     await assignTaskRequest(taskId, targetUserId, cookieHeader);
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message };
+    }
+    return {
+      success: false,
+      error: "Terjadi kesalahan tak terduga. Coba lagi.",
+    };
+  }
+
+  revalidatePath(projectRoutes(projectId).TASK_BOARD);
+  revalidatePath(taskDetailRoute(projectId, taskId));
+  return { success: true, error: null };
+}
+
+export type SwapRequestState = {
+  success: boolean;
+  error: string | null;
+};
+
+// Membuat permintaan tukar task. Backend mengirim notifikasi ke user yang
+// diminta (requestedTo) begitu request dibuat — lihat catatan di
+// SWAP_REQUEST_API_NEEDS.md untuk kontrak notifikasi yang diharapkan.
+export async function createSwapRequestAction(
+  projectId: string,
+  taskId: number,
+  payload: CreateSwapRequestPayload,
+): Promise<SwapRequestState> {
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    await createSwapRequestRequest(taskId, payload, cookieHeader);
   } catch (err) {
     if (err instanceof ApiRequestError) {
       return { success: false, error: err.message };
