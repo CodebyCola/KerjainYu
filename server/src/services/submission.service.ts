@@ -2,10 +2,11 @@ import { db } from "../database/db"
 import * as submissionRepo from "../database/repositories/submission.repository"
 import * as taskRepo from "../database/repositories/task.repository"
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError"
-import { CreateFileAttachmentInput, CreateFileUploadUrlInput, CreateSubmissionInput, ReviewSubmissionInput } from "../schemas/submission.schema"
+import { CreateAttachmentInput, CreateFileAttachmentInput, CreateFileUploadUrlInput, CreateSubmissionInput, ReviewSubmissionInput } from "../schemas/submission.schema"
 import * as storageService from "./storage.service"
 import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper"
 import { assertTaskAccess } from "./helper/task.helper"
+import { file } from "zod"
 
 //POST /api/v1/tasks/:id/submissions
 export async function createSubmission(
@@ -102,10 +103,10 @@ export async function createAttachmentUploadUrl(
 }
 
 //POST /api/v1/submissions/:id/attachments -> For saving metadata to database
-export async function createFileAttachment(
+export async function createAttachment(
     submissionId: number,
     userId: number,
-    input: CreateFileAttachmentInput,
+    input: CreateAttachmentInput,
 ) {
     const submission =
         await submissionRepo.getSubmissionById(
@@ -142,24 +143,31 @@ export async function createFileAttachment(
         );
     }
 
-    if (!input.objectKey.startsWith(`submissions/${submissionId}/`,)) {
-        throw new ForbiddenError(
-            "Invalid object key",
-        );
-    }
-
     return db.transaction(async (trx) => {
-        return submissionRepo.createFileAttachment(
-            {
-                submissionId,
-                type: input.type,
-                objectKey: input.objectKey,
-                fileName: input.fileName,
-                mimeType: input.mimeType,
-                fileSize: input.fileSize,
-            },
-            trx,
-        );
+        let contentAttachment = null;
+        let fileAttachment = null;
+        if (input.content) {
+            contentAttachment = await submissionRepo.createContentAttachment(submissionId, { content: input.content.content, type: input.content.type }, trx)
+        }
+        if (input.file) {
+            if (!input.file.objectKey.startsWith(`submissions/${submissionId}/`,)) {
+                throw new ForbiddenError(
+                    "Invalid object key",
+                );
+            }
+            fileAttachment = await submissionRepo.createFileAttachment(
+                {
+                    submissionId,
+                    type: input.file.type,
+                    objectKey: input.file.objectKey,
+                    fileName: input.file.fileName,
+                    mimeType: input.file.mimeType,
+                    fileSize: input.file.fileSize,
+                },
+                trx,
+            );
+        }
+        return { contentAttachment, fileAttachment }
     });
 }
 
@@ -214,7 +222,7 @@ export async function getSubmissionAttachments(submissionId: number, userId: num
         throw new NotFoundError("Task not found")
     }
     await assertProjectMembership(task.projectId, userId)
-    return submissionRepo.getAttachmentsBySubmission(submissionId)
+    return await submissionRepo.getAttachmentsBySubmission(submissionId)
 }
 
 //DELETE /api/v1/submissions/:id/attachments/:attachmentId

@@ -5,7 +5,6 @@ import {
     beforeEach,
     afterAll,
 } from "vitest";
-
 import request from "supertest";
 
 import app from "../../app";
@@ -34,20 +33,22 @@ import {
     closeDb,
 } from "../helpers/testDb";
 
-import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import {
+    HeadObjectCommand,
+} from "@aws-sdk/client-s3";
 
 import {
     s3,
     STORAGE_BUCKET,
 } from "../../config/storage";
 
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-
+// ============================================================
+// HELPERS
+// ============================================================
 
 async function createTaskWithSubmission() {
     const leader = await registerAndLogin(
-        `file_leader_${Date.now()}`,
+        `attachment_leader_${Date.now()}`,
     );
 
     const project = await createProject(
@@ -60,14 +61,14 @@ async function createTaskWithSubmission() {
     const member = await inviteAndAccept(
         leader.cookie,
         projectId,
-        `file_member_${Date.now()}`,
+        `attachment_member_${Date.now()}`,
     );
 
     const taskRes = await createTask(
         leader.cookie,
         projectId,
         {
-            title: "File Submission Task",
+            title: "Attachment Submission Task",
             isClaimable: false,
         },
     );
@@ -92,7 +93,7 @@ async function createTaskWithSubmission() {
             member.cookie,
             taskId,
             {
-                note: "Submission with file.",
+                note: "Submission for attachment testing.",
             },
         );
 
@@ -104,9 +105,13 @@ async function createTaskWithSubmission() {
         projectId,
         taskId,
         submissionId:
-            submissionRes.body.data.id,
+            Number(submissionRes.body.data.id),
     };
 }
+
+// ============================================================
+// REQUEST PRESIGNED UPLOAD URL
+// ============================================================
 
 async function requestUploadUrl(
     cookie: string,
@@ -126,7 +131,11 @@ async function requestUploadUrl(
         .send(file);
 }
 
-async function registerAttachment(
+// ============================================================
+// REGISTER FILE ATTACHMENT
+// ============================================================
+
+async function registerFileAttachment(
     cookie: string,
     submissionId: number,
     attachment: {
@@ -142,29 +151,60 @@ async function registerAttachment(
             `/api/v1/submissions/${submissionId}/attachments`,
         )
         .set("Cookie", cookie)
-        .send(attachment);
+        .send({
+            content: null,
+            file: attachment,
+        });
 }
+
+// ============================================================
+// REGISTER CONTENT ATTACHMENT
+// ============================================================
+
+async function registerContentAttachment(
+    cookie: string,
+    submissionId: number,
+    content: {
+        type: "text" | "link";
+        content: string;
+    },
+) {
+    return request(app)
+        .post(
+            `/api/v1/submissions/${submissionId}/attachments`,
+        )
+        .set("Cookie", cookie)
+        .send({
+            content,
+            file: null,
+        });
+}
+
+// ============================================================
+// TEST SUITE
+// ============================================================
 
 afterAll(async () => {
     await closeDb();
 });
-
 describe(
-    "Submission File Attachment Integration",
+    "Submission Attachment Integration",
     () => {
         beforeEach(async () => {
             await cleanDatabase();
         });
 
-        // =====================================================
-        // REQUEST UPLOAD URL
-        // =====================================================
+
+        // ====================================================
+        // POST /attachments
+        // CONTENT ATTACHMENT
+        // ====================================================
 
         describe(
-            "POST /api/v1/submissions/:id/attachments/upload-url",
+            "POST /api/v1/submissions/:id/attachments - Content",
             () => {
                 it(
-                    "should generate a presigned upload URL",
+                    "should create a text content attachment",
                     async () => {
                         const {
                             member,
@@ -173,121 +213,66 @@ describe(
                             await createTaskWithSubmission();
 
                         const res =
-                            await requestUploadUrl(
+                            await registerContentAttachment(
                                 member.cookie,
                                 submissionId,
                                 {
-                                    type: "file",
-                                    fileName:
-                                        "report.pdf",
-                                    mimeType:
-                                        "application/pdf",
-                                    fileSize:
-                                        2458123,
+                                    type: "text",
+                                    content:
+                                        "This is my submission.",
                                 },
                             );
 
-                        expect(res.status)
-                            .toBe(200);
+                        expect(res.status).toBe(201);
 
                         expect(
                             res.body.success,
                         ).toBe(true);
 
                         expect(
-                            res.body.data.uploadUrl,
-                        ).toBeDefined();
+                            res.body.data.contentAttachment,
+                        ).toEqual(
+                            expect.objectContaining({
+                                submissionId,
+                                type: "text",
+                                content:
+                                    "This is my submission.",
+                            }),
+                        );
 
                         expect(
-                            typeof res.body
-                                .data.uploadUrl,
-                        ).toBe("string");
+                            res.body.data.fileAttachment,
+                        ).toBeNull();
+
+                        const attachments =
+                            await db(
+                                "submission_attachments",
+                            ).where({
+                                submissionId,
+                            });
 
                         expect(
-                            res.body.data.objectKey,
-                        ).toBeDefined();
+                            attachments,
+                        ).toHaveLength(1);
 
                         expect(
-                            res.body.data.objectKey,
-                        ).toMatch(
-                            new RegExp(
-                                `^submissions/${submissionId}/`,
-                            ),
+                            attachments[0],
+                        ).toEqual(
+                            expect.objectContaining({
+                                submissionId:
+                                    String(
+                                        submissionId,
+                                    ),
+                                type: "text",
+                                content:
+                                    "This is my submission.",
+                            }),
                         );
                     },
                 );
 
                 it(
-                    "should reject upload URL request from non-assignee",
-                    async () => {
-                        const {
-                            leader,
-                            member,
-                            submissionId,
-                        } =
-                            await createTaskWithSubmission();
-
-                        const stranger =
-                            await registerAndLogin(
-                                `file_stranger_${Date.now()}`,
-                            );
-
-                        const res =
-                            await requestUploadUrl(
-                                stranger.cookie,
-                                submissionId,
-                                {
-                                    type: "file",
-                                    fileName:
-                                        "report.pdf",
-                                    mimeType:
-                                        "application/pdf",
-                                    fileSize: 1000,
-                                },
-                            );
-
-                        expect(res.status)
-                            .toBe(403);
-
-                        expect(
-                            res.body.error.code,
-                        ).toBe("FORBIDDEN");
-                    },
-                );
-
-                it(
-                    "should reject upload URL request for non-existent submission",
-                    async () => {
-                        const member =
-                            await registerAndLogin(
-                                `file_not_found_${Date.now()}`,
-                            );
-
-                        const res =
-                            await requestUploadUrl(
-                                member.cookie,
-                                999999999,
-                                {
-                                    type: "file",
-                                    fileName:
-                                        "report.pdf",
-                                    mimeType:
-                                        "application/pdf",
-                                    fileSize: 1000,
-                                },
-                            );
-
-                        expect(res.status)
-                            .toBe(404);
-
-                        expect(
-                            res.body.error.code,
-                        ).toBe("NOT_FOUND");
-                    },
-                );
-
-                it(
-                    "should reject invalid file size",
+                    "should create a link content attachment",
                     async () => {
                         const {
                             member,
@@ -296,24 +281,59 @@ describe(
                             await createTaskWithSubmission();
 
                         const res =
-                            await requestUploadUrl(
+                            await registerContentAttachment(
                                 member.cookie,
                                 submissionId,
                                 {
-                                    type: "file",
-                                    fileName:
-                                        "huge.zip",
-                                    mimeType:
-                                        "application/zip",
-                                    fileSize:
-                                        11 *
-                                        1024 *
-                                        1024,
+                                    type: "link",
+                                    content:
+                                        "https://figma.com/design/test",
                                 },
                             );
 
-                        expect(res.status)
-                            .toBe(400);
+                        expect(res.status).toBe(201);
+
+                        expect(
+                            res.body.success,
+                        ).toBe(true);
+
+                        expect(
+                            res.body.data.contentAttachment,
+                        ).toEqual(
+                            expect.objectContaining({
+                                submissionId,
+                                type: "link",
+                                content:
+                                    "https://figma.com/design/test",
+                            }),
+                        );
+
+                        expect(
+                            res.body.data.fileAttachment,
+                        ).toBeNull();
+                    },
+                );
+
+                it(
+                    "should reject empty content",
+                    async () => {
+                        const {
+                            member,
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const res =
+                            await registerContentAttachment(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "text",
+                                    content: "",
+                                },
+                            );
+
+                        expect(res.status).toBe(400);
 
                         expect(
                             res.body.error.code,
@@ -325,22 +345,27 @@ describe(
             },
         );
 
-        // =====================================================
-        // REGISTER FILE ATTACHMENT
-        // =====================================================
+        // ====================================================
+        // POST /attachments
+        // FILE ATTACHMENT
+        // ====================================================
 
         describe(
-            "POST /api/v1/submissions/:id/attachments",
+            "POST /api/v1/submissions/:id/attachments - File",
             () => {
                 it(
                     "should register uploaded file metadata",
                     async () => {
                         const {
                             member,
-                            submissionId: rawSubmissionId,
-                        } = await createTaskWithSubmission();
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
 
-                        const submissionId = Number(rawSubmissionId);
+                        // ------------------------------------
+                        // 1. Request presigned URL
+                        // ------------------------------------
+
                         const uploadRes =
                             await requestUploadUrl(
                                 member.cookie,
@@ -360,14 +385,36 @@ describe(
                             uploadRes.status,
                         ).toBe(200);
 
+                        expect(
+                            uploadRes.body.success,
+                        ).toBe(true);
+
                         const {
                             uploadUrl,
                             objectKey,
                         } =
                             uploadRes.body.data;
 
+                        expect(
+                            uploadUrl,
+                        ).toEqual(
+                            expect.any(String),
+                        );
+
+                        expect(
+                            objectKey,
+                        ).toMatch(
+                            new RegExp(
+                                `^submissions/${submissionId}/`,
+                            ),
+                        );
+
+                        // ------------------------------------
+                        // 2. Register metadata
+                        // ------------------------------------
+
                         const attachmentRes =
-                            await registerAttachment(
+                            await registerFileAttachment(
                                 member.cookie,
                                 submissionId,
                                 {
@@ -391,21 +438,25 @@ describe(
                         ).toBe(true);
 
                         expect(
-                            attachmentRes.body.data,
+                            attachmentRes.body.data
+                                .contentAttachment,
+                        ).toBeNull();
+
+                        expect(
+                            attachmentRes.body.data
+                                .fileAttachment,
                         ).toEqual(
-                            expect.objectContaining(
-                                {
-                                    submissionId,
-                                    type: "file",
-                                    objectKey,
-                                    fileName:
-                                        "report.pdf",
-                                    mimeType:
-                                        "application/pdf",
-                                    fileSize:
-                                        2458123,
-                                },
-                            ),
+                            expect.objectContaining({
+                                submissionId,
+                                type: "file",
+                                objectKey,
+                                fileName:
+                                    "report.pdf",
+                                mimeType:
+                                    "application/pdf",
+                                fileSize:
+                                    2458123,
+                            }),
                         );
                     },
                 );
@@ -420,7 +471,7 @@ describe(
                             await createTaskWithSubmission();
 
                         const res =
-                            await registerAttachment(
+                            await registerFileAttachment(
                                 member.cookie,
                                 submissionId,
                                 {
@@ -431,13 +482,11 @@ describe(
                                         "fake.pdf",
                                     mimeType:
                                         "application/pdf",
-                                    fileSize:
-                                        1000,
+                                    fileSize: 1000,
                                 },
                             );
 
-                        expect(res.status)
-                            .toBe(403);
+                        expect(res.status).toBe(403);
 
                         expect(
                             res.body.error.code,
@@ -459,7 +508,7 @@ describe(
                             );
 
                         const res =
-                            await registerAttachment(
+                            await registerFileAttachment(
                                 stranger.cookie,
                                 submissionId,
                                 {
@@ -470,13 +519,11 @@ describe(
                                         "fake.pdf",
                                     mimeType:
                                         "application/pdf",
-                                    fileSize:
-                                        1000,
+                                    fileSize: 1000,
                                 },
                             );
 
-                        expect(res.status)
-                            .toBe(403);
+                        expect(res.status).toBe(403);
 
                         expect(
                             res.body.error.code,
@@ -513,7 +560,7 @@ describe(
                         ).toBe(200);
 
                         const res =
-                            await registerAttachment(
+                            await registerFileAttachment(
                                 member.cookie,
                                 submissionId,
                                 {
@@ -524,13 +571,11 @@ describe(
                                         "fake.pdf",
                                     mimeType:
                                         "application/pdf",
-                                    fileSize:
-                                        1000,
+                                    fileSize: 1000,
                                 },
                             );
 
-                        expect(res.status)
-                            .toBe(409);
+                        expect(res.status).toBe(409);
 
                         expect(
                             res.body.error.code,
@@ -540,15 +585,15 @@ describe(
             },
         );
 
-        // =====================================================
-        // MULTIPLE FILES
-        // =====================================================
+        // ====================================================
+        // VALIDATION
+        // ====================================================
 
         describe(
-            "Multiple file attachments",
+            "POST /api/v1/submissions/:id/attachments - Validation",
             () => {
                 it(
-                    "should allow multiple files on one submission",
+                    "should reject when both content and file are null",
                     async () => {
                         const {
                             member,
@@ -556,92 +601,156 @@ describe(
                         } =
                             await createTaskWithSubmission();
 
-                        const files = [
-                            {
-                                type: "file" as const,
-                                fileName:
-                                    "report.pdf",
-                                mimeType:
-                                    "application/pdf",
-                                fileSize: 1000,
-                            },
-                            {
-                                type: "file" as const,
-                                fileName:
-                                    "source.zip",
-                                mimeType:
-                                    "application/zip",
-                                fileSize: 2000,
-                            },
-                            {
-                                type: "image" as const,
-                                fileName:
-                                    "preview.png",
-                                mimeType:
-                                    "image/png",
-                                fileSize: 3000,
-                            },
-                        ];
-
-                        const uploaded = [];
-
-                        for (const file of files) {
-                            const uploadRes =
-                                await requestUploadUrl(
+                        const res =
+                            await request(app)
+                                .post(
+                                    `/api/v1/submissions/${submissionId}/attachments`,
+                                )
+                                .set(
+                                    "Cookie",
                                     member.cookie,
-                                    submissionId,
-                                    file,
-                                );
+                                )
+                                .send({
+                                    content: null,
+                                    file: null,
+                                });
 
-                            expect(
-                                uploadRes.status,
-                            ).toBe(200);
-
-                            const {
-                                uploadUrl,
-                                objectKey,
-                            } =
-                                uploadRes.body.data;
-
-                            expect(
-                                objectKey,
-                            ).toMatch(
-                                new RegExp(
-                                    `^submissions/${submissionId}/`,
-                                ),
-                            );
-
-                            const attachmentRes =
-                                await registerAttachment(
-                                    member.cookie,
-                                    submissionId,
-                                    {
-                                        ...file,
-                                        objectKey,
-                                    },
-                                );
-
-                            expect(
-                                attachmentRes.status,
-                            ).toBe(201);
-
-                            uploaded.push(
-                                attachmentRes.body
-                                    .data,
-                            );
-                        }
+                        expect(res.status).toBe(400);
 
                         expect(
-                            uploaded,
-                        ).toHaveLength(3);
+                            res.body.error.code,
+                        ).toBe(
+                            "VALIDATION_ERROR",
+                        );
+                    },
+                );
+
+                it(
+                    "should reject request without content and file",
+                    async () => {
+                        const {
+                            member,
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const res =
+                            await request(app)
+                                .post(
+                                    `/api/v1/submissions/${submissionId}/attachments`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    member.cookie,
+                                )
+                                .send({});
+
+                        expect(res.status).toBe(400);
+
+                        expect(
+                            res.body.error.code,
+                        ).toBe(
+                            "VALIDATION_ERROR",
+                        );
+                    },
+                );
+            },
+        );
+
+        // ====================================================
+        // MULTIPLE ATTACHMENTS
+        // ====================================================
+
+        describe(
+            "Multiple attachments",
+            () => {
+                it(
+                    "should allow multiple attachments on one submission",
+                    async () => {
+                        const {
+                            member,
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const textRes =
+                            await registerContentAttachment(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "text",
+                                    content:
+                                        "My submission text.",
+                                },
+                            );
+
+                        expect(
+                            textRes.status,
+                        ).toBe(201);
+
+                        const linkRes =
+                            await registerContentAttachment(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "link",
+                                    content:
+                                        "https://figma.com/design/test",
+                                },
+                            );
+
+                        expect(
+                            linkRes.status,
+                        ).toBe(201);
+
+                        const uploadRes =
+                            await requestUploadUrl(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "file",
+                                    fileName:
+                                        "report.pdf",
+                                    mimeType:
+                                        "application/pdf",
+                                    fileSize: 1000,
+                                },
+                            );
+
+                        expect(
+                            uploadRes.status,
+                        ).toBe(200);
+
+                        const {
+                            objectKey,
+                        } =
+                            uploadRes.body.data;
+
+                        const fileRes =
+                            await registerFileAttachment(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "file",
+                                    objectKey,
+                                    fileName:
+                                        "report.pdf",
+                                    mimeType:
+                                        "application/pdf",
+                                    fileSize: 1000,
+                                },
+                            );
+
+                        expect(
+                            fileRes.status,
+                        ).toBe(201);
 
                         const attachments =
                             await db(
                                 "submission_attachments",
-                            )
-                                .where({
-                                    submissionId,
-                                });
+                            ).where({
+                                submissionId,
+                            });
 
                         expect(
                             attachments,
@@ -649,26 +758,598 @@ describe(
 
                         expect(
                             attachments.map(
-                                (a) =>
-                                    a.fileName,
+                                (attachment) =>
+                                    attachment.type,
                             ),
                         ).toEqual(
-                            expect.arrayContaining(
-                                [
-                                    "report.pdf",
-                                    "source.zip",
-                                    "preview.png",
-                                ],
-                            ),
+                            expect.arrayContaining([
+                                "text",
+                                "link",
+                                "file",
+                            ]),
                         );
                     },
                 );
             },
         );
 
-        // =====================================================
+        // ====================================================
+        // GET /attachments
+        // ====================================================
+
+        describe(
+            "GET /api/v1/submissions/:id/attachments",
+            () => {
+                it(
+                    "should return all attachments for a submission",
+                    async () => {
+                        const {
+                            member,
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        // Text
+                        const textRes =
+                            await registerContentAttachment(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "text",
+                                    content:
+                                        "This is my submission",
+                                },
+                            );
+
+                        expect(
+                            textRes.status,
+                        ).toBe(201);
+
+                        // Link
+                        const linkRes =
+                            await registerContentAttachment(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "link",
+                                    content:
+                                        "https://figma.com/design/test",
+                                },
+                            );
+
+                        expect(
+                            linkRes.status,
+                        ).toBe(201);
+
+                        const res =
+                            await request(app)
+                                .get(
+                                    `/api/v1/submissions/${submissionId}/attachments`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    member.cookie,
+                                );
+
+                        expect(
+                            res.status,
+                        ).toBe(200);
+
+                        expect(
+                            res.body.success,
+                        ).toBe(true);
+
+                        expect(
+                            res.body.data,
+                        ).toHaveLength(2);
+
+                        expect(
+                            res.body.data,
+                        ).toEqual(
+                            expect.arrayContaining([
+                                expect.objectContaining({
+                                    submissionId,
+                                    type: "text",
+                                    content:
+                                        "This is my submission",
+                                }),
+
+                                expect.objectContaining({
+                                    submissionId,
+                                    type: "link",
+                                    content:
+                                        "https://figma.com/design/test",
+                                }),
+                            ]),
+                        );
+                    },
+                );
+
+                it(
+                    "should return empty array when submission has no attachments",
+                    async () => {
+                        const {
+                            member,
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const res =
+                            await request(app)
+                                .get(
+                                    `/api/v1/submissions/${submissionId}/attachments`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    member.cookie,
+                                );
+
+                        expect(
+                            res.status,
+                        ).toBe(200);
+
+                        expect(
+                            res.body.success,
+                        ).toBe(true);
+
+                        expect(
+                            res.body.data,
+                        ).toEqual([]);
+                    },
+                );
+
+                it(
+                    "should reject unauthenticated request",
+                    async () => {
+                        const {
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const res =
+                            await request(app).get(
+                                `/api/v1/submissions/${submissionId}/attachments`,
+                            );
+
+                        expect(
+                            res.status,
+                        ).toBe(401);
+                    },
+                );
+
+                it(
+                    "should reject non-existent submission",
+                    async () => {
+                        const {
+                            member,
+                        } =
+                            await createTaskWithSubmission();
+                        const submissionId = Number(9999999)
+                        const res =
+                            await request(app)
+                                .get(
+                                    `/api/v1/submissions/${submissionId}/attachments`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    member.cookie,
+                                );
+
+                        expect(
+                            res.status,
+                        ).toBe(404);
+                    },
+                );
+            },
+        );
+
+        // ====================================================
+        // DELETE /attachments/:attachmentId
+        // ====================================================
+
+        describe(
+            "DELETE /api/v1/submissions/:id/attachments/:attachmentId",
+            () => {
+                it(
+                    "should delete text attachment",
+                    async () => {
+                        const {
+                            member,
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const createRes =
+                            await registerContentAttachment(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "text",
+                                    content:
+                                        "Delete me",
+                                },
+                            );
+
+                        expect(
+                            createRes.status,
+                        ).toBe(201);
+
+                        const attachmentId =
+                            createRes.body.data
+                                .contentAttachment.id;
+
+                        const deleteRes =
+                            await request(app)
+                                .delete(
+                                    `/api/v1/submissions/${submissionId}/attachments/${attachmentId}`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    member.cookie,
+                                );
+
+                        expect(
+                            deleteRes.status,
+                        ).toBe(204);
+
+                        const afterDelete =
+                            await request(app)
+                                .get(
+                                    `/api/v1/submissions/${submissionId}/attachments`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    member.cookie,
+                                );
+
+                        expect(
+                            afterDelete.status,
+                        ).toBe(200);
+
+                        expect(
+                            afterDelete.body.data,
+                        ).toEqual([]);
+                    },
+                );
+
+                it(
+                    "should delete file attachment",
+                    async () => {
+                        const {
+                            member,
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const uploadRes =
+                            await requestUploadUrl(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "file",
+                                    fileName:
+                                        "delete-me.pdf",
+                                    mimeType:
+                                        "application/pdf",
+                                    fileSize: 1000,
+                                },
+                            );
+
+                        expect(
+                            uploadRes.status,
+                        ).toBe(200);
+
+                        const {
+                            objectKey,
+                        } =
+                            uploadRes.body.data;
+
+                        const createRes =
+                            await registerFileAttachment(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "file",
+                                    objectKey,
+                                    fileName:
+                                        "delete-me.pdf",
+                                    mimeType:
+                                        "application/pdf",
+                                    fileSize: 1000,
+                                },
+                            );
+
+                        expect(
+                            createRes.status,
+                        ).toBe(201);
+
+                        const attachmentId =
+                            createRes.body.data
+                                .fileAttachment.id;
+
+                        const deleteRes =
+                            await request(app)
+                                .delete(
+                                    `/api/v1/submissions/${submissionId}/attachments/${attachmentId}`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    member.cookie,
+                                );
+
+                        expect(
+                            deleteRes.status,
+                        ).toBe(204);
+
+                        const afterDelete =
+                            await request(app)
+                                .get(
+                                    `/api/v1/submissions/${submissionId}/attachments`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    member.cookie,
+                                );
+
+                        expect(
+                            afterDelete.body.data,
+                        ).toEqual([]);
+                    },
+                );
+
+                it(
+                    "should reject deleting attachment belonging to another submission",
+                    async () => {
+                        const first =
+                            await createTaskWithSubmission();
+
+                        const second =
+                            await createTaskWithSubmission();
+
+                        const createRes =
+                            await registerContentAttachment(
+                                first.member.cookie,
+                                first.submissionId,
+                                {
+                                    type: "text",
+                                    content:
+                                        "Private attachment",
+                                },
+                            );
+
+                        expect(
+                            createRes.status,
+                        ).toBe(201);
+
+                        const attachmentId =
+                            createRes.body.data
+                                .contentAttachment.id;
+
+                        const deleteRes =
+                            await request(app)
+                                .delete(
+                                    `/api/v1/submissions/${second.submissionId}/attachments/${attachmentId}`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    second.member.cookie,
+                                );
+
+                        expect(
+                            deleteRes.status,
+                        ).toBe(404);
+                    },
+                );
+
+                it(
+                    "should reject deleting attachment from unauthorized member",
+                    async () => {
+                        const {
+                            leader,
+                            member,
+                            projectId,
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const unauthorizedMember =
+                            await inviteAndAccept(
+                                leader.cookie,
+                                projectId,
+                                `unauthorized_${Date.now()}`,
+                            );
+
+                        const createRes =
+                            await registerContentAttachment(
+                                member.cookie,
+                                submissionId,
+                                {
+                                    type: "text",
+                                    content:
+                                        "Private attachment",
+                                },
+                            );
+
+                        expect(
+                            createRes.status,
+                        ).toBe(201);
+
+                        const attachmentId =
+                            createRes.body.data
+                                .contentAttachment.id;
+
+                        const deleteRes =
+                            await request(app)
+                                .delete(
+                                    `/api/v1/submissions/${submissionId}/attachments/${attachmentId}`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    unauthorizedMember.cookie,
+                                );
+
+                        expect(
+                            deleteRes.status,
+                        ).toBe(403);
+                    },
+                );
+                it("should delete file attachment from both database and object storage", async () => {
+                    const {
+                        member,
+                        submissionId,
+                    } = await createTaskWithSubmission();
+
+                    const fileContent = Buffer.from(
+                        "File to be deleted",
+                        "utf-8",
+                    );
+
+                    const fileName = "delete-me.txt";
+                    const mimeType = "text/plain";
+
+                    // 1. Get presigned URL
+                    const uploadUrlRes = await requestUploadUrl(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "file",
+                            fileName,
+                            mimeType,
+                            fileSize: fileContent.length,
+                        },
+                    );
+
+                    expect(uploadUrlRes.status).toBe(200);
+
+                    const {
+                        uploadUrl,
+                        objectKey,
+                    } = uploadUrlRes.body.data;
+
+                    // 2. Upload actual file
+                    const uploadRes = await fetch(uploadUrl, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": mimeType,
+                        },
+                        body: fileContent,
+                    });
+
+                    expect(uploadRes.ok).toBe(true);
+
+                    // 3. Verify object exists
+                    const headBeforeDelete =
+                        await s3.send(
+                            new HeadObjectCommand({
+                                Bucket: STORAGE_BUCKET,
+                                Key: objectKey,
+                            }),
+                        );
+
+                    expect(headBeforeDelete.ContentLength).toBe(
+                        fileContent.length,
+                    );
+
+                    // 4. Register metadata
+                    const attachmentRes =
+                        await registerFileAttachment(
+                            member.cookie,
+                            submissionId,
+                            {
+                                type: "file",
+                                objectKey,
+                                fileName,
+                                mimeType,
+                                fileSize: fileContent.length,
+                            },
+                        );
+                    expect(attachmentRes.status).toBe(201);
+
+                    const attachmentId =
+                        attachmentRes.body.data.fileAttachment.id;
+                    // 5. Delete attachment
+                    const deleteRes =
+                        await request(app)
+                            .delete(
+                                `/api/v1/submissions/${submissionId}/attachments/${attachmentId}`,
+                            )
+                            .set(
+                                "Cookie",
+                                member.cookie,
+                            );
+                    console.log(deleteRes.body)
+                    expect(deleteRes.status).toBe(204);
+
+                    // 6. Verify DB metadata is gone
+                    const dbAttachment =
+                        await db("submission_attachments")
+                            .where({ id: attachmentId })
+                            .first();
+
+                    expect(dbAttachment).toBeUndefined();
+
+                    // 7. Verify object is gone
+                    await expect(
+                        s3.send(
+                            new HeadObjectCommand({
+                                Bucket: STORAGE_BUCKET,
+                                Key: objectKey,
+                            }),
+                        ),
+                    ).rejects.toThrow();
+                });
+                it(
+                    "should reject unauthenticated delete",
+                    async () => {
+                        const {
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const res =
+                            await request(app)
+                                .delete(
+                                    `/api/v1/submissions/${submissionId}/attachments/1`,
+                                );
+
+                        expect(
+                            res.status,
+                        ).toBe(401);
+                    },
+                );
+
+                it(
+                    "should reject non-existent attachment",
+                    async () => {
+                        const {
+                            member,
+                            submissionId,
+                        } =
+                            await createTaskWithSubmission();
+
+                        const res =
+                            await request(app)
+                                .delete(
+                                    `/api/v1/submissions/${submissionId}/attachments/999999`,
+                                )
+                                .set(
+                                    "Cookie",
+                                    member.cookie,
+                                );
+
+                        expect(
+                            res.status,
+                        ).toBe(404);
+                    },
+                );
+            },
+
+        );
+
+
+        // ====================================================
         // AUTHENTICATION
-        // =====================================================
+        // ====================================================
 
         describe(
             "Authentication",
@@ -687,12 +1368,12 @@ describe(
                                         "report.pdf",
                                     mimeType:
                                         "application/pdf",
-                                    fileSize:
-                                        1000,
+                                    fileSize: 1000,
                                 });
 
-                        expect(res.status)
-                            .toBe(401);
+                        expect(
+                            res.status,
+                        ).toBe(401);
                     },
                 );
 
@@ -705,19 +1386,17 @@ describe(
                                     "/api/v1/submissions/1/attachments",
                                 )
                                 .send({
-                                    type: "file",
-                                    objectKey:
-                                        "submissions/1/file.pdf",
-                                    fileName:
-                                        "file.pdf",
-                                    mimeType:
-                                        "application/pdf",
-                                    fileSize:
-                                        1000,
+                                    content: {
+                                        type: "text",
+                                        content:
+                                            "Unauthenticated",
+                                    },
+                                    file: null,
                                 });
 
-                        expect(res.status)
-                            .toBe(401);
+                        expect(
+                            res.status,
+                        ).toBe(401);
                     },
                 );
             },
@@ -725,26 +1404,36 @@ describe(
     },
 );
 
-describe("Submission File Upload End-to-End Integration", () => {
-    beforeEach(async () => {
-        await cleanDatabase();
-    });
+// ============================================================
+// END-TO-END FILE UPLOAD
+//
+// Presigned URL
+//      ↓
+// Object Storage
+//      ↓
+// Register Metadata
+// ============================================================
 
-    describe(
-        "POST /api/v1/submissions/:id/attachments/upload-url → Object Storage → POST /attachments",
-        () => {
-            it("should upload the actual file to object storage and register its metadata", async () => {
+describe(
+    "Submission File Upload End-to-End Integration",
+    () => {
+        beforeEach(async () => {
+            await cleanDatabase();
+        });
+
+        it(
+            "should upload the actual file to object storage and register its metadata",
+            async () => {
                 const {
                     member,
-                    submissionId: rawSubmissionId,
-                } = await createTaskWithSubmission();
+                    submissionId,
+                } =
+                    await createTaskWithSubmission();
 
-                const submissionId = Number(rawSubmissionId);
-
-                // ─────────────────────────────────────────────
+                // ------------------------------------------------
                 // Fake file content
-                // ─────────────────────────────────────────────
-
+                // ------------------------------------------------
+                console.log("Submission Id : ", submissionId)
                 const fileContent = Buffer.from(
                     "Hello from KerjainYu integration test!",
                     "utf-8",
@@ -753,9 +1442,9 @@ describe("Submission File Upload End-to-End Integration", () => {
                 const fileName = "report.txt";
                 const mimeType = "text/plain";
 
-                // ─────────────────────────────────────────────
+                // ------------------------------------------------
                 // 1. Request presigned upload URL
-                // ─────────────────────────────────────────────
+                // ------------------------------------------------
 
                 const uploadUrlRes =
                     await requestUploadUrl(
@@ -765,11 +1454,14 @@ describe("Submission File Upload End-to-End Integration", () => {
                             type: "file",
                             fileName,
                             mimeType,
-                            fileSize: fileContent.length,
+                            fileSize:
+                                fileContent.length,
                         },
                     );
 
-                expect(uploadUrlRes.status).toBe(200);
+                expect(
+                    uploadUrlRes.status,
+                ).toBe(200);
 
                 expect(
                     uploadUrlRes.body.success,
@@ -778,28 +1470,33 @@ describe("Submission File Upload End-to-End Integration", () => {
                 const {
                     uploadUrl,
                     objectKey,
-                } = uploadUrlRes.body.data;
+                } =
+                    uploadUrlRes.body.data;
 
-                expect(uploadUrl).toEqual(
+                expect(
+                    uploadUrl,
+                ).toEqual(
                     expect.any(String),
                 );
 
-                expect(objectKey).toEqual(
+                expect(
+                    objectKey,
+                ).toEqual(
                     expect.stringContaining(
                         `submissions/${submissionId}/`,
                     ),
                 );
 
-                // ─────────────────────────────────────────────
-                // 2. Upload actual binary directly
-                //    to object storage
-                // ─────────────────────────────────────────────
+                // ------------------------------------------------
+                // 2. Upload actual binary
+                // ------------------------------------------------
 
                 const storageUploadRes =
                     await fetch(uploadUrl, {
                         method: "PUT",
                         headers: {
-                            "Content-Type": mimeType,
+                            "Content-Type":
+                                mimeType,
                         },
                         body: fileContent,
                     });
@@ -808,20 +1505,22 @@ describe("Submission File Upload End-to-End Integration", () => {
                     storageUploadRes.ok,
                 ).toBe(true);
 
-                // ─────────────────────────────────────────────
-                // 3. Verify object actually exists
-                //    in object storage
-                // ─────────────────────────────────────────────
+                // ------------------------------------------------
+                // 3. Verify object exists
+                // ------------------------------------------------
 
                 const headObject =
                     await s3.send(
                         new HeadObjectCommand({
-                            Bucket: STORAGE_BUCKET,
+                            Bucket:
+                                STORAGE_BUCKET,
                             Key: objectKey,
                         }),
                     );
 
-                expect(headObject.ContentLength).toBe(
+                expect(
+                    headObject.ContentLength,
+                ).toBe(
                     fileContent.length,
                 );
 
@@ -829,12 +1528,12 @@ describe("Submission File Upload End-to-End Integration", () => {
                     headObject.ContentType,
                 ).toBe(mimeType);
 
-                // ─────────────────────────────────────────────
-                // 4. Register uploaded file metadata
-                // ─────────────────────────────────────────────
+                // ------------------------------------------------
+                // 4. Register metadata
+                // ------------------------------------------------
 
                 const attachmentRes =
-                    await registerAttachment(
+                    await registerFileAttachment(
                         member.cookie,
                         submissionId,
                         {
@@ -855,12 +1554,14 @@ describe("Submission File Upload End-to-End Integration", () => {
                     attachmentRes.body.success,
                 ).toBe(true);
 
-                // ─────────────────────────────────────────────
-                // 5. Verify database metadata
-                // ─────────────────────────────────────────────
+                expect(
+                    attachmentRes.body.data
+                        .contentAttachment,
+                ).toBeNull();
 
                 expect(
-                    attachmentRes.body.data,
+                    attachmentRes.body.data
+                        .fileAttachment,
                 ).toEqual(
                     expect.objectContaining({
                         submissionId,
@@ -872,393 +1573,43 @@ describe("Submission File Upload End-to-End Integration", () => {
                             fileContent.length,
                     }),
                 );
-            });
-        },
-    );
-});
 
-describe(
-    "GET /api/v1/submissions/:id/attachments",
-    () => {
-        beforeEach(async () => {
-            await cleanDatabase();
-        });
-        it(
-            "should return all attachments for a submission",
-            async () => {
-                const {
-                    member,
-                    submissionId,
-                } = await createTaskWithSubmission();
+                // ------------------------------------------------
+                // 5. Verify database
+                // ------------------------------------------------
 
-                const textAttachment =
-                    await request(app)
-                        .post(
-                            `/api/v1/submissions/${submissionId}/attachments`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        )
-                        .send({
-                            type: "text",
-                            content:
-                                "This is my submission",
-                        });
-
-                const linkAttachment =
-                    await request(app)
-                        .post(
-                            `/api/v1/submissions/${submissionId}/attachments`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        )
-                        .send({
-                            type: "link",
-                            content:
-                                "https://figma.com/design/test",
-                        });
-                console.log(textAttachment.error)
-                expect(
-                    textAttachment.status,
-                ).toBe(201);
+                const attachment =
+                    await db(
+                        "submission_attachments",
+                    )
+                        .where({
+                            id: Number(
+                                attachmentRes.body
+                                    .data
+                                    .fileAttachment
+                                    .id,
+                            ),
+                        })
+                        .first();
 
                 expect(
-                    linkAttachment.status,
-                ).toBe(201);
-
-                const res =
-                    await request(app)
-                        .get(
-                            `/api/v1/submissions/${submissionId}/attachments`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        );
-
-                expect(res.status).toBe(200);
-                expect(res.body.success).toBe(true);
-                expect(
-                    res.body.data,
-                ).toHaveLength(2);
-
-                expect(
-                    res.body.data,
+                    attachment,
                 ).toEqual(
-                    expect.arrayContaining([
-                        expect.objectContaining({
-                            submissionId:
-                                Number(
-                                    submissionId,
-                                ),
-                            type: "text",
-                            content:
-                                "This is my submission",
-                        }),
-                        expect.objectContaining({
-                            submissionId:
-                                Number(
-                                    submissionId,
-                                ),
-                            type: "link",
-                            content:
-                                "https://figma.com/design/test",
-                        }),
-                    ]),
+                    expect.objectContaining({
+                        submissionId:
+                            String(
+                                submissionId,
+                            ),
+                        type: "file",
+                        objectKey,
+                        fileName,
+                        mimeType,
+                        fileSize:
+                            String(
+                                fileContent.length,
+                            ),
+                    }),
                 );
-            },
-        );
-
-        it(
-            "should return empty array when submission has no attachments",
-            async () => {
-                const {
-                    member,
-                    submissionId,
-                } = await createTaskWithSubmission();
-
-                const res =
-                    await request(app)
-                        .get(
-                            `/api/v1/submissions/${submissionId}/attachments`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        );
-
-                expect(res.status).toBe(200);
-                expect(res.body.success).toBe(true);
-                expect(res.body.data).toEqual([]);
-            },
-        );
-
-        it(
-            "should reject unauthenticated request",
-            async () => {
-                const {
-                    submissionId,
-                } = await createTaskWithSubmission();
-
-                const res =
-                    await request(app).get(
-                        `/api/v1/submissions/${submissionId}/attachments`,
-                    );
-
-                expect(res.status).toBe(401);
-            },
-        );
-
-        it(
-            "should reject non-existent submission",
-            async () => {
-                const {
-                    member,
-                } = await createTaskWithSubmission();
-
-                const res =
-                    await request(app)
-                        .get(
-                            "/api/v1/submissions/999999/attachments",
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        );
-
-                expect(res.status).toBe(404);
-            },
-        );
-    },
-);
-
-describe(
-    "DELETE /api/v1/submissions/:id/attachments/:attachmentId",
-    () => {
-        beforeEach(async () => {
-            await cleanDatabase();
-        });
-        it(
-            "should delete text attachment",
-            async () => {
-                const {
-                    member,
-                    submissionId,
-                } = await createTaskWithSubmission();
-
-                const submissionRes =
-                    await request(app)
-                        .post(
-                            `/api/v1/tasks/${submissionId}/submissions`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        )
-                        .send({
-                            note: "Submission",
-                            contents: [
-                                {
-                                    type: "text",
-                                    content:
-                                        "Delete me",
-                                },
-                            ],
-                        });
-
-                expect(
-                    submissionRes.status,
-                ).toBe(201);
-
-                const attachmentsRes =
-                    await request(app)
-                        .get(
-                            `/api/v1/submissions/${submissionId}/attachments`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        );
-
-                const attachment =
-                    attachmentsRes.body.data[0];
-
-                const deleteRes =
-                    await request(app)
-                        .delete(
-                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        );
-
-                expect(
-                    deleteRes.status,
-                ).toBe(204);
-
-                const afterDelete =
-                    await request(app)
-                        .get(
-                            `/api/v1/submissions/${submissionId}/attachments`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        );
-
-                expect(
-                    afterDelete.body.data,
-                ).toEqual([]);
-            },
-        );
-
-        it(
-            "should reject deleting attachment belonging to another submission",
-            async () => {
-                const first =
-                    await createTaskWithSubmission();
-
-                const second =
-                    await createTaskWithSubmission();
-
-                const submissionRes =
-                    await request(app)
-                        .post(
-                            `/api/v1/tasks/${first.taskId}/submissions`,
-                        )
-                        .set(
-                            "Cookie",
-                            first.member.cookie,
-                        )
-                        .send({
-                            note: "Submission",
-                            contents: [
-                                {
-                                    type: "text",
-                                    content:
-                                        "Private attachment",
-                                },
-                            ],
-                        });
-
-                expect(
-                    submissionRes.status,
-                ).toBe(201);
-
-                const attachmentsRes =
-                    await request(app)
-                        .get(
-                            `/api/v1/submissions/${first.submissionId}/attachments`,
-                        )
-                        .set(
-                            "Cookie",
-                            first.member.cookie,
-                        );
-
-                const attachment =
-                    attachmentsRes.body.data[0];
-
-                const deleteRes =
-                    await request(app)
-                        .delete(
-                            `/api/v1/submissions/${second.submissionId}/attachments/${attachment.id}`,
-                        )
-                        .set(
-                            "Cookie",
-                            second.member.cookie,
-                        );
-
-                expect(
-                    deleteRes.status,
-                ).toBe(404);
-            },
-        );
-
-        it(
-            "should reject deleting attachment from unauthorized member",
-            async () => {
-                const {
-                    leader,
-                    member,
-                    projectId,
-                    submissionId,
-                } = await createTaskWithSubmission();
-
-                const unauthorizedMember =
-                    await inviteAndAccept(
-                        leader.cookie,
-                        projectId,
-                        `file_unauthorized_${Date.now()}`,
-                    );
-
-                const submissionRes =
-                    await request(app)
-                        .get(
-                            `/api/v1/submissions/${submissionId}/attachments`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        );
-
-                expect(submissionRes.status).toBe(200);
-
-                const attachment =
-                    submissionRes.body.data[0];
-
-                const deleteRes =
-                    await request(app)
-                        .delete(
-                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
-                        )
-                        .set(
-                            "Cookie",
-                            unauthorizedMember.cookie,
-                        );
-
-                expect(deleteRes.status).toBe(403);
-            },
-        );
-        it(
-            "should reject unauthenticated delete",
-            async () => {
-                const {
-                    submissionId,
-                } = await createTaskWithSubmission();
-
-                const res =
-                    await request(app)
-                        .delete(
-                            `/api/v1/submissions/${submissionId}/attachments/1`,
-                        );
-
-                expect(res.status).toBe(401);
-            },
-        );
-
-        it(
-            "should reject non-existent attachment",
-            async () => {
-                const {
-                    member,
-                    submissionId,
-                } = await createTaskWithSubmission();
-
-                const res =
-                    await request(app)
-                        .delete(
-                            `/api/v1/submissions/${submissionId}/attachments/999999`,
-                        )
-                        .set(
-                            "Cookie",
-                            member.cookie,
-                        );
-
-                expect(res.status).toBe(404);
             },
         );
     },

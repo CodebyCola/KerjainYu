@@ -101,9 +101,16 @@ export const createFileAttachmentSchema = z.object({
     .openapi("CreateFileAttachmentInput");
 
 export const createAttachmentSchema = z.object({
-    content: submissionContentAttachmentSchema || null,
-    file: createFileAttachmentSchema || null
+    content: submissionContentAttachmentSchema.nullable(),
+    file: createFileAttachmentSchema.nullable(),
 })
+    .refine(
+        (data) => data.content !== null || data.file !== null,
+        {
+            message: "Either content or file must be provided",
+        },
+    )
+    .openapi("CreateAttachmentInput");
 
 export const createSubmissionSchema = z.object({
     note: z.string()
@@ -187,7 +194,7 @@ export const attachmentIdParams = z.object({
 export type SubmissionContentAttachmentInput =
     z.infer<typeof submissionContentAttachmentSchema>;
 
-export type CreateAttachmentinput =
+export type CreateAttachmentInput =
     z.infer<typeof createAttachmentSchema>;
 
 export type CreateFileAttachmentInput =
