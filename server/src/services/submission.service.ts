@@ -2,47 +2,57 @@ import { db } from "../database/db"
 import * as submissionRepo from "../database/repositories/submission.repository"
 import * as taskRepo from "../database/repositories/task.repository"
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError"
-import { CreateSubmissionInput, ReviewSubmissionInput } from "../schemas/submission.schema"
-import { userIdParams } from "../schemas/userSchema"
+import { CreateFileAttachmentInput, CreateFileUploadUrlInput, CreateSubmissionInput, ReviewSubmissionInput } from "../schemas/submission.schema"
+import * as storageService from "./storage.service"
 import { assertProjectLeader } from "./helper/auhtorization.helper"
 import { assertTaskAccess } from "./helper/task.helper"
 
 //POST /api/v1/tasks/:id/submissions
-export async function createSubmission(taskId: number, submittedBy: number, input: CreateSubmissionInput) {
-    const task = await assertTaskAccess(taskId, submittedBy)
-    if (task.assigneeId != submittedBy) {
-        throw new ForbiddenError("Only the assignee can submit the task")
-    }
-    if (!['in_revision', 'ongoing'].includes(task.status)) {
-        throw new ConflictError("Only task in status revision & ongoing that can be submitted")
-    }
-    return db.transaction(async (trx) => {
-        let submission;
+export async function createSubmission(
+    taskId: number,
+    submittedBy: number,
+    input: CreateSubmissionInput,
+) {
+    const task = await assertTaskAccess(taskId, submittedBy);
 
-        if (input.attachments.length > 0) {
-            submission =
-                await submissionRepo.createSubmissionWithAttachments(
-                    taskId,
-                    submittedBy,
-                    input,
-                    trx
-                );
-        } else {
-            submission = await submissionRepo.createSubmission(
-                {
-                    taskId,
-                    submittedBy,
-                    note: input.note,
-                },
+    if (task.assigneeId != submittedBy) {
+        throw new ForbiddenError(
+            "Only the assignee can submit the task"
+        );
+    }
+
+    if (!["in_revision", "ongoing"].includes(task.status)) {
+        throw new ConflictError(
+            "Only task in status revision & ongoing that can be submitted"
+        );
+    }
+
+    return db.transaction(async (trx) => {
+        const submission = await submissionRepo.createSubmission(
+            {
+                taskId,
+                submittedBy,
+                note: input.note,
+            },
+            trx
+        );
+
+        // text / link attachments only
+        if (input.contents.length > 0) {
+            await submissionRepo.createContentAttachments(
+                submission.id,
+                input.contents,
                 trx
             );
         }
-        const updatedTask = await taskRepo.updateTaskStatusIfAllowed(
-            task.id,
-            ["ongoing", "in_revision"],
-            "submitted",
-            trx
-        );
+
+        const updatedTask =
+            await taskRepo.updateTaskStatusIfAllowed(
+                task.id,
+                ["ongoing", "in_revision"],
+                "submitted",
+                trx
+            );
 
         if (!updatedTask) {
             throw new ConflictError(
@@ -54,6 +64,104 @@ export async function createSubmission(taskId: number, submittedBy: number, inpu
     });
 }
 
+// POST /api/v1/submissions/:id/attachments/upload-url -> Used to provide the presigned url to the client
+export async function createAttachmentUploadUrl(
+    submissionId: number,
+    userId: number,
+    input: CreateFileUploadUrlInput,
+) {
+    const submission =
+        await submissionRepo.getSubmissionById(submissionId);
+
+    if (!submission) {
+        throw new NotFoundError("Submission is not found");
+    }
+
+    const task =
+        await taskRepo.getTaskById(submission.taskId);
+
+    if (!task) {
+        throw new NotFoundError("Task is not found");
+    }
+
+    if (task.assigneeId != userId) {
+        throw new ForbiddenError(
+            "Only the assignee can upload submission attachments",
+        );
+    }
+
+    if (!["pending", "revision_requested"].includes(submission.reviewStatus)) {
+        throw new ConflictError("Cannot upload attachments to a reviewed submission");
+    }
+
+    return storageService.createSubmissionUploadUrl(
+        submissionId,
+        input.fileName,
+        input.mimeType,
+    );
+}
+
+//POST /api/v1/submissions/:id/attachments -> For saving metadata to database
+export async function createFileAttachment(
+    submissionId: number,
+    userId: number,
+    input: CreateFileAttachmentInput,
+) {
+    const submission =
+        await submissionRepo.getSubmissionById(
+            submissionId,
+        );
+
+    if (!submission) {
+        throw new NotFoundError(
+            "Submission is not found",
+        );
+    }
+
+    const task =
+        await taskRepo.getTaskById(
+            submission.taskId,
+        );
+
+    if (!task) {
+        throw new NotFoundError(
+            "Task is not found",
+        );
+    }
+
+    if (task.assigneeId != userId) {
+        throw new ForbiddenError(
+            "Only the assignee can attach files to this submission",
+        );
+    }
+
+    if (!["pending", "revision_requested"].includes(submission.reviewStatus)
+    ) {
+        throw new ConflictError(
+            "Cannot attach file to a reviewed submission",
+        );
+    }
+
+    if (!input.objectKey.startsWith(`submissions/${submissionId}/`,)) {
+        throw new ForbiddenError(
+            "Invalid object key",
+        );
+    }
+
+    return db.transaction(async (trx) => {
+        return submissionRepo.createFileAttachment(
+            {
+                submissionId,
+                type: input.type,
+                objectKey: input.objectKey,
+                fileName: input.fileName,
+                mimeType: input.mimeType,
+                fileSize: input.fileSize,
+            },
+            trx,
+        );
+    });
+}
 
 //PATCH /api/v1/submissions/:id/review
 export async function reviewSubmission(submissionId: number, leaderId: number, input: ReviewSubmissionInput) {

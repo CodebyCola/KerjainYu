@@ -26,6 +26,56 @@ export async function createSubmission(
     }
 }
 
+// POST /api/v1/submissions/:id/attachments/upload-url
+export async function createAttachmentUploadUrl(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+) {
+    try {
+        const submissionId = Number(req.params.id);
+
+        const result =
+            await submissionService.createAttachmentUploadUrl(
+                submissionId,
+                req.user!.id,
+                req.body,
+            );
+
+        res.status(200).json({
+            success: true,
+            data: result,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// POST /api/v1/submissions/:id/attachments
+export async function createFileAttachment(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+) {
+    try {
+        const submissionId = Number(req.params.id);
+
+        const attachment =
+            await submissionService.createFileAttachment(
+                submissionId,
+                req.user!.id,
+                req.body,
+            );
+
+        res.status(201).json({
+            success: true,
+            data: attachment,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 // PATCH /api/v1/submissions/:id/review
 export async function reviewSubmission(
     req: AuthRequest,
@@ -35,11 +85,12 @@ export async function reviewSubmission(
     try {
         const submissionId = Number(req.params.id);
 
-        const submission = await submissionService.reviewSubmission(
-            submissionId,
-            req.user!.id,
-            req.body,
-        );
+        const submission =
+            await submissionService.reviewSubmission(
+                submissionId,
+                req.user!.id,
+                req.body,
+            );
 
         res.status(200).json({
             success: true,

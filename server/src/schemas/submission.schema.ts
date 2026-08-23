@@ -1,17 +1,114 @@
 import { z } from "../lib/zod-extended";
 
+// ─────────────────────────────────────────────
+// Content attachment
+// Used when submitting text / link content
+// ─────────────────────────────────────────────
 
-export const submissionAttachmentSchema = z.object({
-    type: z.enum(["text", "image", "file", "link"])
-        .openapi({ example: "link" }),
-    content: z.string().trim().min(1, "Content cannot be empty")
-        .openapi({ example: "https://figma.com/file/website-redesign?node=homepage" }),
-}).strict().openapi("SubmissionAttachmentInput");
+export const submissionContentAttachmentSchema = z.object({
+    type: z.enum(["text", "link"])
+        .openapi({
+            example: "link",
+        }),
+
+    content: z.string()
+        .trim()
+        .min(1, "Content cannot be empty")
+        .openapi({
+            example:
+                "https://figma.com/file/website-redesign?node=homepage",
+        }),
+})
+    .strict()
+    .openapi("SubmissionContentAttachmentInput");
 
 // ─────────────────────────────────────────────
+// File attachment
+// Used for:
+// 1. Requesting presigned upload URL
+// 2. Registering uploaded file in database
+// ─────────────────────────────────────────────
+export const createFileUploadUrlSchema = z.object({
+    type: z.enum(["file", "image"])
+        .openapi({
+            example: "file",
+        }),
+
+    fileName: z.string()
+        .trim()
+        .min(1, "File name cannot be empty")
+        .max(255, "File name is too long")
+        .openapi({
+            example: "report.pdf",
+        }),
+
+    mimeType: z.string()
+        .trim()
+        .min(1, "MIME type cannot be empty")
+        .openapi({
+            example: "application/pdf",
+        }),
+
+    fileSize: z.number()
+        .int()
+        .positive("File size must be greater than 0")
+        .max(
+            10 * 1024 * 1024,
+            "Maximum file size is 10MB",
+        )
+        .openapi({
+            example: 2458123,
+        }),
+})
+    .strict()
+    .openapi("CreateFileUploadUrlInput");
+
+export const createFileAttachmentSchema = z.object({
+    type: z.enum(["file", "image"])
+        .openapi({
+            example: "file",
+        }),
+
+    objectKey: z.string()
+        .trim()
+        .min(1, "Object key cannot be empty")
+        .openapi({
+            example:
+                "submissions/370/550e8400-e29b-41d4-a716-446655440000-report.pdf",
+        }),
+
+    fileName: z.string()
+        .trim()
+        .min(1, "File name cannot be empty")
+        .max(255, "File name is too long")
+        .openapi({
+            example: "report.pdf",
+        }),
+
+    mimeType: z.string()
+        .trim()
+        .min(1, "MIME type cannot be empty")
+        .openapi({
+            example: "application/pdf",
+        }),
+
+    fileSize: z.number()
+        .int()
+        .positive("File size must be greater than 0")
+        .max(
+            10 * 1024 * 1024,
+            "Maximum file size is 10MB",
+        )
+        .openapi({
+            example: 2458123,
+        }),
+})
+    .strict()
+    .openapi("CreateFileAttachmentInput");
+
+// ─────────────────────────────────────────────
+// Create submission
 // POST /api/v1/tasks/:id/submissions
-// taskId dari URL param, submittedBy dari user yang login — TIDAK ada di body
-// (prinsip yang sama dengan projectId/createdBy di createTaskSchema)
 // ─────────────────────────────────────────────
 
 export const createSubmissionSchema = z.object({
@@ -21,42 +118,84 @@ export const createSubmissionSchema = z.object({
         .max(1000, "Note is too long")
         .optional()
         .openapi({
-            example: "Sudah selesai, mockup ada di Figma."
+            example:
+                "Sudah selesai, mockup ada di Figma.",
         }),
-    attachments: z.array(submissionAttachmentSchema).max(10, "Maximum 10 attachments per submission")
-        .optional().default([])
-        .openapi({ description: "Optional list of links/files/images/text attached to this submission" }),
-}).strict().openapi("CreateSubmissionInput");
+
+    contents: z.array(
+        submissionContentAttachmentSchema,
+    )
+        .max(
+            10,
+            "Maximum 10 content attachments per submission",
+        )
+        .default([])
+        .openapi({
+            description:
+                "Optional text or link attachments.",
+        }),
+})
+    .strict()
+    .openapi("CreateSubmissionInput");
 
 // ─────────────────────────────────────────────
+// Review submission
 // PATCH /api/v1/submissions/:id/review
-// Dipakai oleh leader untuk approve/minta revisi/reject.
-// reviewedBy diambil dari user yang login, BUKAN dari body.
 // ─────────────────────────────────────────────
 
 export const reviewSubmissionSchema = z.object({
-    reviewStatus: z.enum(["approved", "revision_requested", "rejected"])
-        .openapi({ example: "revision_requested" }),
-    reviewNote: z.string().trim().max(1000, "Review note is too long").optional()
-        .openapi({ example: "Warna kurang sesuai brand guideline, tolong disesuaikan." }),
+    reviewStatus: z.enum([
+        "approved",
+        "revision_requested",
+        "rejected",
+    ])
+        .openapi({
+            example: "revision_requested",
+        }),
+
+    reviewNote: z.string()
+        .trim()
+        .max(1000, "Review note is too long")
+        .optional()
+        .openapi({
+            example:
+                "Warna kurang sesuai brand guideline, tolong disesuaikan.",
+        }),
 })
     .strict()
     .refine(
         (data) => {
-            // reviewNote WAJIB diisi kalau statusnya bukan "approved" — member berhak tau
-            // alasannya kalau kerjaannya diminta revisi atau ditolak
-            if (data.reviewStatus !== "approved" && !data.reviewNote) {
+            if (
+                data.reviewStatus !== "approved" &&
+                !data.reviewNote
+            ) {
                 return false;
             }
+
             return true;
         },
         {
-            message: "reviewNote is required when requesting revision or rejecting a submission",
+            message:
+                "reviewNote is required when requesting revision or rejecting a submission",
             path: ["reviewNote"],
-        }
+        },
     )
     .openapi("ReviewSubmissionInput");
 
-export type SubmissionAttachmentInput = z.infer<typeof submissionAttachmentSchema>;
-export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
-export type ReviewSubmissionInput = z.infer<typeof reviewSubmissionSchema>;
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
+
+export type SubmissionContentAttachmentInput =
+    z.infer<typeof submissionContentAttachmentSchema>;
+
+export type CreateFileAttachmentInput =
+    z.infer<typeof createFileAttachmentSchema>;
+export type CreateFileUploadUrlInput =
+    z.infer<typeof createFileUploadUrlSchema>;
+
+export type CreateSubmissionInput =
+    z.infer<typeof createSubmissionSchema>;
+
+export type ReviewSubmissionInput =
+    z.infer<typeof reviewSubmissionSchema>;

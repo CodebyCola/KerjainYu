@@ -20,20 +20,16 @@ exports.up = function (knex) {
         // Used for text and link attachments
         table.string("content").nullable();
 
-        // Object Storage metadata
-        // Example: submissions/123/8f92a-report.pdf
         table.string("object_key").nullable();
 
         // Original filename uploaded by the user
-        // Example: report.pdf
-        table.string("original_name").nullable();
+        table.string("file_name").nullable();
 
         // MIME type
-        // Example: application/pdf, image/png
         table.string("mime_type").nullable();
 
         // File size in bytes
-        table.bigInteger("size").nullable();
+        table.bigInteger("file_size").nullable();
 
         table
             .timestamp("created_at")

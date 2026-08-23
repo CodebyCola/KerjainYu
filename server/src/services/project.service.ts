@@ -3,7 +3,7 @@ import * as projectMemberRepo from "../database/repositories/project.member.repo
 import * as projectLinkRepo from "../database/repositories/project.link.repository";
 import * as taskRepo from "../database/repositories/task.repository"
 import * as projectSchema from "../schemas/projectSchema";
-import { findById, findByUsername } from "../database/repositories/user.repository";
+import { findById } from "../database/repositories/user.repository";
 import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
 import { db } from "../database/db";
 import {
