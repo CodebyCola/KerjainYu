@@ -1768,13 +1768,13 @@ describe(
             expect(updateRes.body.success).toBe(true);
 
             expect(updateRes.body.data).toMatchObject({
-                id: String(attachment.id),
-                submissionId: String(submissionId),
+                id: Number(attachment.id),
+                submissionId: Number(submissionId),
                 type: "file",
                 objectKey: newObjectKey,
                 fileName: "new-file.pdf",
                 mimeType: "application/pdf",
-                fileSize: "2000",
+                fileSize: 2000,
             });
         });
 
