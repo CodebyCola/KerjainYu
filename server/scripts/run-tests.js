@@ -11,6 +11,7 @@ const testFiles = [
     "src/tests/integration/project.link.test.ts",
     "src/tests/integration/task.swap.request.test.ts",
     "src/tests/integration/submission.test.ts",
+    "src/tests/integration/submission.attachment.test.ts",
 ];
 
 let hasFailure = false;

@@ -22,12 +22,6 @@ export const submissionContentAttachmentSchema = z.object({
     .strict()
     .openapi("SubmissionContentAttachmentInput");
 
-// ─────────────────────────────────────────────
-// File attachment
-// Used for:
-// 1. Requesting presigned upload URL
-// 2. Registering uploaded file in database
-// ─────────────────────────────────────────────
 export const createFileUploadUrlSchema = z.object({
     type: z.enum(["file", "image"])
         .openapi({
@@ -106,10 +100,10 @@ export const createFileAttachmentSchema = z.object({
     .strict()
     .openapi("CreateFileAttachmentInput");
 
-// ─────────────────────────────────────────────
-// Create submission
-// POST /api/v1/tasks/:id/submissions
-// ─────────────────────────────────────────────
+export const createAttachmentSchema = z.object({
+    content: submissionContentAttachmentSchema || null,
+    file: createFileAttachmentSchema || null
+})
 
 export const createSubmissionSchema = z.object({
     note: z.string()
@@ -182,12 +176,19 @@ export const reviewSubmissionSchema = z.object({
     )
     .openapi("ReviewSubmissionInput");
 
+export const attachmentIdParams = z.object({
+    attachmentId: z.coerce.number().int().positive()
+})
+
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
 
 export type SubmissionContentAttachmentInput =
     z.infer<typeof submissionContentAttachmentSchema>;
+
+export type CreateAttachmentinput =
+    z.infer<typeof createAttachmentSchema>;
 
 export type CreateFileAttachmentInput =
     z.infer<typeof createFileAttachmentSchema>;

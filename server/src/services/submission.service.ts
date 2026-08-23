@@ -4,7 +4,7 @@ import * as taskRepo from "../database/repositories/task.repository"
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError"
 import { CreateFileAttachmentInput, CreateFileUploadUrlInput, CreateSubmissionInput, ReviewSubmissionInput } from "../schemas/submission.schema"
 import * as storageService from "./storage.service"
-import { assertProjectLeader } from "./helper/auhtorization.helper"
+import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper"
 import { assertTaskAccess } from "./helper/task.helper"
 
 //POST /api/v1/tasks/:id/submissions
@@ -202,3 +202,48 @@ export async function pendingSubmissionsByProject(projectId: number, leaderId: n
     const submissions = await submissionRepo.getPendingSubmissionsByProject(projectId)
     return submissions
 }
+
+//GET /api/v1/submissions/:id/attachments -> Fetching all attachments by submission
+export async function getSubmissionAttachments(submissionId: number, userId: number) {
+    const submission = await submissionRepo.getSubmissionById(submissionId)
+    if (!submission) {
+        throw new NotFoundError("Submission not found")
+    }
+    const task = await taskRepo.getTaskById(submission.taskId)
+    if (!task) {
+        throw new NotFoundError("Task not found")
+    }
+    await assertProjectMembership(task.projectId, userId)
+    return submissionRepo.getAttachmentsBySubmission(submissionId)
+}
+
+//DELETE /api/v1/submissions/:id/attachments/:attachmentId
+export async function deleteAttachment(submissionId: number, attachmentId: number, userId: number) {
+    const submission = await submissionRepo.getSubmissionById(submissionId)
+    if (!submission) {
+        throw new NotFoundError("Submission not found")
+    }
+    const attachment = await submissionRepo.getAttachmentById(attachmentId)
+    const task = await taskRepo.getTaskById(submission.taskId)
+    if (!task) {
+        throw new NotFoundError("Task not found")
+    }
+    const isAssignee = task.assigneeId == userId;
+
+    if (!isAssignee) {
+        await assertProjectLeader(
+            task.projectId,
+            userId,
+        );
+    }
+    if (!attachment) {
+        throw new NotFoundError("Attachment not found")
+    }
+    if (attachment.submissionId != submission.id) {
+        throw new NotFoundError("Attachment not found")
+    }
+    if (attachment.type === "file" || attachment.type === "image") {
+        await storageService.deleteObject(attachment.objectKey)
+    }
+    return await submissionRepo.deleteAttachment(attachmentId)
+}   

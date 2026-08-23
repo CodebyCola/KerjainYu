@@ -1,4 +1,4 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 
@@ -48,6 +48,20 @@ export async function createSubmissionUploadUrl(
 
     return {
         uploadUrl,
+        objectKey,
+    };
+}
+export async function deleteObject(
+    objectKey: string,
+) {
+    const command = new DeleteObjectCommand({
+        Bucket: STORAGE_BUCKET,
+        Key: objectKey,
+    });
+
+    await s3.send(command);
+
+    return {
         objectKey,
     };
 }
