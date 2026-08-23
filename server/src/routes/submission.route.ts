@@ -8,6 +8,7 @@ import { validate } from "../middlewares/validate";
 import { idParams } from "../schemas/id.schema";
 import {
     attachmentIdParams,
+    createAttachmentSchema,
     createFileAttachmentSchema,
     createFileUploadUrlSchema,
     reviewSubmissionSchema,
@@ -29,7 +30,7 @@ router.post(
     "/:id/attachments",
     authenticate,
     validate(idParams, "params"),
-    validate(createFileAttachmentSchema, "body"),
+    validate(createAttachmentSchema, "body"),
     submissionController.createFileAttachment,
 );
 

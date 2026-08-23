@@ -60,8 +60,8 @@ export async function createFileAttachment(
     try {
         const submissionId = Number(req.params.id);
 
-        const attachment =
-            await submissionService.createFileAttachment(
+        const { contentAttachment, fileAttachment } =
+            await submissionService.createAttachment(
                 submissionId,
                 req.user!.id,
                 req.body,
@@ -69,7 +69,7 @@ export async function createFileAttachment(
 
         res.status(201).json({
             success: true,
-            data: attachment,
+            data: { contentAttachment, fileAttachment }
         });
     } catch (error) {
         next(error);
@@ -131,7 +131,7 @@ export async function getAttachmentsBySubmission(req: AuthRequest,
     next: NextFunction) {
     try {
         const submissionid = Number(req.params.id)
-        const attachments = submissionService.getSubmissionAttachments(submissionid, req.user!.id)
+        const attachments = await submissionService.getSubmissionAttachments(submissionid, req.user!.id)
         res.status(200).json({ success: true, data: attachments })
     } catch (error) {
         next(error)

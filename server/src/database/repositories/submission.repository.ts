@@ -48,7 +48,6 @@ export async function createContentAttachments(
         )
         .returning("*");
 }
-
 export async function createContentAttachment(
     submissionId: number,
     content: {
@@ -59,13 +58,28 @@ export async function createContentAttachment(
 ) {
     const executor = trx || db;
 
-    return executor("submission_attachments")
+    const [created] = await executor(
+        "submission_attachments",
+    )
         .insert({
+            submissionId,
             type: content.type,
             content: content.content,
-        }).returning("*");
-}
+        })
+        .returning([
+            "id",
+            "submissionId",
+            "type",
+            "content",
+            "createdAt",
+        ]);
 
+    return {
+        ...created,
+        id: Number(created.id),
+        submissionId: Number(created.submissionId),
+    };
+}
 export async function createFileAttachment(
     attachment: {
         submissionId: number;
@@ -78,9 +92,22 @@ export async function createFileAttachment(
     trx?: Knex.Transaction,
 ) {
     const executor = trx || db;
-    const [created] = await executor("submission_attachments")
+
+    const [created] = await executor(
+        "submission_attachments",
+    )
         .insert(attachment)
-        .returning("*");
+        .returning([
+            "id",
+            "submissionId",
+            "type",
+            "objectKey",
+            "fileName",
+            "mimeType",
+            "fileSize",
+            "createdAt",
+        ]);
+
     return {
         ...created,
         id: Number(created.id),
@@ -88,7 +115,6 @@ export async function createFileAttachment(
         fileSize: Number(created.fileSize),
     };
 }
-
 
 export async function getSubmissionById(id: number) {
     return db("task_submissions")
@@ -165,8 +191,18 @@ export async function reviewSubmission(
 export async function getAttachmentsBySubmission(
     submissionId: number,
 ) {
-    return db("submission_attachments")
+    const attachments = await db("submission_attachments")
         .where({ submissionId });
+
+    return attachments.map((attachment) => ({
+        ...attachment,
+        id: Number(attachment.id),
+        submissionId: Number(attachment.submissionId),
+        fileSize:
+            attachment.fileSize !== null
+                ? Number(attachment.fileSize)
+                : null,
+    }));
 }
 
 export async function getAttachmentById(
