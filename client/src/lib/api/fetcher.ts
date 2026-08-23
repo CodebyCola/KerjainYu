@@ -40,6 +40,13 @@ export async function apiFetch<T>(
     });
   }
 
+  if (response.status === 204) {
+    return {
+      data: null as T,
+      setCookies: response.headers.getSetCookie(),
+    };
+  }
+
   let json: ApiResponse<T>;
   try {
     json = await response.json();

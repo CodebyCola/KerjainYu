@@ -49,6 +49,7 @@ export async function getProjectsByUserId(user_id: number) {
   const projects = await db<Project>("projects")
     .join("project_members", "projects.id", "project_members.project_id")
     .where("project_members.user_id", user_id)
+    .where("project_members.status", "active")
     .select("projects.*");
 
   if (projects.length === 0) {

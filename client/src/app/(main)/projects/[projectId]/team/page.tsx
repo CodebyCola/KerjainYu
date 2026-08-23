@@ -5,6 +5,7 @@ import { TeamMember } from "@/types/team";
 import { ProjectMember } from "@/types/project";
 import TeamHeader from "@/components/features/team/TeamHeader";
 import TeamMemberList from "@/components/features/team/TeamMemberList";
+import LeaveProjectButton from "@/components/features/team/LeaveProjectButton";
 
 type TeamPageProps = {
     params: Promise<{ projectId: string }>;
@@ -40,6 +41,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
     const projectMembers = await getProjectMembers(projectId);
     const members = projectMembers.map(toTeamMember);
     const canManage = detail.membership.role === "leader";
+    const currentUserId = detail.membership.userId;
+    const hasOtherActiveMembers = members.some((member) => member.userId !== currentUserId);
 
     return (
         <div className="flex flex-col gap-5">
@@ -50,6 +53,13 @@ export default async function TeamPage({ params }: TeamPageProps) {
                 canManage={canManage}
             />
             <TeamMemberList projectId={projectId} initialMembers={members} canManage={canManage} />
+
+            <LeaveProjectButton
+                projectId={projectId}
+                projectTitle={detail.project.title}
+                isLeader={canManage}
+                hasOtherActiveMembers={hasOtherActiveMembers}
+            />
         </div>
     );
 }
