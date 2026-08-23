@@ -50,6 +50,15 @@ export async function leaveProject(projectId: number, userId: number) {
     if (membership.status !== "active") {
         throw new ConflictError("Active member not found in this project")
     }
+
+    // Guard tambahan biar leader gak bisa leave jika masih ada member
+    if (membership.role === "leader") {
+        const members = await projectMemberRepo.getMembersByProject(projectId)
+        const otherActiveMembers = members.filter((member) => member.user_id !== userId)
+        if (otherActiveMembers.length > 0) {
+            throw new ConflictError("Transfer leadership to another member before leaving this project")
+        }
+    }
     return db.transaction(async (trx) => {
         await projectMemberRepo.removeMember(projectId, userId, trx)
         await taskRepo.unassignTask(projectId, userId, trx)

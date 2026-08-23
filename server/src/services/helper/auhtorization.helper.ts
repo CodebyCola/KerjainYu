@@ -13,7 +13,7 @@ export async function assertProjectMembership(
   }
 
   const membership = await projectMemberRepo.getRole(projectId, userId);
-  if (!membership) {
+  if (!membership || membership.status !== "active") {
     throw new ForbiddenError("You're not part of this project");
   }
 

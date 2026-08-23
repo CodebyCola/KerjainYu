@@ -16,6 +16,10 @@ function projectLeaderPath(projectId: string) {
   return `/projects/${projectId}/leader`;
 }
 
+function projectLeavePath(projectId: string) {
+  return `/projects/${projectId}/leave`;
+}
+
 export function getProjectMembersRequest(projectId: string, cookie: string) {
   return apiFetch<ProjectMember[]>(projectMembersPath(projectId), { cookie });
 }
@@ -54,6 +58,13 @@ export function promoteToLeaderRequest(
   return apiFetch<null>(projectLeaderPath(projectId), {
     method: "PATCH",
     body: { userId },
+    cookie,
+  });
+}
+
+export function leaveProjectRequest(projectId: string, cookie: string) {
+  return apiFetch<null>(projectLeavePath(projectId), {
+    method: "POST",
     cookie,
   });
 }
