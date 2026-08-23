@@ -1,7 +1,5 @@
 import * as commentTaskRepo from "../database/repositories/comment.task.repository"
-import * as taskRepo from "../database/repositories/task.repository"
 import { ForbiddenError, NotFoundError } from "../errors/AppError";
-import { assertProjectMembership } from "./helper/auhtorization.helper"
 import { assertTaskAccess } from "./helper/task.helper";
 
 //GET /api/v1/tasks/:id/comments

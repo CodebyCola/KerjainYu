@@ -1,0 +1,25 @@
+import fs from "fs";
+import { createUploadUrl } from "../../services/storage.service";
+import "dotenv/config";
+async function main() {
+    const objectKey = "submissions/123/report.txt";
+
+    const uploadUrl = await createUploadUrl(
+        objectKey,
+        "text/plain",
+    );
+
+    const file = fs.readFileSync("./report.txt");
+
+    const response = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "text/plain",
+        },
+        body: file,
+    });
+
+    console.log("Upload status:", response.status); 
+}
+
+main().catch(console.error);

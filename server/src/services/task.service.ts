@@ -1,10 +1,7 @@
 import * as taskRepo from "../database/repositories/task.repository";
-import * as projectRepo from "../database/repositories/project.repository";
-import * as projectMemberRepo from "../database/repositories/project.member.repository";
 import * as taskInput from "../schemas/task.schema";
 import * as taskOwnershipLogRepo from "../database/repositories/task_ownership_log.repository"
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
-// import { ProjectIdParams } from "../schemas/projectSchema
 import {
   assertProjectMembership,
   assertProjectLeader,

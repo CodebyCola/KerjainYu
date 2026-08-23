@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { Knex } from "knex";
-import { CreateSubmissionInput } from "../../schemas/submission.schema";
+
+type AttachmentType = "text" | "image" | "file" | "link";
 
 // ─────────────────────────────────────────────
 // task_submissions
@@ -15,44 +16,66 @@ export async function createSubmission(
     trx?: Knex.Transaction,
 ) {
     const executor = trx || db;
+
     const [submission] = await executor("task_submissions")
         .insert(data)
         .returning("*");
+
     return submission;
 }
 
-export async function createSubmissionWithAttachments(
-    taskId: number,
-    submittedBy: number,
-    input: CreateSubmissionInput,
-    trx: Knex.Transaction,
+// ─────────────────────────────────────────────
+// submission_attachments - content
+// ─────────────────────────────────────────────
+
+export async function createContentAttachments(
+    submissionId: number,
+    contents: Array<{
+        type: "text" | "link";
+        content: string;
+    }>,
+    trx?: Knex.Transaction,
 ) {
-    const executor = trx;
+    const executor = trx || db;
 
-    const submission = await createSubmission(
-        {
-            taskId,
-            submittedBy,
-            note: input.note,
-        },
-        executor,
-    );
-
-    if (input.attachments.length > 0) {
-        await createAttachments(
-            input.attachments.map((attachment) => ({
-                ...attachment,
-                submissionId: submission.id,
+    return executor("submission_attachments")
+        .insert(
+            contents.map((content) => ({
+                submissionId,
+                type: content.type,
+                content: content.content,
             })),
-            executor,
-        );
-    }
-
-    return submission;
+        )
+        .returning("*");
 }
+export async function createFileAttachment(
+    attachment: {
+        submissionId: number;
+        type: "file" | "image";
+        objectKey: string;
+        fileName: string;
+        mimeType: string;
+        fileSize: number;
+    },
+    trx?: Knex.Transaction,
+) {
+    const executor = trx || db;
+    const [created] = await executor("submission_attachments")
+        .insert(attachment)
+        .returning("*");
+    return {
+        ...created,
+        id: Number(created.id),
+        submissionId: Number(created.submissionId),
+        fileSize: Number(created.fileSize),
+    };
+}
+
 
 export async function getSubmissionById(id: number) {
-    return db("task_submissions").where({ id }).first();
+    return db("task_submissions")
+        .where({ id })
+        .first();
 }
 
 export async function getSubmissionsByTask(taskId: number) {
@@ -61,29 +84,51 @@ export async function getSubmissionsByTask(taskId: number) {
         .orderBy("submitted_at", "desc");
 }
 
-// Submission yang MASIH PENDING milik project tertentu — berguna untuk
-// leader lihat "apa saja yang perlu saya review" tanpa harus buka tiap task satu-satu
-export async function getPendingSubmissionsByProject(projectId: number) {
+export async function getPendingSubmissionsByProject(
+    projectId: number,
+) {
     return db("task_submissions")
-        .join("tasks", "tasks.id", "task_submissions.task_id")
+        .join(
+            "tasks",
+            "tasks.id",
+            "task_submissions.task_id",
+        )
         .where("tasks.project_id", projectId)
-        .where("task_submissions.review_status", "pending")
-        .select("task_submissions.*", "tasks.title as task_title")
-        .orderBy("task_submissions.submitted_at", "asc");
+        .where(
+            "task_submissions.review_status",
+            "pending",
+        )
+        .select(
+            "task_submissions.*",
+            "tasks.title as task_title",
+        )
+        .orderBy(
+            "task_submissions.submitted_at",
+            "asc",
+        );
 }
+
 
 export async function reviewSubmission(
     id: number,
     data: {
-        reviewStatus: "approved" | "revision_requested" | "rejected";
+        reviewStatus:
+        | "approved"
+        | "revision_requested"
+        | "rejected";
         reviewNote?: string;
         reviewedBy: number;
     },
     trx?: Knex.Transaction,
 ) {
     const executor = trx || db;
+
     const [updated] = await executor("task_submissions")
-        .where({ id }).whereIn("review_status", ["pending", "revision_requested"])
+        .where({ id })
+        .whereIn("review_status", [
+            "pending",
+            "revision_requested",
+        ])
         .update({
             reviewStatus: data.reviewStatus,
             reviewNote: data.reviewNote ?? null,
@@ -91,21 +136,17 @@ export async function reviewSubmission(
             reviewedAt: new Date(),
         })
         .returning("*");
+
     return updated;
 }
 
 // ─────────────────────────────────────────────
-// submission_attachments
+// Attachments
 // ─────────────────────────────────────────────
 
-export async function createAttachments(
-    attachments: Array<{ submissionId: number; type: string; content: string }>,
-    trx?: Knex.Transaction,
+export async function getAttachmentsBySubmission(
+    submissionId: number,
 ) {
-    const executor = trx || db;
-    return executor("submission_attachments").insert(attachments).returning("*");
-}
-
-export async function getAttachmentsBySubmission(submissionId: number) {
-    return db("submission_attachments").where({ submissionId });
+    return db("submission_attachments")
+        .where({ submissionId });
 }
