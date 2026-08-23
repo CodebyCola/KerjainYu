@@ -163,3 +163,26 @@ export async function deleteAttachment(
         next(error);
     }
 }
+
+
+//PATCH /api/v1/submissions/:id/attachment/:attachmentId
+export async function updateAttachment(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+) {
+    try {
+        const submissionId = Number(req.params.id);
+        const attachmentId = Number(req.params.attachmentId);
+
+        const result = await submissionService.updateAttachment(submissionId, attachmentId, req.user!.id, req.body,
+        );
+
+        res.status(200).json({
+            success: true,
+            data: result,
+        });
+    } catch (error) {
+        next(error);
+    }
+}

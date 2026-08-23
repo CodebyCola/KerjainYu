@@ -187,6 +187,33 @@ export const attachmentIdParams = z.object({
     attachmentId: z.coerce.number().int().positive()
 })
 
+export const updateAttachmentSchema = z
+    .object({
+        content: z
+            .object({
+                type: z.enum(["text", "link"]),
+                content: z.string().trim().min(1),
+            })
+            .optional(),
+
+        file: z
+            .object({
+                type: z.enum(["file", "image"]),
+                objectKey: z.string().trim().min(1),
+                fileName: z.string().trim().min(1),
+                mimeType: z.string().trim().min(1),
+                fileSize: z.number().positive(),
+            })
+            .optional(),
+    })
+    .refine(
+        (data) => !!data.content !== !!data.file,
+        {
+            message: "Provide either content or file",
+        },
+    );
+
+
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
@@ -207,3 +234,7 @@ export type CreateSubmissionInput =
 
 export type ReviewSubmissionInput =
     z.infer<typeof reviewSubmissionSchema>;
+
+export type UpdateAttachmentInput = z.infer<
+    typeof updateAttachmentSchema
+>; 

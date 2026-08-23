@@ -226,3 +226,56 @@ export async function deleteAttachment(
 
     return deleted;
 }
+
+export async function updateContentAttachment(
+    attachmentId: number,
+    data: {
+        type: "text" | "link";
+        content: string;
+    },
+    trx?: Knex.Transaction,
+) {
+    const executor = trx || db;
+
+    const [updated] = await executor("submission_attachments")
+        .where({ id: attachmentId })
+        .update({
+            type: data.type,
+            content: data.content,
+        })
+        .returning("*");
+
+    return updated;
+}
+
+export async function updateFileAttachment(
+    attachmentId: number,
+    data: {
+        type: "file" | "image";
+        objectKey: string;
+        fileName: string;
+        mimeType: string;
+        fileSize: number;
+    },
+    trx?: Knex.Transaction,
+) {
+    const executor = trx || db;
+
+    const [updated] = await executor("submission_attachments")
+        .where({ id: attachmentId })
+        .update({
+            type: data.type,
+            objectKey: data.objectKey,
+            fileName: data.fileName,
+            mimeType: data.mimeType,
+            fileSize: data.fileSize,
+            content: null,
+        })
+        .returning("*");
+    return {
+        ...updated,
+        id: Number(updated.id),
+        submissionId: Number(updated.submissionId),
+        fileSize: Number(updated.fileSize),
+    };
+}
