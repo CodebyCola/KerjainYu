@@ -2,7 +2,7 @@ import { db } from "../database/db"
 import * as submissionRepo from "../database/repositories/submission.repository"
 import * as taskRepo from "../database/repositories/task.repository"
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError"
-import { CreateAttachmentInput, CreateFileAttachmentInput, CreateFileUploadUrlInput, CreateSubmissionInput, ReviewSubmissionInput } from "../schemas/submission.schema"
+import { CreateAttachmentInput, CreateFileAttachmentInput, CreateFileUploadUrlInput, CreateSubmissionInput, ReviewSubmissionInput, UpdateAttachmentInput } from "../schemas/submission.schema"
 import * as storageService from "./storage.service"
 import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper"
 import { assertTaskAccess } from "./helper/task.helper"
@@ -258,4 +258,114 @@ export async function deleteAttachment(submissionId: number, attachmentId: numbe
         await storageService.deleteObject(attachment.objectKey)
     }
     return await submissionRepo.deleteAttachment(attachmentId)
-}   
+}
+
+
+// PATCH /api/v1/submissions/:id/attachments/:attachmentId
+export async function updateAttachment(
+    submissionId: number,
+    attachmentId: number,
+    userId: number,
+    input: UpdateAttachmentInput,
+) {
+    const submission =
+        await submissionRepo.getSubmissionById(submissionId);
+
+    if (!submission) {
+        throw new NotFoundError("Submission not found");
+    }
+
+    const attachment =
+        await submissionRepo.getAttachmentById(attachmentId);
+
+    if (!attachment) {
+        throw new NotFoundError("Attachment not found");
+    }
+
+    if (attachment.submissionId !== submission.id) {
+        throw new NotFoundError("Attachment not found");
+    }
+
+    const task =
+        await taskRepo.getTaskById(submission.taskId);
+
+    if (!task) {
+        throw new NotFoundError("Task not found");
+    }
+
+    const isAssignee = task.assigneeId === userId;
+
+    if (!isAssignee) {
+        await assertProjectLeader(
+            task.projectId,
+            userId,
+        );
+    }
+
+    if (
+        !["pending", "revision_requested"].includes(
+            submission.reviewStatus,
+        )
+    ) {
+        throw new ConflictError(
+            "Cannot update attachment on a reviewed submission",
+        );
+    }
+
+    if (input.content) {
+        if (
+            attachment.type !== "text" &&
+            attachment.type !== "link"
+        ) {
+            throw new ConflictError(
+                "Cannot change a file attachment into a content attachment",
+            );
+        }
+
+        return submissionRepo.updateContentAttachment(
+            attachmentId,
+            input.content,
+        );
+    }
+
+    if (
+        attachment.type !== "file" &&
+        attachment.type !== "image"
+    ) {
+        throw new ConflictError(
+            "Cannot change a content attachment into a file attachment",
+        );
+    }
+
+    const file = input.file!;
+
+    if (
+        !file.objectKey.startsWith(
+            `submissions/${submissionId}/`,
+        )
+    ) {
+        throw new ForbiddenError(
+            "Invalid object key",
+        );
+    }
+
+    const oldObjectKey = attachment.objectKey;
+
+    const updated =
+        await submissionRepo.updateFileAttachment(
+            attachmentId,
+            {
+                type: file.type,
+                objectKey: file.objectKey,
+                fileName: file.fileName,
+                mimeType: file.mimeType,
+                fileSize: file.fileSize,
+            },
+        );
+
+    if (oldObjectKey) {
+        await storageService.deleteObject(oldObjectKey);
+    }
+
+    return updated;
+}

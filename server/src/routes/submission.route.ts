@@ -12,6 +12,7 @@ import {
     createFileAttachmentSchema,
     createFileUploadUrlSchema,
     reviewSubmissionSchema,
+    updateAttachmentSchema,
 } from "../schemas/submission.schema";
 
 const router = Router();
@@ -33,7 +34,16 @@ router.post(
     validate(createAttachmentSchema, "body"),
     submissionController.createFileAttachment,
 );
-
+//DELETE /api/v1/submissions/:id/attachments/:attachmentId
+router.delete(
+    "/:id/attachments/:attachmentId",
+    authenticate,
+    validate(idParams, "params"),
+    validate(attachmentIdParams, "params"),
+    submissionController.deleteAttachment,
+);
+//PATCH /api/v1/submission/:id/attachments/:attachmentId
+router.patch("/:id/attachments/:attachmentId", authenticate, validate(idParams, 'params'), validate(attachmentIdParams, 'params'), validate(updateAttachmentSchema, 'body'), submissionController.updateAttachment)
 // PATCH /api/v1/submissions/:id/review
 router.patch(
     "/:id/review",
@@ -42,14 +52,6 @@ router.patch(
     validate(reviewSubmissionSchema, "body"),
     submissionController.reviewSubmission,
 );
-
 //GET /api/v1/submissions/:id/attachments
 router.get("/:id/attachments", authenticate, validate(idParams, "params"), submissionController.getAttachmentsBySubmission)
-router.delete(
-    "/:id/attachments/:attachmentId",
-    authenticate,
-    validate(idParams, "params"),
-    validate(attachmentIdParams, "params"),
-    submissionController.deleteAttachment,
-);
 export default router;

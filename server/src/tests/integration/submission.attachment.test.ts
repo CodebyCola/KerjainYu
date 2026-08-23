@@ -26,6 +26,7 @@ import {
 
 import {
     createSubmission,
+    reviewSubmission,
 } from "../helpers/submission";
 
 import {
@@ -34,6 +35,7 @@ import {
 } from "../helpers/testDb";
 
 import {
+    GetObjectCommand,
     HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 
@@ -41,6 +43,7 @@ import {
     s3,
     STORAGE_BUCKET,
 } from "../../config/storage";
+import { updateAttachment } from "../../services/submission.service";
 
 // ============================================================
 // HELPERS
@@ -1277,7 +1280,6 @@ describe(
                                 "Cookie",
                                 member.cookie,
                             );
-                    console.log(deleteRes.body)
                     expect(deleteRes.status).toBe(204);
 
                     // 6. Verify DB metadata is gone
@@ -1433,7 +1435,6 @@ describe(
                 // ------------------------------------------------
                 // Fake file content
                 // ------------------------------------------------
-                console.log("Submission Id : ", submissionId)
                 const fileContent = Buffer.from(
                     "Hello from KerjainYu integration test!",
                     "utf-8",
@@ -1610,6 +1611,1001 @@ describe(
                             ),
                     }),
                 );
+            },
+        );
+    },
+);
+
+describe(
+    "PATCH /api/v1/submissions/:id/attachments/:attachmentId",
+    () => {
+        let leader: any;
+        let member: any;
+        let projectId: number;
+        let taskId: number;
+        let submissionId: number;
+
+        beforeEach(async () => {
+            const setup =
+                await createTaskWithSubmission();
+
+            leader = setup.leader;
+            member = setup.member;
+            projectId = setup.projectId;
+            taskId = setup.taskId;
+            submissionId = setup.submissionId;
+        });
+
+        // =====================================================
+        // CONTENT
+        // =====================================================
+
+        it("should update text attachment successfully", async () => {
+            const createRes =
+                await registerContentAttachment(
+                    member.cookie,
+                    submissionId,
+                    {
+                        type: "text",
+                        content: "Original content",
+                    },
+                );
+
+            expect(createRes.status).toBe(201);
+
+            const attachment =
+                createRes.body.data.contentAttachment;
+
+            const updateRes =
+                await request(app)
+                    .patch(
+                        `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                    )
+                    .set("Cookie", member.cookie)
+                    .send({
+                        content: {
+                            type: "text",
+                            content: "Updated content",
+                        },
+                    });
+
+            expect(updateRes.status).toBe(200);
+            expect(updateRes.body.success).toBe(true);
+
+            expect(updateRes.body.data).toMatchObject({
+                id: String(attachment.id),
+                submissionId: String(submissionId),
+                type: "text",
+                content: "Updated content",
+            });
+        });
+
+        it("should update link attachment successfully", async () => {
+            const createRes =
+                await registerContentAttachment(
+                    member.cookie,
+                    submissionId,
+                    {
+                        type: "link",
+                        content:
+                            "https://figma.com/old-design",
+                    },
+                );
+
+            expect(createRes.status).toBe(201);
+
+            const attachment =
+                createRes.body.data.contentAttachment;
+
+            const updateRes =
+                await request(app)
+                    .patch(
+                        `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                    )
+                    .set("Cookie", member.cookie)
+                    .send({
+                        content: {
+                            type: "link",
+                            content:
+                                "https://figma.com/new-design",
+                        },
+                    });
+
+            expect(updateRes.status).toBe(200);
+
+            expect(updateRes.body.data).toMatchObject({
+                id: String(attachment.id),
+                submissionId: String(submissionId),
+                type: "link",
+                content:
+                    "https://figma.com/new-design",
+            });
+        });
+
+        // =====================================================
+        // FILE
+        // =====================================================
+
+        it("should update file attachment successfully", async () => {
+            const createRes =
+                await registerFileAttachment(
+                    member.cookie,
+                    submissionId,
+                    {
+                        type: "file",
+                        objectKey:
+                            `submissions/${submissionId}/old-file.pdf`,
+                        fileName: "old-file.pdf",
+                        mimeType: "application/pdf",
+                        fileSize: 1000,
+                    },
+                );
+
+            expect(createRes.status).toBe(201);
+
+            const attachment =
+                createRes.body.data.fileAttachment;
+
+            const newObjectKey =
+                `submissions/${submissionId}/new-file.pdf`;
+
+            const updateRes =
+                await request(app)
+                    .patch(
+                        `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                    )
+                    .set("Cookie", member.cookie)
+                    .send({
+                        file: {
+                            type: "file",
+                            objectKey: newObjectKey,
+                            fileName: "new-file.pdf",
+                            mimeType: "application/pdf",
+                            fileSize: 2000,
+                        },
+                    });
+            expect(updateRes.status).toBe(200);
+            expect(updateRes.body.success).toBe(true);
+
+            expect(updateRes.body.data).toMatchObject({
+                id: String(attachment.id),
+                submissionId: String(submissionId),
+                type: "file",
+                objectKey: newObjectKey,
+                fileName: "new-file.pdf",
+                mimeType: "application/pdf",
+                fileSize: "2000",
+            });
+        });
+
+
+        it(
+            "should update file attachment end-to-end",
+            async () => {
+                // ============================================================
+                // SETUP
+                // ============================================================
+
+                const {
+                    member,
+                    submissionId,
+                } = await createTaskWithSubmission();
+
+                // ============================================================
+                // 1. UPLOAD OLD FILE
+                // ============================================================
+
+                const oldFileContent = Buffer.from(
+                    "This is the OLD file content.",
+                    "utf-8",
+                );
+
+                const oldFileName = "old-file.txt";
+                const oldMimeType = "text/plain";
+
+                const oldUploadRes =
+                    await requestUploadUrl(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "file",
+                            fileName: oldFileName,
+                            mimeType: oldMimeType,
+                            fileSize: oldFileContent.length,
+                        },
+                    );
+
+                expect(oldUploadRes.status).toBe(200);
+
+                const {
+                    uploadUrl: oldUploadUrl,
+                    objectKey: oldObjectKey,
+                } = oldUploadRes.body.data;
+
+                // Upload OLD file
+                const oldStorageRes = await fetch(
+                    oldUploadUrl,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": oldMimeType,
+                        },
+                        body: oldFileContent,
+                    },
+                );
+
+                expect(oldStorageRes.ok).toBe(true);
+
+                // ============================================================
+                // 2. REGISTER OLD FILE METADATA
+                // ============================================================
+
+                const createRes =
+                    await registerFileAttachment(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "file",
+                            objectKey: oldObjectKey,
+                            fileName: oldFileName,
+                            mimeType: oldMimeType,
+                            fileSize:
+                                oldFileContent.length,
+                        },
+                    );
+
+                expect(createRes.status).toBe(201);
+
+                const attachment =
+                    createRes.body.data.fileAttachment;
+
+                const attachmentId =
+                    Number(attachment.id);
+
+                // ============================================================
+                // 3. VERIFY OLD OBJECT REALLY EXISTS
+                // ============================================================
+
+                const oldObjectBeforeUpdate =
+                    await s3.send(
+                        new HeadObjectCommand({
+                            Bucket: STORAGE_BUCKET,
+                            Key: oldObjectKey,
+                        }),
+                    );
+
+                expect(
+                    oldObjectBeforeUpdate.ContentLength,
+                ).toBe(oldFileContent.length);
+
+                expect(
+                    oldObjectBeforeUpdate.ContentType,
+                ).toBe(oldMimeType);
+
+                // ============================================================
+                // 4. UPLOAD NEW FILE
+                // ============================================================
+
+                const newFileContent = Buffer.from(
+                    "This is the NEW updated file content.",
+                    "utf-8",
+                );
+
+                const newFileName = "new-file.txt";
+                const newMimeType = "text/plain";
+
+                const newUploadRes =
+                    await requestUploadUrl(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "file",
+                            fileName: newFileName,
+                            mimeType: newMimeType,
+                            fileSize: newFileContent.length,
+                        },
+                    );
+
+                expect(newUploadRes.status).toBe(200);
+
+                const {
+                    uploadUrl: newUploadUrl,
+                    objectKey: newObjectKey,
+                } = newUploadRes.body.data;
+
+                // Upload NEW file
+                const newStorageRes = await fetch(
+                    newUploadUrl,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": newMimeType,
+                        },
+                        body: newFileContent,
+                    },
+                );
+
+                expect(newStorageRes.ok).toBe(true);
+
+                // ============================================================
+                // 5. PATCH ATTACHMENT
+                // ============================================================
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachmentId}`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        )
+                        .send({
+                            file: {
+                                type: "file",
+                                objectKey: newObjectKey,
+                                fileName: newFileName,
+                                mimeType: newMimeType,
+                                fileSize:
+                                    newFileContent.length,
+                            },
+                        });
+
+                expect(updateRes.status).toBe(200);
+
+                expect(
+                    updateRes.body.success,
+                ).toBe(true);
+                const updatedAttachment2 = await db("submission_attachments")
+                    .where({ id: attachmentId })
+                    .first();
+
+                expect({
+                    ...updatedAttachment2,
+                    id: Number(updatedAttachment2.id),
+                    submissionId: Number(updatedAttachment2.submissionId),
+                    fileSize: Number(updatedAttachment2.fileSize),
+                }).toEqual(
+                    expect.objectContaining({
+                        id: attachmentId,
+                        submissionId: Number(submissionId),
+                        fileName: "new-file.txt",
+                        fileSize: 37,
+                        mimeType: "text/plain",
+                        objectKey: expect.stringContaining("new-file.txt"),
+                        type: "file",
+                    }),
+                );
+
+                // ============================================================
+                // 6. VERIFY DATABASE WAS UPDATED
+                // ============================================================
+
+                const updatedAttachment =
+                    await db(
+                        "submission_attachments",
+                    )
+                        .where({
+                            id: attachmentId,
+                        })
+                        .first();
+
+                expect({
+                    ...updatedAttachment,
+                    id: Number(updatedAttachment.id),
+                    submissionId: Number(updatedAttachment.submissionId),
+                    fileSize: Number(updatedAttachment.fileSize)
+                },).toEqual(
+                    expect.objectContaining({
+                        id: attachmentId,
+                        submissionId,
+                        type: "file",
+                        objectKey: newObjectKey,
+                        fileName: newFileName,
+                        mimeType: newMimeType,
+                        fileSize:
+                            newFileContent.length,
+                    }),
+                );
+
+                // Make sure OLD metadata is no longer present
+                expect(
+                    updatedAttachment.objectKey,
+                ).not.toBe(oldObjectKey);
+
+                expect(
+                    updatedAttachment.fileName,
+                ).not.toBe(oldFileName);
+
+                // ============================================================
+                // 7. VERIFY NEW OBJECT EXISTS IN OBJECT STORAGE
+                // ============================================================
+
+                const newObject =
+                    await s3.send(
+                        new HeadObjectCommand({
+                            Bucket: STORAGE_BUCKET,
+                            Key: newObjectKey,
+                        }),
+                    );
+
+                expect(
+                    newObject.ContentLength,
+                ).toBe(newFileContent.length);
+
+                expect(
+                    newObject.ContentType,
+                ).toBe(newMimeType);
+
+                // ============================================================
+                // 8. VERIFY ACTUAL CONTENT OF NEW OBJECT
+                // ============================================================
+
+                const downloadedNewObject =
+                    await s3.send(
+                        new GetObjectCommand({
+                            Bucket: STORAGE_BUCKET,
+                            Key: newObjectKey,
+                        }),
+                    );
+
+                const downloadedNewFile =
+                    Buffer.from(
+                        await downloadedNewObject
+                            .Body!
+                            .transformToByteArray(),
+                    );
+
+                expect(downloadedNewFile).toEqual(
+                    newFileContent,
+                );
+
+                // ============================================================
+                // 9. VERIFY OLD OBJECT IS GONE
+                // ============================================================
+
+                await expect(
+                    s3.send(
+                        new HeadObjectCommand({
+                            Bucket: STORAGE_BUCKET,
+                            Key: oldObjectKey,
+                        }),
+                    ),
+                ).rejects.toThrow();
+            },
+        );
+        // =====================================================
+        // TYPE CONVERSION
+        // =====================================================
+
+        it(
+            "should reject changing file attachment into content attachment",
+            async () => {
+                const createRes =
+                    await registerFileAttachment(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "file",
+                            objectKey:
+                                `submissions/${submissionId}/file.pdf`,
+                            fileName: "file.pdf",
+                            mimeType: "application/pdf",
+                            fileSize: 1000,
+                        },
+                    );
+
+                expect(createRes.status).toBe(201);
+
+                const attachment =
+                    createRes.body.data.fileAttachment;
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set("Cookie", member.cookie)
+                        .send({
+                            content: {
+                                type: "text",
+                                content:
+                                    "This should not be allowed",
+                            },
+                        });
+
+                expect(updateRes.status).toBe(409);
+            },
+        );
+
+        it(
+            "should reject changing content attachment into file attachment",
+            async () => {
+                const createRes =
+                    await registerContentAttachment(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "text",
+                            content: "Original content",
+                        },
+                    );
+
+                expect(createRes.status).toBe(201);
+
+                const attachment =
+                    createRes.body.data.contentAttachment;
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set("Cookie", member.cookie)
+                        .send({
+                            file: {
+                                type: "file",
+                                objectKey:
+                                    `submissions/${submissionId}/new.pdf`,
+                                fileName: "new.pdf",
+                                mimeType: "application/pdf",
+                                fileSize: 1000,
+                            },
+                        });
+
+                expect(updateRes.status).toBe(409);
+            },
+        );
+
+        // =====================================================
+        // OBJECT KEY VALIDATION
+        // =====================================================
+
+        it(
+            "should reject object key belonging to another submission",
+            async () => {
+                const createRes =
+                    await registerFileAttachment(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "file",
+                            objectKey:
+                                `submissions/${submissionId}/old.pdf`,
+                            fileName: "old.pdf",
+                            mimeType: "application/pdf",
+                            fileSize: 1000,
+                        },
+                    );
+
+                expect(createRes.status).toBe(201);
+
+                const attachment =
+                    createRes.body.data.fileAttachment;
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set("Cookie", member.cookie)
+                        .send({
+                            file: {
+                                type: "file",
+                                objectKey:
+                                    "submissions/999999/new.pdf",
+                                fileName: "new.pdf",
+                                mimeType: "application/pdf",
+                                fileSize: 1000,
+                            },
+                        });
+
+                expect(updateRes.status).toBe(403);
+            },
+        );
+
+        // =====================================================
+        // AUTHORIZATION
+        // =====================================================
+
+        it(
+            "should allow project leader to update attachment",
+            async () => {
+                const createRes =
+                    await registerContentAttachment(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "text",
+                            content: "Original",
+                        },
+                    );
+
+                expect(createRes.status).toBe(201);
+
+                const attachment =
+                    createRes.body.data.contentAttachment;
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set("Cookie", leader.cookie)
+                        .send({
+                            content: {
+                                type: "text",
+                                content:
+                                    "Updated by leader",
+                            },
+                        });
+
+                expect(updateRes.status).toBe(200);
+            },
+        );
+
+        it(
+            "should reject update from unauthorized project member",
+            async () => {
+                const createRes =
+                    await registerContentAttachment(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "text",
+                            content: "Original",
+                        },
+                    );
+
+                expect(createRes.status).toBe(201);
+
+                const attachment =
+                    createRes.body.data.contentAttachment;
+
+                const unauthorizedUser =
+                    await registerAndLogin(
+                        `attachment_unauthorized_${Date.now()}`,
+                    );
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set(
+                            "Cookie",
+                            unauthorizedUser.cookie,
+                        )
+                        .send({
+                            content: {
+                                type: "text",
+                                content:
+                                    "Unauthorized",
+                            },
+                        });
+
+                expect(updateRes.status).toBe(403);
+            },
+        );
+
+        // =====================================================
+        // SUBMISSION STATUS
+        // =====================================================
+
+        it(
+            "should reject update on approved submission",
+            async () => {
+                const createRes =
+                    await registerContentAttachment(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "text",
+                            content: "Original",
+                        },
+                    );
+
+                expect(createRes.status).toBe(201);
+
+                const attachment =
+                    createRes.body.data.contentAttachment;
+
+                const reviewRes =
+                    await reviewSubmission(
+                        leader.cookie,
+                        submissionId,
+                        {
+                            reviewStatus: "approved",
+                        },
+                    );
+
+                expect(reviewRes.status).toBe(200);
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set("Cookie", member.cookie)
+                        .send({
+                            content: {
+                                type: "text",
+                                content:
+                                    "Should fail",
+                            },
+                        });
+
+                expect(updateRes.status).toBe(409);
+            },
+        );
+
+        // =====================================================
+        // NOT FOUND
+        // =====================================================
+
+        it(
+            "should reject non-existent submission",
+            async () => {
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/999999/attachments/1`,
+                        )
+                        .set("Cookie", member.cookie)
+                        .send({
+                            content: {
+                                type: "text",
+                                content: "Updated",
+                            },
+                        });
+
+                expect(updateRes.status).toBe(404);
+            },
+        );
+
+        it(
+            "should reject non-existent attachment",
+            async () => {
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/999999`,
+                        )
+                        .set("Cookie", member.cookie)
+                        .send({
+                            content: {
+                                type: "text",
+                                content: "Updated",
+                            },
+                        });
+
+                expect(updateRes.status).toBe(404);
+            },
+        );
+
+        it(
+            "should reject attachment belonging to another submission",
+            async () => {
+                // ---------------------------------------------
+                // Create second task
+                // ---------------------------------------------
+
+                const task2Res =
+                    await createTask(
+                        leader.cookie,
+                        projectId,
+                        {
+                            title:
+                                "Second Attachment Task",
+                            isClaimable: false,
+                        },
+                    );
+
+                expect(task2Res.status).toBe(201);
+
+                const task2Id =
+                    task2Res.body.data.id;
+
+                // ---------------------------------------------
+                // Assign second task to same member
+                // ---------------------------------------------
+
+                await assignTask(
+                    leader.cookie,
+                    task2Id,
+                    member.userId,
+                );
+
+                await db("tasks")
+                    .where({ id: task2Id })
+                    .update({
+                        status: "ongoing",
+                    });
+
+                // ---------------------------------------------
+                // Create second submission
+                // ---------------------------------------------
+
+                const submission2Res =
+                    await createSubmission(
+                        member.cookie,
+                        task2Id,
+                        {
+                            note: "Second submission",
+                        },
+                    );
+
+                expect(
+                    submission2Res.status,
+                ).toBe(201);
+
+                const submission2Id =
+                    submission2Res.body.data.id;
+
+                // ---------------------------------------------
+                // Create attachment on submission #2
+                // ---------------------------------------------
+
+                const attachmentRes =
+                    await registerContentAttachment(
+                        member.cookie,
+                        submission2Id,
+                        {
+                            type: "text",
+                            content:
+                                "Second attachment",
+                        },
+                    );
+
+                expect(
+                    attachmentRes.status,
+                ).toBe(201);
+
+                const attachment =
+                    attachmentRes.body.data
+                        .contentAttachment;
+
+                // ---------------------------------------------
+                // Try updating attachment using submission #1
+                // ---------------------------------------------
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set("Cookie", member.cookie)
+                        .send({
+                            content: {
+                                type: "text",
+                                content:
+                                    "Should fail",
+                            },
+                        });
+
+                expect(updateRes.status).toBe(404);
+            },
+        );
+
+        // =====================================================
+        // VALIDATION
+        // =====================================================
+
+        it(
+            "should reject when both content and file are provided",
+            async () => {
+                // ============================================
+                // 1. Create existing attachment
+                // ============================================
+
+                const createRes =
+                    await registerContentAttachment(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "text",
+                            content: "Original content",
+                        },
+                    );
+
+                expect(createRes.status).toBe(201);
+
+                const attachment =
+                    createRes.body.data.contentAttachment;
+
+                const attachmentId = attachment.id;
+
+                // ============================================
+                // 2. Try to update with BOTH content and file
+                // ============================================
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachmentId}`,
+                        )
+                        .set("Cookie", member.cookie)
+                        .send({
+                            content: {
+                                type: "text",
+                                content: "Updated content",
+                            },
+                            file: {
+                                type: "file",
+                                objectKey:
+                                    `submissions/${submissionId}/file.pdf`,
+                                fileName: "file.pdf",
+                                mimeType: "application/pdf",
+                                fileSize: 1000,
+                            },
+                        });
+
+
+                expect(updateRes.status).toBe(400);
+            },
+        );
+
+        it(
+            "should reject when neither content nor file is provided",
+            async () => {
+                // ============================================
+                // 1. Create existing attachment
+                // ============================================
+
+                const createRes =
+                    await registerContentAttachment(
+                        member.cookie,
+                        submissionId,
+                        {
+                            type: "text",
+                            content: "Original content",
+                        },
+                    );
+
+                expect(createRes.status).toBe(201);
+
+                const attachment =
+                    createRes.body.data.contentAttachment;
+
+                const attachmentId = attachment.id;
+
+                // ============================================
+                // 2. Try to update without content or file
+                // ============================================
+
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachmentId}`,
+                        )
+                        .set("Cookie", member.cookie)
+                        .send({});
+
+                console.log(updateRes.body);
+
+                expect(updateRes.status).toBe(400);
+            },
+        );
+        // =====================================================
+        // AUTHENTICATION
+        // =====================================================
+
+        it(
+            "should reject unauthenticated update",
+            async () => {
+                const updateRes =
+                    await request(app)
+                        .patch(
+                            `/api/v1/submissions/${submissionId}/attachments/1`,
+                        )
+                        .send({
+                            content: {
+                                type: "text",
+                                content: "Updated",
+                            },
+                        });
+
+                expect(updateRes.status).toBe(401);
             },
         );
     },
