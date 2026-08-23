@@ -4,6 +4,7 @@ import {
     reviewSubmissionSchema,
     createAttachmentSchema,
     submissionContentAttachmentSchema,
+    updateAttachmentSchema,
 } from "../schemas/submission.schema";
 import { idParams, submissionAttachmentParams } from "../schemas/id.schema";
 
@@ -795,6 +796,54 @@ registry.registerPath({
 
         404: {
             description: "Project not found",
+        },
+    },
+});
+
+registry.registerPath({
+    method: "patch",
+    path: "/api/v1/submissions/{id}/attachments/{attachmentId}",
+    tags: ["Submissions"],
+    security: [{ cookieAuth: [] }],
+
+    request: {
+        params: submissionAttachmentParams,
+
+        body: {
+            content: {
+                "application/json": {
+                    schema: updateAttachmentSchema,
+                },
+            },
+        },
+    },
+
+    responses: {
+        200: {
+            description: "Attachment updated successfully",
+        },
+
+        400: {
+            description: "Invalid request",
+        },
+
+        401: {
+            description: "Unauthenticated",
+        },
+
+        403: {
+            description:
+                "User is not authorized to update this attachment",
+        },
+
+        404: {
+            description:
+                "Submission or attachment not found",
+        },
+
+        409: {
+            description:
+                "Cannot update attachment",
         },
     },
 });
