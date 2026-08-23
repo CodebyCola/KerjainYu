@@ -124,3 +124,42 @@ export async function pendingSubmissionsByProject(
         next(error);
     }
 }
+
+//GET /api/v1/submissions/:id/attachments
+export async function getAttachmentsBySubmission(req: AuthRequest,
+    res: Response,
+    next: NextFunction) {
+    try {
+        const submissionid = Number(req.params.id)
+        const attachments = submissionService.getSubmissionAttachments(submissionid, req.user!.id)
+        res.status(200).json({ success: true, data: attachments })
+    } catch (error) {
+        next(error)
+    }
+}
+
+export async function deleteAttachment(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+) {
+    try {
+        const submissionId = Number(
+            req.params.id,
+        );
+
+        const attachmentId = Number(
+            req.params.attachmentId,
+        );
+
+        await submissionService.deleteAttachment(
+            submissionId,
+            attachmentId,
+            req.user!.id,
+        );
+
+        res.status(204).send();
+    } catch (error) {
+        next(error);
+    }
+}

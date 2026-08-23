@@ -7,6 +7,7 @@ import { validate } from "../middlewares/validate";
 
 import { idParams } from "../schemas/id.schema";
 import {
+    attachmentIdParams,
     createFileAttachmentSchema,
     createFileUploadUrlSchema,
     reviewSubmissionSchema,
@@ -41,5 +42,13 @@ router.patch(
     submissionController.reviewSubmission,
 );
 
-
+//GET /api/v1/submissions/:id/attachments
+router.get("/:id/attachments", authenticate, validate(idParams, "params"), submissionController.getAttachmentsBySubmission)
+router.delete(
+    "/:id/attachments/:attachmentId",
+    authenticate,
+    validate(idParams, "params"),
+    validate(attachmentIdParams, "params"),
+    submissionController.deleteAttachment,
+);
 export default router;

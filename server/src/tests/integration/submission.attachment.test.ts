@@ -730,10 +730,6 @@ describe("Submission File Upload End-to-End Integration", () => {
         await cleanDatabase();
     });
 
-    afterAll(async () => {
-        await closeDb();
-    });
-
     describe(
         "POST /api/v1/submissions/:id/attachments/upload-url → Object Storage → POST /attachments",
         () => {
@@ -808,11 +804,6 @@ describe("Submission File Upload End-to-End Integration", () => {
                         body: fileContent,
                     });
 
-                console.log("UPLOAD STATUS:", storageUploadRes.status);
-                console.log(
-                    "UPLOAD RESPONSE:",
-                    await storageUploadRes.text(),
-                );
                 expect(
                     storageUploadRes.ok,
                 ).toBe(true);
@@ -885,3 +876,390 @@ describe("Submission File Upload End-to-End Integration", () => {
         },
     );
 });
+
+describe(
+    "GET /api/v1/submissions/:id/attachments",
+    () => {
+        beforeEach(async () => {
+            await cleanDatabase();
+        });
+        it(
+            "should return all attachments for a submission",
+            async () => {
+                const {
+                    member,
+                    submissionId,
+                } = await createTaskWithSubmission();
+
+                const textAttachment =
+                    await request(app)
+                        .post(
+                            `/api/v1/submissions/${submissionId}/attachments`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        )
+                        .send({
+                            type: "text",
+                            content:
+                                "This is my submission",
+                        });
+
+                const linkAttachment =
+                    await request(app)
+                        .post(
+                            `/api/v1/submissions/${submissionId}/attachments`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        )
+                        .send({
+                            type: "link",
+                            content:
+                                "https://figma.com/design/test",
+                        });
+                console.log(textAttachment.error)
+                expect(
+                    textAttachment.status,
+                ).toBe(201);
+
+                expect(
+                    linkAttachment.status,
+                ).toBe(201);
+
+                const res =
+                    await request(app)
+                        .get(
+                            `/api/v1/submissions/${submissionId}/attachments`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        );
+
+                expect(res.status).toBe(200);
+                expect(res.body.success).toBe(true);
+                expect(
+                    res.body.data,
+                ).toHaveLength(2);
+
+                expect(
+                    res.body.data,
+                ).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({
+                            submissionId:
+                                Number(
+                                    submissionId,
+                                ),
+                            type: "text",
+                            content:
+                                "This is my submission",
+                        }),
+                        expect.objectContaining({
+                            submissionId:
+                                Number(
+                                    submissionId,
+                                ),
+                            type: "link",
+                            content:
+                                "https://figma.com/design/test",
+                        }),
+                    ]),
+                );
+            },
+        );
+
+        it(
+            "should return empty array when submission has no attachments",
+            async () => {
+                const {
+                    member,
+                    submissionId,
+                } = await createTaskWithSubmission();
+
+                const res =
+                    await request(app)
+                        .get(
+                            `/api/v1/submissions/${submissionId}/attachments`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        );
+
+                expect(res.status).toBe(200);
+                expect(res.body.success).toBe(true);
+                expect(res.body.data).toEqual([]);
+            },
+        );
+
+        it(
+            "should reject unauthenticated request",
+            async () => {
+                const {
+                    submissionId,
+                } = await createTaskWithSubmission();
+
+                const res =
+                    await request(app).get(
+                        `/api/v1/submissions/${submissionId}/attachments`,
+                    );
+
+                expect(res.status).toBe(401);
+            },
+        );
+
+        it(
+            "should reject non-existent submission",
+            async () => {
+                const {
+                    member,
+                } = await createTaskWithSubmission();
+
+                const res =
+                    await request(app)
+                        .get(
+                            "/api/v1/submissions/999999/attachments",
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        );
+
+                expect(res.status).toBe(404);
+            },
+        );
+    },
+);
+
+describe(
+    "DELETE /api/v1/submissions/:id/attachments/:attachmentId",
+    () => {
+        beforeEach(async () => {
+            await cleanDatabase();
+        });
+        it(
+            "should delete text attachment",
+            async () => {
+                const {
+                    member,
+                    submissionId,
+                } = await createTaskWithSubmission();
+
+                const submissionRes =
+                    await request(app)
+                        .post(
+                            `/api/v1/tasks/${submissionId}/submissions`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        )
+                        .send({
+                            note: "Submission",
+                            contents: [
+                                {
+                                    type: "text",
+                                    content:
+                                        "Delete me",
+                                },
+                            ],
+                        });
+
+                expect(
+                    submissionRes.status,
+                ).toBe(201);
+
+                const attachmentsRes =
+                    await request(app)
+                        .get(
+                            `/api/v1/submissions/${submissionId}/attachments`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        );
+
+                const attachment =
+                    attachmentsRes.body.data[0];
+
+                const deleteRes =
+                    await request(app)
+                        .delete(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        );
+
+                expect(
+                    deleteRes.status,
+                ).toBe(204);
+
+                const afterDelete =
+                    await request(app)
+                        .get(
+                            `/api/v1/submissions/${submissionId}/attachments`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        );
+
+                expect(
+                    afterDelete.body.data,
+                ).toEqual([]);
+            },
+        );
+
+        it(
+            "should reject deleting attachment belonging to another submission",
+            async () => {
+                const first =
+                    await createTaskWithSubmission();
+
+                const second =
+                    await createTaskWithSubmission();
+
+                const submissionRes =
+                    await request(app)
+                        .post(
+                            `/api/v1/tasks/${first.taskId}/submissions`,
+                        )
+                        .set(
+                            "Cookie",
+                            first.member.cookie,
+                        )
+                        .send({
+                            note: "Submission",
+                            contents: [
+                                {
+                                    type: "text",
+                                    content:
+                                        "Private attachment",
+                                },
+                            ],
+                        });
+
+                expect(
+                    submissionRes.status,
+                ).toBe(201);
+
+                const attachmentsRes =
+                    await request(app)
+                        .get(
+                            `/api/v1/submissions/${first.submissionId}/attachments`,
+                        )
+                        .set(
+                            "Cookie",
+                            first.member.cookie,
+                        );
+
+                const attachment =
+                    attachmentsRes.body.data[0];
+
+                const deleteRes =
+                    await request(app)
+                        .delete(
+                            `/api/v1/submissions/${second.submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set(
+                            "Cookie",
+                            second.member.cookie,
+                        );
+
+                expect(
+                    deleteRes.status,
+                ).toBe(404);
+            },
+        );
+
+        it(
+            "should reject deleting attachment from unauthorized member",
+            async () => {
+                const {
+                    leader,
+                    member,
+                    projectId,
+                    submissionId,
+                } = await createTaskWithSubmission();
+
+                const unauthorizedMember =
+                    await inviteAndAccept(
+                        leader.cookie,
+                        projectId,
+                        `file_unauthorized_${Date.now()}`,
+                    );
+
+                const submissionRes =
+                    await request(app)
+                        .get(
+                            `/api/v1/submissions/${submissionId}/attachments`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        );
+
+                expect(submissionRes.status).toBe(200);
+
+                const attachment =
+                    submissionRes.body.data[0];
+
+                const deleteRes =
+                    await request(app)
+                        .delete(
+                            `/api/v1/submissions/${submissionId}/attachments/${attachment.id}`,
+                        )
+                        .set(
+                            "Cookie",
+                            unauthorizedMember.cookie,
+                        );
+
+                expect(deleteRes.status).toBe(403);
+            },
+        );
+        it(
+            "should reject unauthenticated delete",
+            async () => {
+                const {
+                    submissionId,
+                } = await createTaskWithSubmission();
+
+                const res =
+                    await request(app)
+                        .delete(
+                            `/api/v1/submissions/${submissionId}/attachments/1`,
+                        );
+
+                expect(res.status).toBe(401);
+            },
+        );
+
+        it(
+            "should reject non-existent attachment",
+            async () => {
+                const {
+                    member,
+                    submissionId,
+                } = await createTaskWithSubmission();
+
+                const res =
+                    await request(app)
+                        .delete(
+                            `/api/v1/submissions/${submissionId}/attachments/999999`,
+                        )
+                        .set(
+                            "Cookie",
+                            member.cookie,
+                        );
+
+                expect(res.status).toBe(404);
+            },
+        );
+    },
+);

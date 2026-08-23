@@ -48,6 +48,24 @@ export async function createContentAttachments(
         )
         .returning("*");
 }
+
+export async function createContentAttachment(
+    submissionId: number,
+    content: {
+        type: "text" | "link";
+        content: string;
+    },
+    trx?: Knex.Transaction,
+) {
+    const executor = trx || db;
+
+    return executor("submission_attachments")
+        .insert({
+            type: content.type,
+            content: content.content,
+        }).returning("*");
+}
+
 export async function createFileAttachment(
     attachment: {
         submissionId: number;
@@ -149,4 +167,26 @@ export async function getAttachmentsBySubmission(
 ) {
     return db("submission_attachments")
         .where({ submissionId });
+}
+
+export async function getAttachmentById(
+    attachmentId: number,
+) {
+    return db("submission_attachments")
+        .where({ id: attachmentId })
+        .first();
+}
+
+export async function deleteAttachment(
+    attachmentId: number,
+    trx?: Knex.Transaction,
+) {
+    const executor = trx || db;
+
+    const [deleted] = await executor("submission_attachments")
+        .where({ id: attachmentId })
+        .delete()
+        .returning("*");
+
+    return deleted;
 }
