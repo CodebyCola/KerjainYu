@@ -126,3 +126,49 @@ export async function cancelSwapRequest(swapId: number, userId: number) {
     }
     return taskSwapRequestRepo.updateSwapRequestStatus(swapId, "cancelled", null);
 }
+
+// Bentuk baris mentah hasil join di getIncoming/OutgoingSwapRequestsForUser
+type SwapRequestListRow = {
+    id: number;
+    status: string;
+    taskId: number;
+    taskTitle: string;
+    taskProjectId: number;
+    targetTaskId: number | null;
+    targetTaskTitle: string | null;
+    requestedById: number;
+    requestedByUsername: string;
+    requestedToId: number;
+    requestedToUsername: string;
+    resolvedBy: number | null;
+    resolvedAt: Date | null;
+    createdAt: Date;
+};
+
+// Ubah baris hasil join (flat) jadi bentuk nested { task, targetTask,
+// requestedBy, requestedTo } yang dipakai di response API.
+function toSwapRequestListItem(row: SwapRequestListRow) {
+    return {
+        id: row.id,
+        status: row.status,
+        task: { id: row.taskId, title: row.taskTitle, projectId: row.taskProjectId },
+        targetTask: row.targetTaskId ? { id: row.targetTaskId, title: row.targetTaskTitle } : null,
+        requestedBy: { id: row.requestedById, username: row.requestedByUsername },
+        requestedTo: { id: row.requestedToId, username: row.requestedToUsername },
+        resolvedBy: row.resolvedBy,
+        resolvedAt: row.resolvedAt,
+        createdAt: row.createdAt,
+    };
+}
+
+//GET /api/v1/swap-requests/incoming
+export async function getIncomingSwapRequests(userId: number) {
+    const rows = await taskSwapRequestRepo.getIncomingSwapRequestsForUser(userId);
+    return rows.map(toSwapRequestListItem);
+}
+
+//GET /api/v1/swap-requests/outgoing
+export async function getOutgoingSwapRequests(userId: number) {
+    const rows = await taskSwapRequestRepo.getOutgoingSwapRequestsForUser(userId);
+    return rows.map(toSwapRequestListItem);
+}

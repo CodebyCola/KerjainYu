@@ -58,3 +58,31 @@ export async function cancelSwapRequest(
         next(error)
     }
 }
+
+//GET /api/v1/swap-requests/incoming
+export async function getIncomingSwapRequests(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+) {
+    try {
+        const requests = await taskSwapRequestService.getIncomingSwapRequests(req.user!.id)
+        res.status(200).json({ success: true, data: requests })
+    } catch (error) {
+        next(error)
+    }
+}
+
+//GET /api/v1/swap-requests/outgoing
+export async function getOutgoingSwapRequests(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+) {
+    try {
+        const requests = await taskSwapRequestService.getOutgoingSwapRequests(req.user!.id)
+        res.status(200).json({ success: true, data: requests })
+    } catch (error) {
+        next(error)
+    }
+}

@@ -39,24 +39,56 @@ export async function updateSwapRequestStatus(
     return updated;
 }
 
-// Swap request yang MASUK buat user tertentu (dia yang diminta setuju/tolak)
-export async function getPendingSwapRequestsForUser(userId: number) {
-    return db("task_swap_requests")
-        .where({ requestedTo: userId, status: "pending" })
-        .orderBy("created_at", "desc");
-}
-
-// Swap request yang DIAJUKAN oleh user tertentu (buat dia bisa lihat/cancel punya sendiri)
-export async function getSwapRequestsBySender(userId: number) {
-    return db("task_swap_requests")
-        .where({ requestedBy: userId })
-        .orderBy("created_at", "desc");
-}
-
 // Cek apakah task ini sudah punya swap request yang masih pending —
 // mencegah user spam banyak request buat task yang sama
 export async function getPendingSwapRequestForTask(taskId: number) {
     return db("task_swap_requests")
         .where({ taskId, status: "pending" })
         .first();
+}
+
+// Select fields bersama buat query list (incoming/outgoing) — di-join ke
+// tasks (task yang ditawarkan & task penukar) dan users (pengaju & penerima)
+// biar frontend nggak perlu N+1 fetch.
+function selectSwapRequestListColumns(qb: Knex.QueryBuilder) {
+    return qb
+        .leftJoin("tasks as offered_task", "offered_task.id", "task_swap_requests.task_id")
+        .leftJoin("tasks as target_task", "target_task.id", "task_swap_requests.target_task_id")
+        .leftJoin("users as sender", "sender.id", "task_swap_requests.requested_by")
+        .leftJoin("users as receiver", "receiver.id", "task_swap_requests.requested_to")
+        .select([
+            "task_swap_requests.id",
+            "task_swap_requests.status",
+            "task_swap_requests.created_at",
+            "task_swap_requests.resolved_at",
+            "task_swap_requests.resolved_by",
+            db.raw('"offered_task"."id" as "taskId"'),
+            db.raw('"offered_task"."title" as "taskTitle"'),
+            db.raw('"offered_task"."project_id" as "taskProjectId"'),
+            db.raw('"target_task"."id" as "targetTaskId"'),
+            db.raw('"target_task"."title" as "targetTaskTitle"'),
+            db.raw('"sender"."id" as "requestedById"'),
+            db.raw('"sender"."username" as "requestedByUsername"'),
+            db.raw('"receiver"."id" as "requestedToId"'),
+            db.raw('"receiver"."username" as "requestedToUsername"'),
+        ])
+        .orderBy("task_swap_requests.created_at", "desc");
+}
+
+// Swap request MASUK yang masih pending buat user tertentu (dia yang diminta
+// setuju/tolak) — dipakai buat notifikasi "ada permintaan tukar task menunggumu"
+export async function getIncomingSwapRequestsForUser(userId: number) {
+    return selectSwapRequestListColumns(
+        db("task_swap_requests")
+            .where("task_swap_requests.requested_to", userId)
+            .andWhere("task_swap_requests.status", "pending"),
+    );
+}
+
+// Semua swap request yang DIAJUKAN oleh user tertentu, apapun statusnya —
+// buat dia bisa lihat riwayat & cancel yang masih pending
+export async function getOutgoingSwapRequestsForUser(userId: number) {
+    return selectSwapRequestListColumns(
+        db("task_swap_requests").where("task_swap_requests.requested_by", userId),
+    );
 }

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getSession } from "@/lib/api/auth/session";
 import { getProject } from "@/lib/api/projects/projects";
 import { getProjectMembers } from "@/lib/api/members/members";
-import { getTaskDetailData, getTaskComments } from "@/lib/api/tasks/tasks";
+import { getProjectTasks, getTaskDetailData, getTaskComments } from "@/lib/api/tasks/tasks";
 import { findTaskAssignee } from "@/lib/api/tasks/taskAssignee";
 import TaskDetailHeader from "@/components/features/task-detail/TaskDetailHeader";
 import TaskDetailInfo from "@/components/features/task-detail/TaskDetailInfo";
@@ -23,12 +23,13 @@ export default async function TaskDetailPage(props: { params: Promise<TaskDetail
         notFound();
     }
 
-    const [user, projectDetail, members, task, comments] = await Promise.all([
+    const [user, projectDetail, members, task, comments, projectTasks] = await Promise.all([
         getSession(),
         getProject(projectId),
         getProjectMembers(projectId),
         getTaskDetailData(taskId),
         getTaskComments(taskId),
+        getProjectTasks(projectId),
     ]);
     
     if (!projectDetail || !task || String(task.projectId) !== String(projectId)) {
@@ -50,6 +51,8 @@ export default async function TaskDetailPage(props: { params: Promise<TaskDetail
                 currentUserId={user?.id ?? -1}
                 isLeader={isLeader}
                 members={members}
+                project={projectDetail.project}
+                projectTasks={projectTasks}
             />
 
             {task.latestSubmission && <TaskSubmissionPanel submission={task.latestSubmission} />}
