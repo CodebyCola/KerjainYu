@@ -250,6 +250,10 @@ export async function deleteAttachment(submissionId: number, attachmentId: numbe
     if (attachment.submissionId != submission.id) {
         throw new NotFoundError("Attachment not found")
     }
+    // Delete the object first to avoid leaving orphaned DB metadata.
+    // Note: DB and object storage are separate systems, so this operation
+    // is not fully atomic. A failed DB delete after storage deletion
+    // may require manual/retry-based recovery.
     if (attachment.type === "file" || attachment.type === "image") {
         await storageService.deleteObject(attachment.objectKey)
     }
