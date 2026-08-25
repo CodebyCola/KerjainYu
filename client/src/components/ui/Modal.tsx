@@ -35,7 +35,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
         if (!isOpen && dialog.open) dialog.close();
     }, [isOpen]);
 
-    if (!isMounted) return null;
+    if (!isMounted || !isOpen) return null;
 
     return createPortal(
         <dialog
