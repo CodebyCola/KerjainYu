@@ -13,17 +13,17 @@ export default function ResponsiveLayout({ user, children }: ResponsiveLayoutPro
     return (
         <>
             {/* Mobile: < md */}
-            <div className="w-full h-screen md:hidden">
+            <div key="layout-mobile" className="w-full h-screen md:hidden">
                 <MobileLayout user={user}>{children}</MobileLayout>
             </div>
 
             {/* Tablet: md - lg */}
-            <div className="hidden w-full h-screen md:flex lg:hidden">
+            <div key="layout-tablet" className="hidden w-full h-screen md:flex lg:hidden">
                 <TabletLayout user={user}>{children}</TabletLayout>
             </div>
 
             {/* Desktop: >= lg */}
-            <div className="hidden w-full h-screen lg:flex">
+            <div key="layout-desktop" className="hidden w-full h-screen lg:flex">
                 <DesktopLayout user={user}>{children}</DesktopLayout>
             </div>
         </>

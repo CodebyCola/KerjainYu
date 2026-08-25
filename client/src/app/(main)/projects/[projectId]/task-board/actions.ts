@@ -14,8 +14,8 @@ import {
   createTaskCommentRequest,
   deleteTaskCommentRequest,
 } from "@/lib/api/tasks/tasks";
-import { createSwapRequestRequest } from "@/lib/api/tasks/swapRequests";
-import { CreateSwapRequestPayload } from "@/types/task";
+import { createSwapRequestRequest, getIncomingSwapRequests, respondSwapRequestRequest } from "@/lib/api/tasks/swapRequests";
+import { CreateSwapRequestPayload, TaskSwapRequestListItem } from "@/types/task";
 import { TaskFormState } from "@/lib/api/tasks/taskFormState";
 import { validateCreateTaskFields } from "@/lib/validation/taskSchema";
 import { projectRoutes, taskDetailRoute } from "@/lib/routes";
@@ -114,9 +114,8 @@ export type SwapRequestState = {
   error: string | null;
 };
 
-// Membuat permintaan tukar task. Backend mengirim notifikasi ke user yang
-// diminta (requestedTo) begitu request dibuat — lihat catatan di
-// SWAP_REQUEST_API_NEEDS.md untuk kontrak notifikasi yang diharapkan.
+// Membuat permintaan tukar task. Penerima (requestedTo) bisa melihatnya lewat
+// getMyIncomingSwapRequestsAction() di bawah, sama seperti alur InvitationBell.
 export async function createSwapRequestAction(
   projectId: string,
   taskId: number,
@@ -139,6 +138,35 @@ export async function createSwapRequestAction(
 
   revalidatePath(projectRoutes(projectId).TASK_BOARD);
   revalidatePath(taskDetailRoute(projectId, taskId));
+  return { success: true, error: null };
+}
+
+// Daftar swap request yang menunggu respons user login — dipakai SwapRequestBell.
+export async function getMyIncomingSwapRequestsAction(): Promise<TaskSwapRequestListItem[]> {
+  return getIncomingSwapRequests();
+}
+
+export async function respondToSwapRequestAction(
+  swapRequestId: number,
+  status: "approved" | "rejected",
+  projectId: string,
+): Promise<SwapRequestState> {
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    await respondSwapRequestRequest(swapRequestId, status, cookieHeader);
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message };
+    }
+    return {
+      success: false,
+      error: "Terjadi kesalahan tak terduga. Coba lagi.",
+    };
+  }
+
+  revalidatePath(projectRoutes(projectId).TASK_BOARD);
   return { success: true, error: null };
 }
 

@@ -150,7 +150,7 @@ export default function TaskDetailActions({
             />
 
             <TaskAssignModal
-                key={assignModalKey}
+                key={`assign-${assignModalKey}`}
                 isOpen={isAssignModalOpen}
                 onClose={() => setIsAssignModalOpen(false)}
                 projectId={projectId}
@@ -160,7 +160,7 @@ export default function TaskDetailActions({
 
             {canRequestSwap && (
                 <TaskSwapRequestModal
-                    key={swapModalKey}
+                    key={`swap-${swapModalKey}`}
                     isOpen={isSwapModalOpen}
                     onClose={() => setIsSwapModalOpen(false)}
                     projectId={projectId}
