@@ -1,7 +1,7 @@
 import "server-only";
-import { CreateSwapRequestPayload, TaskSwapRequest } from "@/types/task";
+import { cookies } from "next/headers";
+import { CreateSwapRequestPayload, TaskSwapRequest, TaskSwapRequestListItem } from "@/types/task";
 import { apiFetch } from "../fetcher";
-
 
 function taskSwapRequestsPath(taskId: number) {
   return `/tasks/${taskId}/swap-requests`;
@@ -40,4 +40,28 @@ export function cancelSwapRequestRequest(swapRequestId: number, cookie: string) 
     method: "PATCH",
     cookie,
   });
+}
+
+// GET /api/v1/swap-requests/incoming — permintaan tukar yang menunggu respons kita.
+export function getIncomingSwapRequestsRequest(cookie: string) {
+  return apiFetch<TaskSwapRequestListItem[]>("/swap-requests/incoming", { cookie });
+}
+
+// GET /api/v1/swap-requests/outgoing — permintaan tukar yang kita ajukan sendiri.
+export function getOutgoingSwapRequestsRequest(cookie: string) {
+  return apiFetch<TaskSwapRequestListItem[]>("/swap-requests/outgoing", { cookie });
+}
+
+// Dipanggil langsung dari server action bell notifikasi — ambil cookie sendiri
+// dan diamkan kegagalan jadi list kosong, sama seperti getMyInvitations().
+export async function getIncomingSwapRequests(): Promise<TaskSwapRequestListItem[]> {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+
+  try {
+    const { data } = await getIncomingSwapRequestsRequest(cookieHeader);
+    return data;
+  } catch {
+    return [];
+  }
 }

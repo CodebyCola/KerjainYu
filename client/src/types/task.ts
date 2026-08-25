@@ -66,6 +66,10 @@ export type TaskComment = {
   avatarUrl: string | null;
 };
 
+// --- Task Swap Request ---
+// Status "pending" = menunggu respons requestedTo (atau leader kalau project
+// tidak allowFreeSwap). "approved"/"rejected" = sudah direspons. "cancelled"
+// = dibatalkan sendiri oleh requestedBy sebelum direspons.
 export type TaskSwapRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export type TaskSwapRequest = {
@@ -84,6 +88,20 @@ export type TaskSwapRequest = {
 export type CreateSwapRequestPayload = {
   requestedTo: number;
   targetTaskId?: number;
+};
+
+// Bentuk item dari GET /swap-requests/incoming & /outgoing — hasil join di
+// server, dipakai buat menampilkan notifikasi tukar task.
+export type TaskSwapRequestListItem = {
+  id: number;
+  status: TaskSwapRequestStatus;
+  task: { id: number; title: string; projectId: number };
+  targetTask: { id: number; title: string } | null;
+  requestedBy: { id: number; username: string };
+  requestedTo: { id: number; username: string };
+  resolvedBy: number | null;
+  resolvedAt: string | null;
+  createdAt: string;
 };
 
 // Task + nama proyeknya, buat ditampilkan di card "My Tasks" tanpa
