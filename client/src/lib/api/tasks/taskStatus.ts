@@ -1,8 +1,6 @@
 import { TaskStatus } from "@/types/task";
 
-// Alur status task (state machine). Lihat server/TASK_BOARD_BACKEND.md §1
-// untuk kontrak lengkap dengan backend — daftar ini harus tetap sinkron.
-export type TaskAction = "claim" | "ongoing" | "submit" | "resume" | "approve" | "requestRevision" | "reject";
+export type TaskAction = "claim" | "ongoing" | "submit" | "approve" | "requestRevision" | "reject";
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
     unclaimed: "Unclaimed",
@@ -52,7 +50,7 @@ export const AVAILABLE_ACTIONS: Record<TaskStatus, ActionDefinition[]> = {
         { action: "reject", label: "Tolak", actor: "leader", nextStatus: "rejected", variant: "danger" },
     ],
     in_revision: [
-        { action: "resume", label: "Kerjakan lagi", actor: "assignee", nextStatus: "ongoing", variant: "primary" },
+        { action: "submit", label: "Submit ulang", actor: "assignee", nextStatus: "submitted", variant: "primary" },
     ],
     approved: [],
     rejected: [],

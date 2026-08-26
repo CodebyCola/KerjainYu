@@ -16,6 +16,7 @@ export function projectRoutes(projectId: string) {
     CALENDAR: `/projects/${projectId}/calendar`,
     FILES: `/projects/${projectId}/files`,
     SETTINGS: `/projects/${projectId}/settings`,
+    PENDING_SUBMISSIONS: `/projects/${projectId}/task-board/pending-submissions`,
   } as const;
 }
 
