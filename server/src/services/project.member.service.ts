@@ -1,8 +1,9 @@
 
 import * as taskRepo from "../database/repositories/task.repository"
 import * as projectMemberRepo from "../database/repositories/project.member.repository";
+import * as projectRepo from "../database/repositories/project.repository"
 import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
-import { ConflictError } from "../errors/AppError";
+import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
 import { db } from "../database/db";
 
 //GET /api/v1/projects/:id/members -> Returning all members that is belong to the project + active
@@ -31,42 +32,50 @@ export async function promoteToLeader(projectId: number, currentLeaderId: number
 
 //DELETE /api/v1/projects/:id/members/:userId
 export async function removeMember(projectId: number, leaderId: number, targetUserId: number) {
-    await assertProjectLeader(projectId, leaderId)
+    await assertProjectLeader(projectId, leaderId);
+
     if (targetUserId == leaderId) {
-        throw new ConflictError("Leader cannot remove themselves, Transfer leadership first")
+        throw new ConflictError("Leader cannot remove themselves. Transfer leadership first.");
     }
-    const { membership } = await assertProjectMembership(projectId, targetUserId)
-    if (membership.status !== "active") {
-        throw new ConflictError("That member is not active on that projecr")
+
+    const membership = await projectMemberRepo.getRole(projectId, targetUserId);
+    if (!membership) {
+        throw new NotFoundError("Member not found in this project");
     }
+    if (membership.status != "active") {
+        throw new ConflictError("This member is not currently active in the project");
+    }
+
     return db.transaction(async (trx) => {
-        await projectMemberRepo.removeMember(projectId, targetUserId, trx)
-        await taskRepo.unassignTask(projectId, targetUserId, trx)
-    })
+        await projectMemberRepo.removeMember(projectId, targetUserId, trx);
+        await taskRepo.unassignTask(projectId, targetUserId, trx);
+    });
 }
+
 //POST /api/v1/projects/:id/leave
 export async function leaveProject(projectId: number, userId: number) {
-    const { membership } = await assertProjectMembership(projectId, userId);
-    if (membership.status !== "active") {
+    const project = await projectRepo.getProjectById(projectId);
+    if (!project) {
+        throw new NotFoundError("Project not found");
+    }
+    const membership = await projectMemberRepo.getRole(projectId, userId);
+    if (!membership) {
+        throw new ForbiddenError("You're not part of this project");
+    }
+    if (membership.status != "active") {
         throw new ConflictError("You are not an active member of this project");
     }
 
     if (membership.role === "leader") {
-        const members = await projectMemberRepo.getMembersByProject(projectId); // sudah filter status='active'
-        const otherActiveMembers = members.filter((member) => member.userId !== userId); // fix: camelCase
-
+        const members = await projectMemberRepo.getMembersByProject(projectId);
+        const otherActiveMembers = members.filter((m) => m.userId !== userId);
         if (otherActiveMembers.length > 0) {
             throw new ConflictError("Transfer leadership to another member before leaving this project");
         }
-
-        // Leader adalah satu-satunya member aktif yang tersisa — boleh leave,
-        // project otomatis di-archive (bukan dihapus) supaya riwayat task/submission tetap ada
         return db.transaction(async (trx) => {
             await projectMemberRepo.removeMember(projectId, userId, trx);
             await taskRepo.unassignTask(projectId, userId, trx);
-            await trx("projects")
-                .where({ id: projectId })
-                .update({ isArchived: true, isArchivedAt: new Date() });
+            await trx("projects").where({ id: projectId }).update({ isArchived: true, isArchivedAt: new Date() });
         });
     }
 
