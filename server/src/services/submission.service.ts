@@ -369,3 +369,40 @@ export async function updateAttachment(
 
     return updated;
 }
+export async function createAttachmentDownloadUrl(
+    submissionId: number,
+    attachmentId: number,
+    userId: number,
+) {
+    const submission = await submissionRepo.getSubmissionById(submissionId);
+    if (!submission) {
+        throw new NotFoundError("Submission not found");
+    }
+
+    const task = await taskRepo.getTaskById(submission.taskId);
+    if (!task) {
+        throw new NotFoundError("Task not found");
+    }
+    await assertProjectMembership(task.projectId, userId);
+
+    const attachment = await submissionRepo.getAttachmentById(attachmentId);
+    if (!attachment) {
+        throw new NotFoundError("Attachment not found");
+    }
+    if (attachment.submissionId != submission.id) {
+        throw new NotFoundError("Attachment not found");
+    }
+    if (attachment.type !== "file" && attachment.type !== "image") {
+        throw new ConflictError("This attachment has no downloadable file");
+    }
+
+    const downloadUrl = await storageService.createDownloadUrl(
+        attachment.objectKey,
+    );
+
+    return {
+        downloadUrl,
+        fileName: attachment.fileName,
+        mimeType: attachment.mimeType,
+    };
+}

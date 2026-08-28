@@ -52,6 +52,14 @@ router.patch(
     validate(reviewSubmissionSchema, "body"),
     submissionController.reviewSubmission,
 );
+// GET /api/v1/submissions/:id/attachments/:attachmentId/download-url
+router.get(
+    "/:id/attachments/:attachmentId/download-url",
+    authenticate,
+    validate(idParams, "params"),
+    validate(attachmentIdParams, "params"),
+    submissionController.createAttachmentDownloadUrl,
+);
 //GET /api/v1/submissions/:id/attachments
 router.get("/:id/attachments", authenticate, validate(idParams, "params"), submissionController.getAttachmentsBySubmission)
 export default router;

@@ -46,21 +46,32 @@ export async function removeMember(projectId: number, leaderId: number, targetUs
 }
 //POST /api/v1/projects/:id/leave
 export async function leaveProject(projectId: number, userId: number) {
-    const { membership } = await assertProjectMembership(projectId, userId)
+    const { membership } = await assertProjectMembership(projectId, userId);
     if (membership.status !== "active") {
-        throw new ConflictError("Active member not found in this project")
+        throw new ConflictError("You are not an active member of this project");
     }
 
-    // Guard tambahan biar leader gak bisa leave jika masih ada member
     if (membership.role === "leader") {
-        const members = await projectMemberRepo.getMembersByProject(projectId)
-        const otherActiveMembers = members.filter((member) => member.user_id !== userId)
+        const members = await projectMemberRepo.getMembersByProject(projectId); // sudah filter status='active'
+        const otherActiveMembers = members.filter((member) => member.userId !== userId); // fix: camelCase
+
         if (otherActiveMembers.length > 0) {
-            throw new ConflictError("Transfer leadership to another member before leaving this project")
+            throw new ConflictError("Transfer leadership to another member before leaving this project");
         }
+
+        // Leader adalah satu-satunya member aktif yang tersisa — boleh leave,
+        // project otomatis di-archive (bukan dihapus) supaya riwayat task/submission tetap ada
+        return db.transaction(async (trx) => {
+            await projectMemberRepo.removeMember(projectId, userId, trx);
+            await taskRepo.unassignTask(projectId, userId, trx);
+            await trx("projects")
+                .where({ id: projectId })
+                .update({ isArchived: true, isArchivedAt: new Date() });
+        });
     }
+
     return db.transaction(async (trx) => {
-        await projectMemberRepo.removeMember(projectId, userId, trx)
-        await taskRepo.unassignTask(projectId, userId, trx)
-    })
+        await projectMemberRepo.removeMember(projectId, userId, trx);
+        await taskRepo.unassignTask(projectId, userId, trx);
+    });
 }
