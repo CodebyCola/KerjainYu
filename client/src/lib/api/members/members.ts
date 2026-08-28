@@ -68,3 +68,10 @@ export function leaveProjectRequest(projectId: string, cookie: string) {
     cookie,
   });
 }
+
+export function removeMemberRequest(projectId: string, userId: number, cookie: string) {
+  return apiFetch<null>(`${projectMembersPath(projectId)}/${userId}`, {
+    method: "DELETE",
+    cookie,
+  });
+}

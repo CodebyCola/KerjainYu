@@ -116,3 +116,16 @@ export function deleteSubmissionAttachmentRequest(
     cookie,
   });
 }
+
+// GET /submissions/:id/attachments/:attachmentId/download-url — presigned
+// URL untuk membuka/download file attachment (tipe file/image saja).
+export function getAttachmentDownloadUrlRequest(
+  submissionId: number,
+  attachmentId: number,
+  cookie: string,
+) {
+  return apiFetch<{ downloadUrl: string; fileName: string; mimeType: string }>(
+    `${submissionPath(submissionId)}/attachments/${attachmentId}/download-url`,
+    { cookie },
+  );
+}

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { TeamMember } from "@/types/team";
 import MemberListItem from "@/components/features/team/MemberListItem";
 import RemoveMemberDialog from "@/components/features/team/RemoveMemberDialog";
-import { promoteToLeaderAction } from "@/app/(main)/projects/[projectId]/team/actions";
+import { promoteToLeaderAction, removeMemberAction } from "@/app/(main)/projects/[projectId]/team/actions";
 
 type TeamMemberListProps = {
     projectId: string;
@@ -17,6 +17,8 @@ export default function TeamMemberList({ projectId, initialMembers, canManage }:
     const [pendingRemoval, setPendingRemoval] = useState<TeamMember | null>(null);
     const [promotingId, setPromotingId] = useState<number | null>(null);
     const [promoteError, setPromoteError] = useState<string | null>(null);
+    const [removeError, setRemoveError] = useState<string | null>(null);
+    const [isRemoving, startRemove] = useTransition();
 
     const [isPromoting, startPromote] = useTransition();
 
@@ -48,12 +50,33 @@ export default function TeamMemberList({ projectId, initialMembers, canManage }:
         });
     }
 
-    // TODO: ganti dengan DELETE /api/v1/project/:id/members/:memberId.
-    // Lihat README bagian "DELETE /api/v1/project/:id/members/:memberId".
+    // DELETE /api/v1/projects/:id/members/:userId — hanya berlaku untuk
+    // member berstatus "active". Server belum punya endpoint untuk
+    // membatalkan undangan ("invited"), jadi kasus itu ditolak di client
+    // dengan pesan yang jujur alih-alih dikira berhasil.
     function handleConfirmRemove() {
         if (!pendingRemoval) return;
-        setMembers((prev) => prev.filter((m) => m.id !== pendingRemoval.id));
+        const target = pendingRemoval;
+
+        if (target.status === "invited") {
+            setPendingRemoval(null);
+            setRemoveError("Membatalkan undangan belum didukung. Coba lagi nanti.");
+            return;
+        }
+
+        const previousMembers = members;
+
+        setRemoveError(null);
+        setMembers((prev) => prev.filter((m) => m.id !== target.id));
         setPendingRemoval(null);
+
+        startRemove(async () => {
+            const result = await removeMemberAction(projectId, target.userId);
+            if (!result.success) {
+                setMembers(previousMembers);
+                setRemoveError(result.error ?? "Gagal mengeluarkan anggota.");
+            }
+        });
     }
 
     if (members.length === 0) {
@@ -68,6 +91,9 @@ export default function TeamMemberList({ projectId, initialMembers, canManage }:
         <>
             {promoteError && (
                 <p className="mb-2.5 text-sm font-inter text-status-blocked-text">{promoteError}</p>
+            )}
+            {removeError && (
+                <p className="mb-2.5 text-sm font-inter text-status-blocked-text">{removeError}</p>
             )}
 
             <div className="flex flex-col gap-2.5">
@@ -85,6 +111,7 @@ export default function TeamMemberList({ projectId, initialMembers, canManage }:
 
             <RemoveMemberDialog
                 member={pendingRemoval}
+                isRemoving={isRemoving}
                 onCancel={() => setPendingRemoval(null)}
                 onConfirm={handleConfirmRemove}
             />

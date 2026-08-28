@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getProject } from "@/lib/api/projects/projects";
-import FilesPageContent from "@/components/features/files/FilesPageContent";
+import FilesPageContent from "@/components/features/links/FilesPageContent";
 
 type FilesPageProps = {
     params: Promise<{ projectId: string }>;

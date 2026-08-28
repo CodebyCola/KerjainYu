@@ -18,7 +18,7 @@ export default function ProjectSubNav({ projectId }: ProjectSubNavProps) {
         { label: "Papan Tugas", href: routes.TASK_BOARD, icon: KanbanSquare },
         { label: "Tim", href: routes.TEAM, icon: Users },
         { label: "Kalender", href: routes.CALENDAR, icon: Calendar },
-        { label: "Berkas", href: routes.FILES, icon: FolderOpen },
+        { label: "Berkas", href: routes.LINKS, icon: FolderOpen },
         { label: "Pengaturan", href: routes.SETTINGS, icon: Settings },
     ];
 

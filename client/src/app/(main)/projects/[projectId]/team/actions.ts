@@ -9,6 +9,7 @@ import {
   inviteMemberRequest,
   promoteToLeaderRequest,
   leaveProjectRequest,
+  removeMemberRequest,
 } from "@/lib/api/members/members";
 import { UserSearchResult } from "@/types/team";
 import { ROUTES, projectRoutes } from "@/lib/routes";
@@ -129,4 +130,35 @@ export async function leaveProjectAction(
   // Halaman proyek ini tidak bisa diakses lagi setelah keluar,
   // jadi langsung redirect ke daftar proyek alih-alih revalidate saja.
   redirect(ROUTES.PROJECTS);
+}
+
+export type RemoveMemberState = {
+  success: boolean;
+  error: string | null;
+};
+
+// DELETE /projects/:id/members/:userId — hanya untuk member berstatus
+// "active". Server menolak kalau targetnya masih "invited" (undangan
+// pending); server belum punya endpoint pembatalan undangan terpisah.
+export async function removeMemberAction(
+  projectId: string,
+  userId: number,
+): Promise<RemoveMemberState> {
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    await removeMemberRequest(projectId, userId, cookieHeader);
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message };
+    }
+    return {
+      success: false,
+      error: "Terjadi kesalahan tak terduga. Coba lagi.",
+    };
+  }
+
+  revalidatePath(projectRoutes(projectId).TEAM);
+  return { success: true, error: null };
 }

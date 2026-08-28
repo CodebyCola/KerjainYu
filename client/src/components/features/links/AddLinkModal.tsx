@@ -6,7 +6,7 @@ import Modal from "@/components/ui/Modal";
 import { ProjectLink, ProjectLinkCategory } from "@/types/project";
 import { CATEGORY_OPTIONS } from "@/utils/projectLink";
 import { cn } from "@/utils/cn";
-import { addLinkAction } from "@/app/(main)/projects/[projectId]/files/actions";
+import { addLinkAction } from "@/app/(main)/projects/[projectId]/links/actions";
 
 type AddLinkModalProps = {
     projectId: string;

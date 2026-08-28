@@ -18,6 +18,7 @@ import {
   createAttachmentUploadUrlRequest,
   createAttachmentRequest,
   deleteSubmissionAttachmentRequest,
+  getAttachmentDownloadUrlRequest,
 } from "@/lib/api/submissions/submissions";
 import { createSwapRequestRequest, getIncomingSwapRequests, respondSwapRequestRequest } from "@/lib/api/tasks/swapRequests";
 import {
@@ -242,6 +243,39 @@ export async function deleteSubmissionAttachmentAction(
 
   revalidatePath(taskDetailRoute(projectId, taskId));
   return { success: true, error: null };
+}
+
+export type DownloadUrlResult = {
+  success: boolean;
+  error: string | null;
+  downloadUrl: string | null;
+  fileName: string | null;
+};
+
+// GET /submissions/:id/attachments/:attachmentId/download-url — dipanggil
+// tepat sebelum file dibuka, karena presigned URL cuma berlaku beberapa
+// menit dan tidak boleh disimpan/dipakai ulang setelah expired.
+export async function getAttachmentDownloadUrlAction(
+  submissionId: number,
+  attachmentId: number,
+): Promise<DownloadUrlResult> {
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    const { data } = await getAttachmentDownloadUrlRequest(submissionId, attachmentId, cookieHeader);
+    return { success: true, error: null, downloadUrl: data.downloadUrl, fileName: data.fileName };
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message, downloadUrl: null, fileName: null };
+    }
+    return {
+      success: false,
+      error: "Terjadi kesalahan tak terduga. Coba lagi.",
+      downloadUrl: null,
+      fileName: null,
+    };
+  }
 }
 
 export type AssignTaskState = {

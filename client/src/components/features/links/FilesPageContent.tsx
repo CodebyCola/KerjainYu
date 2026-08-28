@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { FolderOpen } from "lucide-react";
 import { ProjectLink } from "@/types/project";
-import AddLinkButton from "@/components/features/files/AddLinkButton";
-import LinkList from "@/components/features/files/LinkList";
+import AddLinkButton from "@/components/features/links/AddLinkButton";
+import LinkList from "@/components/features/links/LinkList";
 
 type FilesPageContentProps = {
     projectId: string;

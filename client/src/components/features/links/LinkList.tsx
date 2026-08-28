@@ -3,9 +3,9 @@
 import { useState, useTransition } from "react";
 import { FolderOpen } from "lucide-react";
 import { ProjectLink } from "@/types/project";
-import LinkListItem from "@/components/features/files/LinkListItem";
-import RemoveLinkDialog from "@/components/features/files/RemoveLinkDialog";
-import { deleteLinkAction } from "@/app/(main)/projects/[projectId]/files/actions";
+import LinkListItem from "@/components/features/links/LinkListItem";
+import RemoveLinkDialog from "@/components/features/links/RemoveLinkDialog";
+import { deleteLinkAction } from "@/app/(main)/projects/[projectId]/links/actions";
 
 type LinkListProps = {
     projectId: string;

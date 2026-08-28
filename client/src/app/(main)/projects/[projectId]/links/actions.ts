@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createProjectLink, deleteProjectLink } from "@/lib/api/files/files";
+import { createProjectLink, deleteProjectLink } from "@/lib/api/links/links";
 import { ProjectLink, CreateProjectLinkPayload } from "@/types/project";
 import { projectRoutes } from "@/lib/routes";
 
@@ -16,7 +16,7 @@ export async function addLinkAction(
 ): Promise<AddLinkState> {
     const result = await createProjectLink(projectId, payload);
     if (result.link) {
-        revalidatePath(projectRoutes(projectId).FILES);
+        revalidatePath(projectRoutes(projectId).LINKS);
     }
     return result;
 }
@@ -32,7 +32,7 @@ export async function deleteLinkAction(
 ): Promise<DeleteLinkState> {
     const result = await deleteProjectLink(linkId);
     if (result.success) {
-        revalidatePath(projectRoutes(projectId).FILES);
+        revalidatePath(projectRoutes(projectId).LINKS);
     }
     return result;
 }

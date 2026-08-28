@@ -14,7 +14,7 @@ export function projectRoutes(projectId: string) {
     TEAM: `/projects/${projectId}/team`,
     TASK_BOARD: `/projects/${projectId}/task-board`,
     CALENDAR: `/projects/${projectId}/calendar`,
-    FILES: `/projects/${projectId}/files`,
+    LINKS: `/projects/${projectId}/links`,
     SETTINGS: `/projects/${projectId}/settings`,
     PENDING_SUBMISSIONS: `/projects/${projectId}/task-board/pending-submissions`,
   } as const;
