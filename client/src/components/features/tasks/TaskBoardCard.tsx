@@ -13,13 +13,6 @@ import { getInitials } from "@/utils/getInitials";
 import { taskDetailRoute } from "@/lib/routes";
 import { transitionTaskAction } from "@/app/(main)/projects/[projectId]/task-board/actions";
 
-const ACTIONS_REQUIRING_DETAIL: ActionDefinition["action"][] = [
-    "submit",
-    "resume",
-    "requestRevision",
-    "reject",
-];
-
 type TaskBoardCardProps = {
     task: Task;
     projectId: string;
@@ -71,7 +64,8 @@ export default function TaskBoardCard({
     });
 
     function handleAction(definition: ActionDefinition) {
-        if (ACTIONS_REQUIRING_DETAIL.includes(definition.action)) {
+        const action = definition.action;
+        if (action !== "claim" && action !== "ongoing") {
             router.push(detailHref);
             return;
         }
@@ -80,7 +74,7 @@ export default function TaskBoardCard({
         onOptimisticAction?.(task.id, definition.nextStatus);
 
         startTransition(async () => {
-            const result = await transitionTaskAction(projectId, task.id, definition.action);
+            const result = await transitionTaskAction(projectId, task.id, action);
             if (!result.success) {
                 setError(result.error);
             }

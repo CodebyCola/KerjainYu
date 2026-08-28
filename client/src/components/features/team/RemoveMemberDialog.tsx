@@ -1,16 +1,17 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { TeamMember } from "@/types/team";
 
 type RemoveMemberDialogProps = {
     member: TeamMember | null;
+    isRemoving: boolean;
     onCancel: () => void;
     onConfirm: () => void;
 };
 
-export default function RemoveMemberDialog({ member, onCancel, onConfirm }: RemoveMemberDialogProps) {
+export default function RemoveMemberDialog({ member, isRemoving, onCancel, onConfirm }: RemoveMemberDialogProps) {
     const isPending = member?.status === "invited";
 
     return (
@@ -30,16 +31,20 @@ export default function RemoveMemberDialog({ member, onCancel, onConfirm }: Remo
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="flex min-h-10 items-center justify-center rounded-lg border border-border px-4 text-sm font-inter font-medium text-foreground transition-colors hover:bg-status-todo-bg"
+                            disabled={isRemoving}
+                            className="flex min-h-10 items-center justify-center rounded-lg border border-border px-4 text-sm font-inter font-medium text-foreground transition-colors hover:bg-status-todo-bg disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             Batal
                         </button>
                         <button
                             type="button"
                             onClick={onConfirm}
-                            className="flex min-h-10 items-center justify-center rounded-lg bg-status-blocked-text px-4 text-sm font-inter font-medium text-white transition-opacity hover:opacity-90"
+                            disabled={isRemoving}
+                            aria-busy={isRemoving}
+                            className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-status-blocked-text px-4 text-sm font-inter font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            {isPending ? "Batalkan undangan" : "Keluarkan"}
+                            {isRemoving && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+                            {isPending ? "Batalkan undangan" : isRemoving ? "Mengeluarkan..." : "Keluarkan"}
                         </button>
                     </div>
                 </div>

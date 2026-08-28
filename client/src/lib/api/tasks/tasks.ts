@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { MyTask, Task, TaskDetail, TaskComment } from "@/types/task";
+import { MyTask, Task, TaskDetail, TaskComment, TaskSubmission } from "@/types/task";
 import { apiFetch } from "../fetcher";
 
 const MY_TASKS_PATH = "/tasks";
@@ -98,24 +98,9 @@ export function submitTaskRequest(
   note: string | undefined,
   cookie: string,
 ) {
-  return apiFetch<TaskDetail>(`${taskPath(taskId)}/submit`, {
-    method: "PATCH",
-    body: { note: note || undefined },
-    cookie,
-  });
-}
-
-export type ReviewDecision = "approved" | "in_revision" | "rejected";
-
-export function reviewTaskRequest(
-  taskId: number,
-  decision: ReviewDecision,
-  reviewNote: string | undefined,
-  cookie: string,
-) {
-  return apiFetch<TaskDetail>(`${taskPath(taskId)}/review`, {
-    method: "PATCH",
-    body: { decision, reviewNote: reviewNote || undefined },
+  return apiFetch<TaskSubmission>(`${taskPath(taskId)}/submissions`, {
+    method: "POST",
+    body: { note: note || undefined, contents: [] },
     cookie,
   });
 }

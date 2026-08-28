@@ -18,7 +18,7 @@ const MAIN_SHEET_ITEMS = [
 function getProjectSheetItems(projectId: string) {
     const routes = projectRoutes(projectId);
     return [
-    { label: "Berkas", href: routes.FILES, icon: FolderOpen },
+    { label: "Berkas", href: routes.LINKS, icon: FolderOpen },
     { label: "Pengaturan", href: routes.SETTINGS, icon: Settings },
     ];
 }

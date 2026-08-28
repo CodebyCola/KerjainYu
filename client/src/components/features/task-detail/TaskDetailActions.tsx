@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftRight, Loader2, UserPlus } from "lucide-react";
-import { Task } from "@/types/task";
+import { Task, TaskDetail } from "@/types/task";
 import { Project, ProjectMember } from "@/types/project";
 import { getAvailableActions, ActionDefinition } from "@/lib/api/tasks/taskStatus";
 import { isTaskAssignee, resolveTaskAssigneeId } from "@/lib/api/tasks/taskAssignee";
@@ -11,15 +11,12 @@ import { getSwapEligibility } from "@/lib/api/tasks/taskSwap";
 import { cn } from "@/utils/cn";
 import { transitionTaskAction } from "@/app/(main)/projects/[projectId]/task-board/actions";
 import TaskActionModal from "@/components/features/task-detail/TaskActionModal";
+import TaskReviewModal from "@/components/features/task-detail/TaskReviewModal";
 import TaskAssignModal from "@/components/features/task-detail/TaskAssignModal";
 import TaskSwapRequestModal from "@/components/features/task-detail/TaskSwapRequestModal";
 
-const ACTIONS_REQUIRING_NOTE: ActionDefinition["action"][] = [
-    "submit",
-    "resume",
-    "requestRevision",
-    "reject",
-];
+
+const REVIEW_ACTIONS: ActionDefinition["action"][] = ["approve", "requestRevision", "reject"];
 
 const ACTION_BUTTON_STYLE: Record<ActionDefinition["variant"], string> = {
     primary: "bg-primary text-primary-foreground hover:opacity-90",
@@ -28,7 +25,7 @@ const ACTION_BUTTON_STYLE: Record<ActionDefinition["variant"], string> = {
 };
 
 type TaskDetailActionsProps = {
-    task: Task;
+    task: TaskDetail;
     projectId: string;
     currentUserId: number;
     isLeader: boolean;
@@ -49,7 +46,8 @@ export default function TaskDetailActions({
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
-    const [activeModalAction, setActiveModalAction] = useState<ActionDefinition | null>(null);
+    const [activeSubmitAction, setActiveSubmitAction] = useState<ActionDefinition | null>(null);
+    const [activeReviewAction, setActiveReviewAction] = useState<ActionDefinition | null>(null);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [assignModalKey, setAssignModalKey] = useState(0);
     const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -66,14 +64,22 @@ export default function TaskDetailActions({
     if (actions.length === 0 && !canAssign && !canRequestSwap) return null;
 
     function handleAction(definition: ActionDefinition) {
-        if (ACTIONS_REQUIRING_NOTE.includes(definition.action)) {
-            setActiveModalAction(definition);
+        if (definition.action === "submit") {
+            setActiveSubmitAction(definition);
+            return;
+        }
+        if (REVIEW_ACTIONS.includes(definition.action)) {
+            setActiveReviewAction(definition);
             return;
         }
 
         setError(null);
         startTransition(async () => {
-            const result = await transitionTaskAction(projectId, task.id, definition.action);
+            const result = await transitionTaskAction(
+                projectId,
+                task.id,
+                definition.action as "claim" | "ongoing",
+            );
             if (!result.success) {
                 setError(result.error);
                 return;
@@ -143,10 +149,18 @@ export default function TaskDetailActions({
             {error && <p className="mt-3 text-xs font-inter text-status-blocked-text">{error}</p>}
 
             <TaskActionModal
-                definition={activeModalAction}
+                definition={activeSubmitAction}
                 projectId={projectId}
                 taskId={task.id}
-                onClose={() => setActiveModalAction(null)}
+                onClose={() => setActiveSubmitAction(null)}
+            />
+
+            <TaskReviewModal
+                definition={activeReviewAction}
+                projectId={projectId}
+                taskId={task.id}
+                submissionId={task.latestSubmission?.id ?? null}
+                onClose={() => setActiveReviewAction(null)}
             />
 
             <TaskAssignModal

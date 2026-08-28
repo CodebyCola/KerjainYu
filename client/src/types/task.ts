@@ -33,6 +33,59 @@ export type TaskSubmission = {
   submittedAt: string;
 };
 
+// Item dari GET /projects/:id/pending-submissions — join task_submissions +
+// tasks, dipakai di halaman "Submission Menunggu Review" level project.
+export type PendingSubmission = TaskSubmission & {
+  taskTitle: string;
+};
+
+export type SubmissionAttachmentType = "text" | "image" | "file" | "link";
+
+export type SubmissionAttachment = {
+  id: number;
+  submissionId: number;
+  type: SubmissionAttachmentType;
+  content: string | null;
+  objectKey: string | null;
+  fileName: string | null;
+  mimeType: string | null;
+  fileSize: number | null;
+  createdAt: string;
+};
+
+// Payload untuk POST /tasks/:id/submissions.
+export type CreateSubmissionPayload = {
+  note?: string;
+  contents: Array<{ type: "text" | "link"; content: string }>;
+};
+
+// Payload untuk PATCH /submissions/:id/review.
+export type ReviewSubmissionPayload = {
+  reviewStatus: "approved" | "revision_requested" | "rejected";
+  reviewNote?: string;
+};
+
+// Payload untuk POST /submissions/:id/attachments/upload-url.
+export type CreateUploadUrlPayload = {
+  type: "file" | "image";
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+};
+
+// Payload untuk POST /submissions/:id/attachments — persis satu dari
+// content/file yang harus diisi, sisanya null (lihat createAttachmentSchema).
+export type CreateAttachmentPayload = {
+  content: { type: "text" | "link"; content: string } | null;
+  file: {
+    type: "file" | "image";
+    objectKey: string;
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+  } | null;
+};
+
 export type Task = {
   id: number;
   title: string;

@@ -3,7 +3,8 @@ import { getSession } from "@/lib/api/auth/session";
 import { getProject } from "@/lib/api/projects/projects";
 import { getProjectMembers } from "@/lib/api/members/members";
 import { getProjectTasks, getTaskDetailData, getTaskComments } from "@/lib/api/tasks/tasks";
-import { findTaskAssignee } from "@/lib/api/tasks/taskAssignee";
+import { getSubmissionAttachments } from "@/lib/api/submissions/submissions";
+import { findTaskAssignee, isTaskAssignee } from "@/lib/api/tasks/taskAssignee";
 import TaskDetailHeader from "@/components/features/task-detail/TaskDetailHeader";
 import TaskDetailInfo from "@/components/features/task-detail/TaskDetailInfo";
 import TaskDetailActions from "@/components/features/task-detail/TaskDetailActions";
@@ -31,13 +32,16 @@ export default async function TaskDetailPage(props: { params: Promise<TaskDetail
         getTaskComments(taskId),
         getProjectTasks(projectId),
     ]);
-    
+
     if (!projectDetail || !task || String(task.projectId) !== String(projectId)) {
         notFound();
     }
 
     const isLeader = projectDetail.membership.role === "leader";
     const assignee = findTaskAssignee(task, members);
+    const attachments = task.latestSubmission
+        ? await getSubmissionAttachments(task.latestSubmission.id)
+        : [];
 
     return (
         <div className="flex flex-col gap-4 pb-6">
@@ -55,7 +59,15 @@ export default async function TaskDetailPage(props: { params: Promise<TaskDetail
                 projectTasks={projectTasks}
             />
 
-            {task.latestSubmission && <TaskSubmissionPanel submission={task.latestSubmission} />}
+            {task.latestSubmission && (
+                <TaskSubmissionPanel
+                    submission={task.latestSubmission}
+                    attachments={attachments}
+                    projectId={projectId}
+                    taskId={taskId}
+                    canManageAttachments={isTaskAssignee(task, user?.id ?? -1)}
+                />
+            )}
 
             <TaskComments comments={comments} projectId={projectId} taskId={taskId} />
         </div>

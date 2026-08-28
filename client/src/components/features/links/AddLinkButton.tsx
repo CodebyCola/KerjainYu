@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import AddLinkModal from "@/components/features/files/AddLinkModal";
+import AddLinkModal from "@/components/features/links/AddLinkModal";
 import { ProjectLink } from "@/types/project";
 
 type AddLinkButtonProps = {
