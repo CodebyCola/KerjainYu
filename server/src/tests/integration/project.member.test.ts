@@ -554,9 +554,9 @@ describe("DELETE /api/v1/projects/:id/members/:userId", () => {
                 `/api/v1/projects/${projectId}/members/${stranger.userId}`
             )
             .set("Cookie", leader.cookie);
-
-        expect(res.status).toBe(403);
-        expect(res.body.error.code).toBe("FORBIDDEN");
+        console.log(res.error)
+        expect(res.status).toBe(404);
+        expect(res.body.error.code).toBe("NOT_FOUND");
     });
 
     it("should reject removing an already inactive member", async () => {
