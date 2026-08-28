@@ -186,3 +186,27 @@ export async function updateAttachment(
         next(error);
     }
 }
+
+export async function createAttachmentDownloadUrl(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+) {
+    try {
+        const submissionId = Number(req.params.id);
+        const attachmentId = Number(req.params.attachmentId);
+
+        const result = await submissionService.createAttachmentDownloadUrl(
+            submissionId,
+            attachmentId,
+            req.user!.id,
+        );
+
+        res.status(200).json({
+            success: true,
+            data: result,
+        });
+    } catch (error) {
+        next(error);
+    }
+}

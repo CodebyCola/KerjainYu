@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 
@@ -16,6 +16,11 @@ export function generateObject(
     return `${prefix}/${randomUUID()}-${sanitizedFileName}`;
 }
 
+export async function createDownloadUrl(objectKey: string) {
+    const command = new GetObjectCommand({ Bucket: STORAGE_BUCKET, Key: objectKey })
+    return getSignedUrl(s3, command, { expiresIn: 60 * 5 })
+}
+
 export async function createUploadUrl(
     objectKey: string,
     contentType: string,
@@ -27,7 +32,7 @@ export async function createUploadUrl(
     });
 
     return getSignedUrl(s3, command, {
-        expiresIn: 60 * 5,
+        expiresIn: 60 * 12,
     });
 }
 
