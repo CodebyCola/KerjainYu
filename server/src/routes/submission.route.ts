@@ -4,7 +4,7 @@ import { Router } from "express";
 import * as submissionController from "../controllers/submission.controller";
 import { authenticate } from "../middlewares/auth.middlewares";
 import { validate } from "../middlewares/validate";
-
+import { readRateLimiter, writeRateLimiter } from "../middlewares/rateLimiter"
 import { idParams } from "../schemas/id.schema";
 import {
     attachmentIdParams,
@@ -14,52 +14,68 @@ import {
     reviewSubmissionSchema,
     updateAttachmentSchema,
 } from "../schemas/submission.schema";
-
 const router = Router();
 
+router.get(
+    "/:id/attachments",
+    readRateLimiter,
+    authenticate,
+    validate(idParams, "params"),
+    submissionController.getAttachmentsBySubmission
+);
 
-// POST /api/v1/submissions/:id/attachments/upload-url
 router.post(
     "/:id/attachments/upload-url",
+    writeRateLimiter,
     authenticate,
     validate(idParams, "params"),
     validate(createFileUploadUrlSchema, "body"),
-    submissionController.createAttachmentUploadUrl,
+    submissionController.createAttachmentUploadUrl
 );
-// POST /api/v1/submissions/:id/attachments
+
 router.post(
     "/:id/attachments",
+    writeRateLimiter,
     authenticate,
     validate(idParams, "params"),
     validate(createAttachmentSchema, "body"),
-    submissionController.createFileAttachment,
+    submissionController.createFileAttachment
 );
-//DELETE /api/v1/submissions/:id/attachments/:attachmentId
-router.delete(
-    "/:id/attachments/:attachmentId",
+
+router.get(
+    "/:id/attachments/:attachmentId/download-url",
+    readRateLimiter,
     authenticate,
     validate(idParams, "params"),
     validate(attachmentIdParams, "params"),
-    submissionController.deleteAttachment,
+    submissionController.createAttachmentDownloadUrl
 );
-//PATCH /api/v1/submission/:id/attachments/:attachmentId
-router.patch("/:id/attachments/:attachmentId", authenticate, validate(idParams, 'params'), validate(attachmentIdParams, 'params'), validate(updateAttachmentSchema, 'body'), submissionController.updateAttachment)
-// PATCH /api/v1/submissions/:id/review
+
+router.patch(
+    "/:id/attachments/:attachmentId",
+    writeRateLimiter,
+    authenticate,
+    validate(idParams, "params"),
+    validate(attachmentIdParams, "params"),
+    validate(updateAttachmentSchema, "body"),
+    submissionController.updateAttachment
+);
+
+router.delete(
+    "/:id/attachments/:attachmentId",
+    writeRateLimiter,
+    authenticate,
+    validate(idParams, "params"),
+    validate(attachmentIdParams, "params"),
+    submissionController.deleteAttachment
+);
 router.patch(
     "/:id/review",
+    writeRateLimiter,
     authenticate,
     validate(idParams, "params"),
     validate(reviewSubmissionSchema, "body"),
-    submissionController.reviewSubmission,
+    submissionController.reviewSubmission
 );
-// GET /api/v1/submissions/:id/attachments/:attachmentId/download-url
-router.get(
-    "/:id/attachments/:attachmentId/download-url",
-    authenticate,
-    validate(idParams, "params"),
-    validate(attachmentIdParams, "params"),
-    submissionController.createAttachmentDownloadUrl,
-);
-//GET /api/v1/submissions/:id/attachments
-router.get("/:id/attachments", authenticate, validate(idParams, "params"), submissionController.getAttachmentsBySubmission)
+
 export default router;

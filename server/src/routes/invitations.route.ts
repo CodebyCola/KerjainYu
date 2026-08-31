@@ -5,9 +5,18 @@ import { updateInvitationSchema } from "../schemas/invitation.schema"
 import * as invitationController from "../controllers/invitation.controller"
 import { idParams } from "../schemas/id.schema"
 
-const router = Router()
+import { readRateLimiter, writeRateLimiter } from "../middlewares/rateLimiter"
+const router = Router();
 
-router.get("/", authenticate, invitationController.getMyInvitations)
-router.patch("/:id", authenticate, validate(idParams, "params"), validate(updateInvitationSchema, "body"), invitationController.respondToInvitation)
+router.get("/", readRateLimiter, authenticate, invitationController.getMyInvitations);
+
+router.patch(
+    "/:id",
+    writeRateLimiter,
+    authenticate,
+    validate(idParams, "params"),
+    validate(updateInvitationSchema, "body"),
+    invitationController.respondToInvitation
+);
 
 export default router;

@@ -5,14 +5,12 @@ import { validate } from "../middlewares/validate";
 import * as taskInput from "../schemas/task.schema";
 import * as commentTaskController from "../controllers/comment.task.controller"
 import { createCommentSchema } from "../schemas/comment.task.schema";
-
 import * as submissionController from "../controllers/submission.controller";
 import { createRequest } from "../controllers/task.swap.request.controller";
 import { idParams } from "../schemas/id.schema";
 import { userIdParams } from "../schemas/userSchema";
 import { createSwapRequestSchema } from "../schemas/task.swap.request.schema";
 import { createSubmissionSchema } from "../schemas/submission.schema";
-import { createSubmission } from "../services/submission.service";
 const router = Router();
 
 router.get("/:id/comments", authenticate, validate(idParams, 'params'), commentTaskController.getCommentsByTask)
