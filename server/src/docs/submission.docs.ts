@@ -5,8 +5,10 @@ import {
     createAttachmentSchema,
     submissionContentAttachmentSchema,
     updateAttachmentSchema,
+    attachmentIdParams,
 } from "../schemas/submission.schema";
 import { idParams, submissionAttachmentParams } from "../schemas/id.schema";
+import z from "zod";
 
 
 const downloadUrlResponseSchema = z.object({
