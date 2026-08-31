@@ -203,11 +203,18 @@ Enum review_status {
 }
 
 // One submission can carry multiple pieces of content (text/image/link/file)
+// UPDATED: sekarang mendukung file upload lewat object storage (presigned URL flow),
+// bukan cuma text/link. "content" tetap dipakai untuk type text/link; type image/file
+// pakai object_key + metadata-nya sendiri. Lihat AGENTS.md bagian "File Upload" untuk alur lengkapnya.
 Table submission_attachments {
   id bigint [pk, increment]
   submission_id bigint [not null, ref: > task_submissions.id]
   type attachment_type [not null]
-  content varchar [not null] // file URL, link, or plain text depending on type
+  content varchar [nullable] // dipakai untuk type text/link; NULL untuk type image/file
+  object_key varchar [nullable] // key/path di object storage (S3/R2); dipakai untuk type image/file
+  file_name varchar [nullable] // nama file asli yang diupload user
+  mime_type varchar [nullable] // MIME type, mis. "image/png", "application/pdf"
+  file_size bigint [nullable] // ukuran file dalam bytes
   created_at timestamp [default: `now()`]
 }
 
@@ -251,7 +258,6 @@ Table comments_task {
   task_id bigint [not null, ref: > tasks.id]
   comment varchar [not null]
   created_at timestamp [default: `now()`]
-  deleted_at timestamp 
 }
 
 // ---------------------------------------------------------

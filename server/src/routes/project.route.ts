@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../middlewares/auth.middlewares";
-import { createLimiter } from "../middlewares/rateLimiter";
+import { readRateLimiter, writeRateLimiter } from "../middlewares/rateLimiter"
 import { validate } from "../middlewares/validate";
 import * as projectSchema from "../schemas/projectSchema";
 import { userIdParams } from "../schemas/userSchema"
@@ -8,7 +8,7 @@ import * as projectController from "../controllers/project.controller";
 import * as submissionController from "../controllers/submission.controller";
 import * as projectMemberController from "../controllers/project.member.controller"
 import * as taskSchema from "../schemas/task.schema";
-import { createProjectLinkSchema, updateProjectLinkSchema } from "../schemas/projectLinkSchema";
+import { createProjectLinkSchema } from "../schemas/projectLinkSchema";
 import * as projectLinkController from "../controllers/project.link.controller"
 import { idParams } from "../schemas/id.schema";
 import { removeMemberParams } from "../schemas/project.member.schema";
@@ -23,7 +23,7 @@ router.post(
 router.post(
   "/",
   authenticate,
-  createLimiter,
+  writeRateLimiter,
   validate(projectSchema.createProjectWithLinksSchema),
   projectController.createProject,
 );
@@ -49,11 +49,11 @@ router.get(
   validate(idParams, "params"),
   projectMemberController.getMembersByProject,
 );
-router.patch("/:id/leader", authenticate, createLimiter, validate(userIdParams, "body"), projectMemberController.promoteToLeader)
+router.patch("/:id/leader", authenticate, writeRateLimiter, validate(userIdParams, "body"), projectMemberController.promoteToLeader)
 router.patch(
   "/:id",
   authenticate,
-  createLimiter,
+  writeRateLimiter,
   validate(projectSchema.updateProjectSchema),
   projectController.updateProject,
 );

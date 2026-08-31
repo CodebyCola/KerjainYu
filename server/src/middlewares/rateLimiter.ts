@@ -1,48 +1,65 @@
-import rateLimit from "express-rate-limit";
-import { AuthRequest } from "./auth.middlewares";
-import { Request, Response, NextFunction } from 'express';
+import { rateLimit } from "express-rate-limit";
+import RedisStore, { RedisReply } from "rate-limit-redis";
+import { redisClient } from "../config/redis";
+import { Request, Response } from "express";
 
-const noopMiddleware = (req: Request, res: Response, next: NextFunction) => next();
-
-// Global limiter
-export const globalLimiter = process.env.NODE_ENV === 'test'
-  ? noopMiddleware
-  : rateLimit({
-    windowMs: 30 * 1000,
-    max: 500,
-    message: {
-      success: false,
-      message: "Too many requests",
-    },
-    standardHeaders: true,
+const createLimiter = (options: {
+  windowMs: number;
+  max: number;
+  code: string;
+  message: string;
+  keyPrefix: string;
+}) => {
+  return rateLimit({
+    windowMs: options.windowMs,
+    max: options.max,
+    standardHeaders: "draft-7",
     legacyHeaders: false,
-  });
 
-// Login/Register attempts
-export const authLimiter = process.env.NODE_ENV === 'test'
-  ? noopMiddleware
-  : rateLimit({
-    // Production: 15 * 60 * 1000
-    windowMs: 10 * 1000, // Development
-    max: 100,
-    message: {
-      success: false,
-      message: "Too many attempts, please try again later",
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
+    skip: () => process.env.NODE_ENV === "test",
 
-// Create project limiter
-export const createLimiter = process.env.NODE_ENV === 'test'
-  ? noopMiddleware
-  : rateLimit({
-    windowMs: 3 * 60 * 1000, // 3 minutes
-    max: 500,
-    message: {
-      success: false,
-      message: "Too many project creations, please try again later",
+    store: new RedisStore({
+      // Teruskan perintah secara langsung ke ioredis
+      sendCommand: (...args: string[]): Promise<RedisReply> => {
+        return redisClient.call(args[0], ...args.slice(1)) as Promise<RedisReply>;
+      },
+      prefix: `rl:${options.keyPrefix}:`,
+    }),
+
+    handler: (req: Request, res: Response) => {
+      res.status(429).json({
+        success: false,
+        error: {
+          code: options.code,
+          message: options.message,
+          httpStatus: 429,
+        },
+      });
     },
-    standardHeaders: true,
-    legacyHeaders: false,
   });
+};
+
+export const readRateLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  code: "TOO_MANY_READ_REQUESTS",
+  message: "Too many read requests, please try again after 15 minutes.",
+  keyPrefix: "read",
+});
+
+export const writeRateLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  code: "TOO_MANY_WRITE_REQUESTS",
+  message: "Too many write requests, please try again after 15 minutes.",
+  keyPrefix: "write",
+});
+
+
+export const authRateLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  code: "TOO_MANY_AUTH_ATTEMPTS",
+  message: "Too many authentication attempts, please try again after 15 minutes.",
+  keyPrefix: "auth",
+});
