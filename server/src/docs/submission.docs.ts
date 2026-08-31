@@ -5,9 +5,20 @@ import {
     createAttachmentSchema,
     submissionContentAttachmentSchema,
     updateAttachmentSchema,
+    attachmentIdParams,
 } from "../schemas/submission.schema";
 import { idParams, submissionAttachmentParams } from "../schemas/id.schema";
+import z from "zod";
 
+
+const downloadUrlResponseSchema = z.object({
+    downloadUrl: z.string().url()
+        .openapi({ example: "https://bucket.s3.amazonaws.com/submissions/12/uuid-report.pdf?X-Amz-Signature=..." }),
+    fileName: z.string().nullable()
+        .openapi({ example: "report.pdf" }),
+    mimeType: z.string().nullable()
+        .openapi({ example: "application/pdf" }),
+}).openapi("DownloadUrlResponse");
 
 // =====================================================
 // POST /api/v1/tasks/:id/submissions
@@ -845,5 +856,36 @@ registry.registerPath({
             description:
                 "Cannot update attachment",
         },
+    },
+});
+
+
+registry.registerPath({
+    method: "get",
+    path: "/api/v1/submissions/{id}/attachments/{attachmentId}/download-url",
+    tags: ["Submissions"],
+    summary: "Get a temporary presigned URL to download a file/image attachment",
+    description: "Accessible to any active member of the task's project (not just the assignee). The URL expires after 5 minutes. Only works for attachments of type 'file' or 'image' — text/link attachments have no downloadable object.",
+    security: [{ cookieAuth: [] }],
+    request: {
+        params: idParams.extend(attachmentIdParams.shape),
+    },
+    responses: {
+        200: {
+            description: "Presigned download URL generated successfully",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        success: z.boolean(),
+                        data: downloadUrlResponseSchema,
+                    }),
+                },
+            },
+        },
+        400: { description: "Validation error (e.g. non-numeric id)" },
+        401: { description: "Not authenticated" },
+        403: { description: "You're not a member of this submission's project" },
+        404: { description: "Submission or attachment not found" },
+        409: { description: "This attachment has no downloadable file (type is 'text' or 'link')" },
     },
 });
