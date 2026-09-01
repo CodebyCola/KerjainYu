@@ -83,7 +83,7 @@ export default function ProjectListCard({ project }: ProjectListCardProps) {
                     {members.slice(0, 4).map((member) => (
                         <div
                             key={member.id}
-                            title={member.username}
+                            title={member.fullName ?? member.username}
                             className={cn(
                                 "flex size-7 items-center justify-center rounded-full border-2 border-card text-[10px] font-inter font-semibold sm:size-8 sm:text-xs",
                                 member.role === "leader"
@@ -91,7 +91,7 @@ export default function ProjectListCard({ project }: ProjectListCardProps) {
                                     : "bg-role-member-bg text-role-member-text"
                             )}
                         >
-                            {getInitials(member.username)}
+                            {getInitials(member.fullName ?? member.username)}
                         </div>
                     ))}
                     {members.length > 4 && (
@@ -103,7 +103,7 @@ export default function ProjectListCard({ project }: ProjectListCardProps) {
 
                 {leader && (
                     <span className="text-xs font-inter text-muted sm:text-sm">
-                        Leader: <span className="text-foreground">{leader.username}</span>
+                        Leader: <span className="text-foreground">{leader.fullName ?? leader.username}</span>
                     </span>
                 )}
             </div>

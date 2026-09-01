@@ -69,19 +69,19 @@ export default function TaskAssignModal({ isOpen, onClose, projectId, taskId, me
                                             // eslint-disable-next-line @next/next/no-img-element
                                             <img
                                                 src={member.avatarUrl}
-                                                alt={member.username}
+                                                alt={member.fullName ?? member.username}
                                                 className="size-8 rounded-full object-cover"
                                             />
                                         ) : (
-                                            getInitials(member.username)
+                                            getInitials(member.fullName ?? member.username)
                                         )}
                                     </div>
                                     <div className="flex min-w-0 flex-col">
                                         <span className="truncate text-sm font-inter font-medium text-foreground">
-                                            {member.username}
+                                            {member.fullName ?? member.username}
                                         </span>
-                                        <span className="text-xs font-inter text-muted">
-                                            {member.role === "leader" ? "Leader" : "Member"}
+                                        <span className="truncate text-xs font-inter text-muted">
+                                            @{member.username} · {member.role === "leader" ? "Leader" : "Member"}
                                         </span>
                                     </div>
                                     {isSelected && (

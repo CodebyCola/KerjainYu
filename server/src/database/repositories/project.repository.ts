@@ -67,6 +67,7 @@ export async function getProjectsByUserId(user_id: number) {
       "project_members.project_id",
       "project_members.user_id",
       "users.username",
+      "users.full_name",
       "users.avatar_url",
       "project_members.role",
     ]);
@@ -79,6 +80,7 @@ export async function getProjectsByUserId(user_id: number) {
         id: member.id,
         userId: member.user_id,
         username: member.username,
+        fullName: member.fullName,
         avatarUrl: member.avatar_url,
         role: member.role,
       })),

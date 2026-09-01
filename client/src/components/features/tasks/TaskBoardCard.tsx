@@ -112,10 +112,10 @@ export default function TaskBoardCard({
 
                 {assigneeId !== null && (
                     <div
-                        title={assignee?.username ?? `User #${assigneeId}`}
+                        title={assignee?.fullName ?? assignee?.username ?? `User #${assigneeId}`}
                         className="flex size-6 items-center justify-center rounded-full bg-role-member-bg text-[10px] font-inter font-semibold text-role-member-text"
                     >
-                        {assignee ? getInitials(assignee.username) : "?"}
+                        {assignee ? getInitials(assignee.fullName ?? assignee.username) : "?"}
                     </div>
                 )}
             </div>

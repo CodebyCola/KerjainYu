@@ -12,6 +12,19 @@ export type LoginPayload = {
   password: string;
 };
 
+export type UpdateProfilePayload = Partial<{
+  username: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string;
+}>;
+
+export type ChangePasswordPayload = {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
 export function registerRequest(payload: RegisterPayload) {
   return apiFetch<User>("/auth/register", { method: "POST", body: payload });
 }
@@ -30,4 +43,12 @@ export function refreshRequest(cookie: string) {
 
 export function logoutRequest(cookie: string) {
   return apiFetch<null>("/auth/logout", { method: "POST", cookie });
+}
+
+export function updateProfileRequest(payload: UpdateProfilePayload, cookie: string) {
+  return apiFetch<User>("/auth/me", { method: "PATCH", body: payload, cookie });
+}
+
+export function changePasswordRequest(payload: ChangePasswordPayload, cookie: string) {
+  return apiFetch<null>("/auth/me/change-password", { method: "PATCH", body: payload, cookie });
 }
