@@ -11,21 +11,16 @@ type TeamPageProps = {
     params: Promise<{ projectId: string }>;
 };
 
-// GET /projects/:id/members saat ini cuma mengembalikan member berstatus
-// "active" dan belum punya field fullName/joinedAt — lihat SERVER_REQUEST.md.
-// Sampai server menambahkannya, field itu di-default seaman mungkin (null)
-// alih-alih ditebak, dan status selalu "active" karena memang cuma itu yang
-// pernah dikirim endpoint ini (member "invited" tidak akan muncul di sini).
 function toTeamMember(member: ProjectMember): TeamMember {
     return {
         id: member.id,
         userId: member.userId,
         username: member.username,
-        fullName: null,
+        fullName: member.fullName,
         avatarUrl: member.avatarUrl,
         role: member.role,
         status: "active",
-        joinedAt: null,
+        joinedAt: member.joinedAt ?? null,
     };
 }
 

@@ -22,7 +22,7 @@ export default function RemoveMemberDialog({ member, isRemoving, onCancel, onCon
                         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-status-blocked-text" />
                         <p className="text-sm font-inter text-status-blocked-text">
                             {isPending
-                                ? `Undangan untuk ${member.username} akan dibatalkan.`
+                                ? `Undangan untuk ${member.fullName ?? member.username} akan dibatalkan.`
                                 : `${member.fullName ?? member.username} akan dikeluarkan dari proyek dan kehilangan akses ke seluruh tugasnya.`}
                         </p>
                     </div>

@@ -2,22 +2,20 @@
 
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { LogOut, Settings, UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { getInitials } from "@/utils/getInitials";
 import { type User } from "@/types/user";
 import { useSession } from "@/contexts/SessionContext";
 import { logoutAction } from "@/app/(main)/actions";
+import { ROUTES } from "@/lib/routes";
 
 type UserMenuProps = {
     user?: User;
     align?: "left" | "right";
 };
 
-const MENU_ITEMS = [
-    { label: "Profile", href: "/profile", icon: UserRound },
-    { label: "Settings", href: "/settings", icon: Settings },
-];
+const MENU_ITEMS = [{ label: "Profil saya", href: ROUTES.PROFILE, icon: UserRound }];
 
 export default function UserMenu({ user: userProp, align = "right" }: UserMenuProps) {
     const sessionUser = useSession();
@@ -26,7 +24,7 @@ export default function UserMenu({ user: userProp, align = "right" }: UserMenuPr
     const [isOpen, setIsOpen] = useState(false);
     const [isLoggingOut, startLogoutTransition] = useTransition();
     const containerRef = useRef<HTMLDivElement>(null);
-    const initials = getInitials(user?.username);
+    const initials = getInitials(user?.fullName ?? user?.username);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -61,7 +59,7 @@ export default function UserMenu({ user: userProp, align = "right" }: UserMenuPr
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={user.avatarUrl}
-                        alt={user?.username ?? "User avatar"}
+                        alt={user?.fullName ?? user?.username ?? "User avatar"}
                         className="size-full object-cover"
                     />
                 ) : (
@@ -96,7 +94,7 @@ export default function UserMenu({ user: userProp, align = "right" }: UserMenuPr
                     <button
                         type="button"
                         role="menuitem"
-                        aria-label="Log out"
+                        aria-label="Keluar"
                         disabled={isLoggingOut}
                         onClick={() => {
                             setIsOpen(false);
@@ -107,7 +105,7 @@ export default function UserMenu({ user: userProp, align = "right" }: UserMenuPr
                         className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-inter text-status-blocked-text hover:bg-status-blocked-bg disabled:opacity-50"
                     >
                         <LogOut className="size-4" />
-                        {isLoggingOut ? "Logging out..." : "Log out"}
+                        {isLoggingOut ? "Keluar..." : "Keluar"}
                     </button>
                 </div>
             )}

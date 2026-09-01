@@ -86,7 +86,7 @@ export default function ArchiveProjectCard({ project, canManage }: ArchiveProjec
 
                     {leader && (
                         <span>
-                            Leader: <span className="text-foreground">{leader.username}</span>
+                            Leader: <span className="text-foreground">{leader.fullName ?? leader.username}</span>
                         </span>
                     )}
                 </div>
@@ -98,7 +98,7 @@ export default function ArchiveProjectCard({ project, canManage }: ArchiveProjec
                     {members.slice(0, 4).map((member) => (
                         <div
                             key={member.id}
-                            title={member.username}
+                            title={member.fullName ?? member.username}
                             className={cn(
                                 "flex size-7 items-center justify-center rounded-full border-2 border-card text-[10px] font-inter font-semibold sm:size-8 sm:text-xs",
                                 member.role === "leader"
@@ -106,7 +106,7 @@ export default function ArchiveProjectCard({ project, canManage }: ArchiveProjec
                                     : "bg-role-member-bg text-role-member-text"
                             )}
                         >
-                            {getInitials(member.username)}
+                            {getInitials(member.fullName ?? member.username)}
                         </div>
                     ))}
                     {members.length > 4 && (

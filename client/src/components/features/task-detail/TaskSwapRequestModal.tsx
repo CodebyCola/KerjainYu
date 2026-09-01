@@ -149,19 +149,19 @@ export default function TaskSwapRequestModal({
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img
                                                         src={member.avatarUrl}
-                                                        alt={member.username}
+                                                        alt={member.fullName ?? member.username}
                                                         className="size-8 rounded-full object-cover"
                                                     />
                                                 ) : (
-                                                    getInitials(member.username)
+                                                    getInitials(member.fullName ?? member.username)
                                                 )}
                                             </div>
                                             <div className="flex min-w-0 flex-col">
                                                 <span className="truncate text-sm font-inter font-medium text-foreground">
-                                                    {member.username}
+                                                    {member.fullName ?? member.username}
                                                 </span>
-                                                <span className="text-xs font-inter text-muted">
-                                                    {member.role === "leader" ? "Leader" : "Member"}
+                                                <span className="truncate text-xs font-inter text-muted">
+                                                    @{member.username} · {member.role === "leader" ? "Leader" : "Member"}
                                                 </span>
                                             </div>
                                             {isSelected && (
@@ -207,8 +207,10 @@ export default function TaskSwapRequestModal({
 
                         <p className="text-sm font-inter text-muted">
                             Opsional: tukar langsung dengan salah satu task milik{" "}
-                            <span className="font-medium text-foreground">{selectedMember.username}</span>.
-                            Kalau tidak dipilih, task kamu akan ditawarkan begitu saja untuk diambil alih.
+                            <span className="font-medium text-foreground">
+                                {selectedMember.fullName ?? selectedMember.username}
+                            </span>
+                            . Kalau tidak dipilih, task kamu akan ditawarkan begitu saja untuk diambil alih.
                         </p>
 
                         <div className="flex flex-col gap-1.5">
@@ -238,7 +240,7 @@ export default function TaskSwapRequestModal({
 
                             {targetMemberTasks.length === 0 ? (
                                 <p className="px-1 py-2 text-xs font-inter text-muted">
-                                    {selectedMember.username} belum punya task lain yang bisa ditukar saat ini.
+                                    {selectedMember.fullName ?? selectedMember.username} belum punya task lain yang bisa ditukar saat ini.
                                 </p>
                             ) : (
                                 <div className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">

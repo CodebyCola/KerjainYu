@@ -8,8 +8,10 @@ export type ProjectMember = {
   id: number;
   userId: number;
   username: string;
+  fullName: string | null;
   avatarUrl: string | null;
   role: ProjectMemberRole;
+  joinedAt?: string | null;
 };
 
 export type ProjectLink = {

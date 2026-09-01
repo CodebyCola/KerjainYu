@@ -28,7 +28,7 @@ export default function TaskDetailInfo({ task, assignee }: TaskDetailInfoProps) 
     const overdue = isOverdue(task);
     const assigneeId = resolveTaskAssigneeId(task);
     const hasAssignee = assigneeId !== null;
-    const assigneeName = assignee?.username ?? task.assignee?.username;
+    const assigneeName = assignee?.fullName ?? assignee?.username ?? task.assignee?.username;
 
     return (
         <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
