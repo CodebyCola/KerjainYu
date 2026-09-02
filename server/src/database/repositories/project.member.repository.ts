@@ -2,6 +2,7 @@ import { stat } from "node:fs";
 import { Role } from "../../types/entities/projectMember.types";
 import { db } from "../db";
 import { Knex } from "knex";
+import { exec } from "node:child_process";
 
 // For Leader setting up the project, so it will automaticallya assign the user as a leader of the project
 export async function setLeader(
@@ -27,8 +28,9 @@ export async function updateMemberRole(projectId: number, userId: number, role: 
     .returning(["user_id", "role", "status"]);
 }
 
-export async function addMember(projectId: number, userId: number) {
-  return db("project_members").insert({
+export async function addMember(projectId: number, userId: number, trx?: Knex.Transaction) {
+  const executor = trx || db
+  return executor("project_members").insert({
     project_id: projectId,
     user_id: userId,
     role: "member",
@@ -36,8 +38,9 @@ export async function addMember(projectId: number, userId: number) {
   });
 }
 
-export async function updateMembershipStatus(id: number, status: string) {
-  return db("project_members")
+export async function updateMembershipStatus(id: number, status: string, trx?: Knex.Transaction) {
+  const executor = trx || db
+  return executor("project_members")
     .where("id", id)
     .update({ status: status });
 }
