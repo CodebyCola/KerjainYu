@@ -91,8 +91,14 @@ export async function getTaskDetailWithRelations(taskId: number) {
 export async function getTasksByUser(userId: number) {
   return db("tasks")
     .join("projects", "projects.id", "tasks.project_id")
-    .where("assignee_id", userId)
+    .join("project_members", (join) => {
+      join
+        .on("project_members.project_id", "=", "tasks.project_id")
+        .andOn("project_members.user_id", "=", db.raw("?", [userId]));
+    })
+    .where("tasks.assignee_id", userId)
     .where("projects.status", "ongoing")
+    .where("project_members.status", "active")
     .select("tasks.*", "projects.title as projectTitle");
 }
 
