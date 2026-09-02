@@ -282,6 +282,68 @@ describe('GET /api/v1/tasks', () => {
 
         expect(res.status).toBe(401);
     });
+
+    it('should no longer show a completed task after the assignee is kicked from the project', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(leader.cookie, projectId);
+
+        const taskRes = await createTask(leader.cookie, projectId);
+        const taskId = taskRes.body.data.id;
+
+        await request(app).patch(`/api/v1/tasks/${taskId}/claim`).set('Cookie', member.cookie);
+        await request(app).patch(`/api/v1/tasks/${taskId}/ongoing`).set('Cookie', member.cookie);
+        const submissionRes = await request(app)
+            .post(`/api/v1/tasks/${taskId}/submissions`)
+            .set('Cookie', member.cookie)
+            .send({ contents: [] });
+        const submissionId = submissionRes.body.data.id;
+        await request(app)
+            .patch(`/api/v1/submissions/${submissionId}/review`)
+            .set('Cookie', leader.cookie)
+            .send({ reviewStatus: 'approved' });
+
+        const beforeKick = await request(app).get('/api/v1/tasks').set('Cookie', member.cookie);
+        expect(beforeKick.body.data.map((t: any) => t.id)).toContain(taskId);
+        expect(beforeKick.body.data.find((t: any) => t.id === taskId).status).toBe('approved');
+
+        await request(app)
+            .delete(`/api/v1/projects/${projectId}/members/${member.userId}`)
+            .set('Cookie', leader.cookie);
+
+        const afterKick = await request(app).get('/api/v1/tasks').set('Cookie', member.cookie);
+        expect(afterKick.body.data.map((t: any) => t.id)).not.toContain(taskId);
+    });
+
+    it('should no longer show a completed task after the assignee leaves the project', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(leader.cookie, projectId);
+
+        const taskRes = await createTask(leader.cookie, projectId);
+        const taskId = taskRes.body.data.id;
+
+        await request(app).patch(`/api/v1/tasks/${taskId}/claim`).set('Cookie', member.cookie);
+        await request(app).patch(`/api/v1/tasks/${taskId}/ongoing`).set('Cookie', member.cookie);
+        const submissionRes = await request(app)
+            .post(`/api/v1/tasks/${taskId}/submissions`)
+            .set('Cookie', member.cookie)
+            .send({ contents: [] });
+        const submissionId = submissionRes.body.data.id;
+        await request(app)
+            .patch(`/api/v1/submissions/${submissionId}/review`)
+            .set('Cookie', leader.cookie)
+            .send({ reviewStatus: 'approved' });
+
+        await request(app).post(`/api/v1/projects/${projectId}/leave`).set('Cookie', member.cookie);
+
+        const afterLeave = await request(app).get('/api/v1/tasks').set('Cookie', member.cookie);
+        expect(afterLeave.body.data.map((t: any) => t.id)).not.toContain(taskId);
+    });
 });
 
 afterAll(async () => {
