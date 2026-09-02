@@ -14,6 +14,7 @@ import {
 } from "../errors/AppError";
 import { CreateProjectLinkInput } from "../schemas/projectLinkSchema";
 import { userIdParams, UserIdParams } from "../schemas/userSchema";
+import { notifyUser } from "./notification.service";
 
 //POST /api/v1/projects
 export async function createProjectWithLinks(
@@ -49,11 +50,14 @@ export async function inviteMember(projectId: number, leaderId: number, targetUs
   if (existing?.status === "invited") {
     throw new ConflictError(`${prospectiveMember.username} has already been invited`);
   }
-  if (existing) {
-    //re-invite after the invitation before got rejected
-    return await projectMemberRepo.updateMembershipStatus(existing.id, "invited")
-  }
-  return await projectMemberRepo.addMember(projectId, prospectiveMember.id)
+  return db.transaction(async (trx) => {
+    await notifyUser({ userId: prospectiveMember, type: "member_invited", referenceType: "project", referenceId: projectId, message: "You got invited to join this project" }, trx)
+    if (existing) {
+      //re-invite after the invitation before got rejected
+      return await projectMemberRepo.updateMembershipStatus(existing.id, "invited", trx)
+    }
+    return await projectMemberRepo.addMember(projectId, prospectiveMember.id, trx)
+  })
 }
 
 //GET /api/v1/projects/:id

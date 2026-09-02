@@ -13,6 +13,7 @@ import invitationRoutes from "./routes/invitations.route"
 import commentTaskRoutes from "./routes/comment.task.route"
 import submissionRoutes from "./routes/submission.route"
 import healthRoutes from "./routes/health.route"
+import notificationRoutes from "./routes/notification.route"
 import taskSwapRequestRoutes from "./routes/task.swap.request.routes"
 import { swaggerSpec } from "./docs/swagger";
 
@@ -37,6 +38,7 @@ app.use("/api/v1/invitations", invitationRoutes)
 app.use("/api/v1/comments", commentTaskRoutes)
 app.use("/api/v1/swap-requests", taskSwapRequestRoutes)
 app.use("/api/v1/submissions", submissionRoutes)
+app.use("/api/v1/notifications", notificationRoutes)
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(errorHandler);

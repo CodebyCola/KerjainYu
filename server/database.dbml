@@ -210,11 +210,11 @@ Table submission_attachments {
   id bigint [pk, increment]
   submission_id bigint [not null, ref: > task_submissions.id]
   type attachment_type [not null]
-  content varchar [nullable] // dipakai untuk type text/link; NULL untuk type image/file
-  object_key varchar [nullable] // key/path di object storage (S3/R2); dipakai untuk type image/file
-  file_name varchar [nullable] // nama file asli yang diupload user
-  mime_type varchar [nullable] // MIME type, mis. "image/png", "application/pdf"
-  file_size bigint [nullable] // ukuran file dalam bytes
+  content varchar 
+  object_key varchar 
+  file_name varchar  
+  mime_type varchar 
+  file_size bigint  
   created_at timestamp [default: `now()`]
 }
 
@@ -237,9 +237,9 @@ Table task_appeals {
   reason varchar [not null]
   status appeal_status [not null, default: 'pending']
   resolved_by bigint [ref: > users.id]
-  resolution_note varchar
-  created_at timestamp [default: `now()`]
+  resolved_note varchar
   resolved_at timestamp
+  created_at timestamp [default: `now()`]
 }
 
 Enum appeal_status {
@@ -248,17 +248,6 @@ Enum appeal_status {
   rejected
 }
 
-// ---------------------------------------------------------
-// COMMENTS
-// ---------------------------------------------------------
-
-Table comments_task {
-  id bigint [pk, increment]
-  user_id bigint [not null, ref: > users.id]
-  task_id bigint [not null, ref: > tasks.id]
-  comment varchar [not null]
-  created_at timestamp [default: `now()`]
-}
 
 // ---------------------------------------------------------
 // NOTIFICATIONS
@@ -287,3 +276,4 @@ Enum notification_type {
   member_added           // new: member baru ditambahkan ke project
   member_invited          // new: member di-invite ke project
 }
+
