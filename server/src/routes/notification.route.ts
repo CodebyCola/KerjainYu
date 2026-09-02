@@ -6,6 +6,7 @@ import { validate } from "../middlewares/validate";
 
 const router = Router();
 
+
 router.get("/stream", authenticate, notificationController.streamNotifications);
 router.get("/me", authenticate, notificationController.getMyNotifications);
 router.post("/:id/read", authenticate, validate(idParams, "params"), notificationController.markAsRead);
