@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoreVertical, Trash2, ExternalLink } from "lucide-react";
+import { MoreVertical, Trash2, ExternalLink, Pencil } from "lucide-react";
 import { ProjectLink } from "@/types/project";
 import { getCategoryMeta, getUrlHost } from "@/utils/projectLink";
 
 type LinkListItemProps = {
     link: ProjectLink;
     canManage: boolean;
+    onEdit: (link: ProjectLink) => void;
     onRemove: (link: ProjectLink) => void;
 };
 
-export default function LinkListItem({ link, canManage, onRemove }: LinkListItemProps) {
+export default function LinkListItem({ link, canManage, onEdit, onRemove }: LinkListItemProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +79,18 @@ export default function LinkListItem({ link, canManage, onRemove }: LinkListItem
                             role="menu"
                             className="absolute right-0 top-[calc(100%+0.375rem)] z-10 min-w-44 rounded-lg border border-border bg-card p-1.5 shadow-lg"
                         >
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                    onEdit(link);
+                                    setIsMenuOpen(false);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-inter text-foreground transition-colors hover:bg-status-todo-bg"
+                            >
+                                <Pencil className="size-4" />
+                                Edit
+                            </button>
                             <button
                                 type="button"
                                 role="menuitem"

@@ -20,6 +20,10 @@ export default function FilesPageContent({ projectId, projectTitle, initialLinks
         setLinks((prev) => [link, ...prev]);
     }
 
+    function handleUpdated(updatedLink: ProjectLink) {
+        setLinks((prev) => prev.map((l) => (l.id === updatedLink.id ? updatedLink : l)));
+    }
+
     function handleRemoved(linkId: number) {
         setLinks((prev) => prev.filter((l) => l.id !== linkId));
     }
@@ -40,7 +44,13 @@ export default function FilesPageContent({ projectId, projectTitle, initialLinks
                 {canManage && <AddLinkButton projectId={projectId} onAdded={handleAdded} />}
             </div>
 
-            <LinkList projectId={projectId} links={links} canManage={canManage} onRemoved={handleRemoved} />
+            <LinkList
+                projectId={projectId}
+                links={links}
+                canManage={canManage}
+                onUpdated={handleUpdated}
+                onRemoved={handleRemoved}
+            />
         </div>
     );
 }

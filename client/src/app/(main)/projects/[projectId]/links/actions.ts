@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createProjectLink, deleteProjectLink } from "@/lib/api/links/links";
-import { ProjectLink, CreateProjectLinkPayload } from "@/types/project";
+import { createProjectLink, updateProjectLink, deleteProjectLink } from "@/lib/api/links/links";
+import { ProjectLink, CreateProjectLinkPayload, UpdateProjectLinkPayload } from "@/types/project";
 import { projectRoutes } from "@/lib/routes";
 
 export type AddLinkState = {
@@ -16,6 +16,23 @@ export async function addLinkAction(
 ): Promise<AddLinkState> {
     const result = await createProjectLink(projectId, payload);
     if (result.link) {
+        revalidatePath(projectRoutes(projectId).LINKS);
+    }
+    return result;
+}
+
+export type UpdateLinkState = {
+    success: boolean;
+    error: string | null;
+};
+
+export async function updateLinkAction(
+    projectId: string,
+    linkId: number,
+    payload: UpdateProjectLinkPayload,
+): Promise<UpdateLinkState> {
+    const result = await updateProjectLink(linkId, payload);
+    if (result.success) {
         revalidatePath(projectRoutes(projectId).LINKS);
     }
     return result;
