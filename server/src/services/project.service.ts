@@ -107,3 +107,40 @@ export async function updateProject(
   }
   return await projectRepo.updateProject(project.id, input);
 }
+
+//DELETE /api/v1/projects/:id
+export async function deleteProject(projectId: number, userId: number) {
+  await assertProjectLeader(projectId, userId);
+
+  return db.transaction(async (trx) => {
+    const tasks = await trx("tasks").select("id").where({ projectId });
+    const taskIds = tasks.map((t) => t.id);
+
+    let submissionIds: number[] = [];
+    if (taskIds.length > 0) {
+      const submissions = await trx("task_submissions").select("id").whereIn("taskId", taskIds);
+      submissionIds = submissions.map((s) => s.id);
+    }
+
+    if (submissionIds.length > 0) {
+      await trx("submission_attachments").whereIn("submissionId", submissionIds).del();
+    }
+
+    if (taskIds.length > 0) {
+      await trx("task_appeals").whereIn("taskId", taskIds).del();
+      await trx("task_submissions").whereIn("taskId", taskIds).del();
+      await trx("comments_task").whereIn("taskId", taskIds).del();
+      await trx("task_swap_requests")
+        .where((qb) => {
+          qb.whereIn("taskId", taskIds).orWhereIn("targetTaskId", taskIds);
+        })
+        .del();
+      await trx("task_ownership_log").whereIn("taskId", taskIds).del();
+      await trx("tasks").whereIn("id", taskIds).del();
+    }
+
+    await trx("project_links").where({ projectId }).del();
+    await trx("project_members").where({ projectId }).del();
+    await trx("projects").where({ id: projectId }).del();
+  });
+}

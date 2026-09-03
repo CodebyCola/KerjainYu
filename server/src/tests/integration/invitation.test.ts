@@ -32,7 +32,6 @@ describe('POST /api/v1/projects/:id/invitations', () => {
             .post(`/api/v1/projects/${projectId}/invitations`)
             .set('Cookie', leader.cookie)
             .send({ userId: invitee.userId });
-        // console.log(res)
 
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);
@@ -79,7 +78,6 @@ describe('POST /api/v1/projects/:id/invitations', () => {
             .post(`/api/v1/projects/${projectId}/invitations`)
             .set('Cookie', leader.cookie)
             .send({ userId: invitee.userId });
-        // console.log(res)
         expect(res.status).toBe(409);
         expect(res.body.error.code).toBe('CONFLICT');
     });

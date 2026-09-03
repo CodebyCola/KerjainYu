@@ -176,7 +176,6 @@ describe('GET /api/v1/tasks/:id', () => {
         const projectId = projectResult.body.data.id
         const task = await request(app).post(`/api/v1/projects/${projectId}/tasks`).set('Cookie', cookie).send({ title: 'Some task' });
         const res = await request(app).get(`/api/v1/tasks/${task.body.data.id}`).set('Cookie', stranger_cookie)
-        // console.log(res.body.data)
 
         expect(res.status).toBe(403)
     })

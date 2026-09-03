@@ -2582,7 +2582,6 @@ describe(
                         .set("Cookie", member.cookie)
                         .send({});
 
-                console.log(updateRes.body);
 
                 expect(updateRes.status).toBe(400);
             },

@@ -219,7 +219,6 @@ describe("PATCH /api/v1/links/:id", () => {
                 url: "https://github.com/budiman/project-v2",
                 category: "development",
             });
-        console.log(res.error)
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);
     });
@@ -316,7 +315,6 @@ describe("PATCH /api/v1/links/:id", () => {
                 url: "https://github.com/budiman/project-one",
                 category: "development",
             });
-        console.log(res.error)
         expect(res.status).toBe(409);
         expect(res.body.error.code).toBe("CONFLICT");
     });

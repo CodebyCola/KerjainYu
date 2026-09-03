@@ -10,7 +10,6 @@ afterAll(async () => {
     await closeDb();
 });
 
-
 describe('GET /api/v1/projects/:id/members', () => {
     beforeEach(async () => {
         await cleanDatabase();
@@ -115,8 +114,6 @@ describe('PATCH /api/v1/projects/:id/leader', () => {
             .patch(`/api/v1/projects/${projectId}/leader`)
             .set('Cookie', oldLeader.cookie)
             .send({ userId: newLeader.userId });
-        // console.log(res.status)
-        // console.log(JSON.stringify(res.body, null, 2))
 
         expect(res.status).toBe(200);
         expect(res.body.data.userId).toBe(newLeader.userId);
@@ -554,7 +551,6 @@ describe("DELETE /api/v1/projects/:id/members/:userId", () => {
                 `/api/v1/projects/${projectId}/members/${stranger.userId}`
             )
             .set("Cookie", leader.cookie);
-        console.log(res.error)
         expect(res.status).toBe(404);
         expect(res.body.error.code).toBe("NOT_FOUND");
     });

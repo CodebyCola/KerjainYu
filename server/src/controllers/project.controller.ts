@@ -128,3 +128,14 @@ export async function inviteMember(req: AuthRequest, res: Response, next: NextFu
     next(error)
   }
 }
+
+//DELETE /api/v1/projects/:id
+export async function deleteProject(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const projectId = Number(req.params.id);
+    await projectService.deleteProject(projectId, req.user!.id)
+    res.status(200).json({ success: true, message: "Successfuly deleted project" })
+  } catch (error) {
+    next(error)
+  }
+}
