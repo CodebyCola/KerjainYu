@@ -38,6 +38,8 @@ export type CreateProjectLinkPayload = {
   category: ProjectLinkCategory;
 };
 
+export type UpdateProjectLinkPayload = Partial<CreateProjectLinkPayload>;
+
 export type ProjectMembership = {
   userId: number;
   role: ProjectMemberRole;

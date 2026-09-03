@@ -1,6 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { ProjectLink, CreateProjectLinkPayload } from "@/types/project";
+import { ProjectLink, CreateProjectLinkPayload, UpdateProjectLinkPayload } from "@/types/project";
 import { apiFetch } from "../fetcher";
 import { ApiRequestError } from "../apiRequestError";
 
@@ -19,6 +19,18 @@ export function createProjectLinkRequest(
 ) {
   return apiFetch<ProjectLink>(projectLinksPath(projectId), {
     method: "POST",
+    body: payload,
+    cookie,
+  });
+}
+
+export function updateProjectLinkRequest(
+  linkId: number,
+  payload: UpdateProjectLinkPayload,
+  cookie: string,
+) {
+  return apiFetch<null>(linkPath(linkId), {
+    method: "PATCH",
     body: payload,
     cookie,
   });
@@ -46,6 +58,24 @@ export async function createProjectLink(
       return { link: null, error: err.message };
     }
     return { link: null, error: "Terjadi kesalahan tak terduga. Coba lagi." };
+  }
+}
+
+export async function updateProjectLink(
+  linkId: number,
+  payload: UpdateProjectLinkPayload,
+): Promise<{ success: boolean; error: string | null }> {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+
+  try {
+    await updateProjectLinkRequest(linkId, payload, cookieHeader);
+    return { success: true, error: null };
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      return { success: false, error: err.message };
+    }
+    return { success: false, error: "Terjadi kesalahan tak terduga. Coba lagi." };
   }
 }
 

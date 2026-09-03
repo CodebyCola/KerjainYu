@@ -5,19 +5,30 @@ import { FolderOpen } from "lucide-react";
 import { ProjectLink } from "@/types/project";
 import LinkListItem from "@/components/features/links/LinkListItem";
 import RemoveLinkDialog from "@/components/features/links/RemoveLinkDialog";
+import EditLinkModal from "@/components/features/links/EditLinkModal";
 import { deleteLinkAction } from "@/app/(main)/projects/[projectId]/links/actions";
 
 type LinkListProps = {
     projectId: string;
     links: ProjectLink[];
     canManage: boolean;
+    onUpdated: (link: ProjectLink) => void;
     onRemoved: (linkId: number) => void;
 };
 
-export default function LinkList({ projectId, links, canManage, onRemoved }: LinkListProps) {
+export default function LinkList({ projectId, links, canManage, onUpdated, onRemoved }: LinkListProps) {
     const [pendingRemoval, setPendingRemoval] = useState<ProjectLink | null>(null);
     const [removeError, setRemoveError] = useState<string | null>(null);
     const [isRemoving, startRemove] = useTransition();
+    const [editingLink, setEditingLink] = useState<ProjectLink | null>(null);
+
+    function handleRequestEdit(link: ProjectLink) {
+        setEditingLink(link);
+    }
+
+    function handleCloseEdit() {
+        setEditingLink(null);
+    }
 
     function handleRequestRemove(link: ProjectLink) {
         setRemoveError(null);
@@ -63,9 +74,22 @@ export default function LinkList({ projectId, links, canManage, onRemoved }: Lin
         <>
             <div className="flex flex-col gap-2.5">
                 {links.map((link) => (
-                    <LinkListItem key={link.id} link={link} canManage={canManage} onRemove={handleRequestRemove} />
+                    <LinkListItem
+                        key={link.id}
+                        link={link}
+                        canManage={canManage}
+                        onEdit={handleRequestEdit}
+                        onRemove={handleRequestRemove}
+                    />
                 ))}
             </div>
+
+            <EditLinkModal
+                projectId={projectId}
+                link={editingLink}
+                onClose={handleCloseEdit}
+                onUpdated={onUpdated}
+            />
 
             <RemoveLinkDialog
                 link={pendingRemoval}
