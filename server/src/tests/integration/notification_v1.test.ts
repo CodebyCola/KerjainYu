@@ -56,3 +56,4 @@ it('should emit a real-time event when a member is invited', async () => {
 
     emitSpy.mockRestore();
 });
+

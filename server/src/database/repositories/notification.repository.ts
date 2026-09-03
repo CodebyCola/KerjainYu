@@ -53,9 +53,10 @@ export async function markAsRead(id: number, trx?: Knex.Transaction) {
     return updated;
 }
 export async function markAllAsRead(userId: number) {
-    return db("notifications")
+    const result = await db("notifications")
         .where({ userId, isRead: false })
         .update({ isRead: true });
+    return result; 
 }
 
 export async function deleteNotification(id: number) {
