@@ -1,7 +1,7 @@
 import { Knex } from "knex";
 import * as notificationRepo from "../database/repositories/notification.repository"
 import { notificationEmitter } from "./notification.emitter";
-import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
+import { ForbiddenError, NotFoundError } from "../errors/AppError";
 
 
 export async function notifyUser(data: {
@@ -33,7 +33,7 @@ export async function markAsReadNotificiation(notifId: number, userId: number) {
         throw new ForbiddenError("This notification is not belong to you")
     }
     if (notification.isRead == true) {
-        throw new ConflictError("This notification has been read")
+        return notification
     }
     return await notificationRepo.markAsRead(notifId)
 }
@@ -50,7 +50,7 @@ export async function deleteNotificationById(notifId: number, userId: number) {
         throw new NotFoundError("Notification is not found")
     }
     if (notification.userId != userId) {
-        throw new ForbiddenError("This notification is not belong to you")
+        throw new ForbiddenError("This notification does not belong to you")
     }
     return await notificationRepo.deleteNotification(notifId)
 }

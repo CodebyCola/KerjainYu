@@ -39,7 +39,7 @@ export async function getMyNotifications(req: AuthRequest, res: Response, next: 
         return res.status(200).json({
             success: true,
             message: "Notifications retrieved successfully",
-            data: notifications, unreadNotificationCount
+            data: { notifications, unreadCount: unreadNotificationCount },
         });
     } catch (error) {
         next(error);
@@ -74,9 +74,7 @@ export async function markAsReadAll(req: AuthRequest, res: Response, next: NextF
         return res.status(200).json({
             success: true,
             message: message,
-            data: {
-                updatedCount
-            }
+            data: updatedCount
         });
     } catch (error) {
         next(error);
@@ -88,7 +86,7 @@ export async function deleteNotificationById(req: AuthRequest, res: Response, ne
     try {
         const notifId = Number(req.params.id)
         await notificationService.deleteNotificationById(notifId, req.user!.id)
-        res.send(204)
+        res.status(204).send()
     } catch (error) {
         next(error);
     }
