@@ -182,7 +182,6 @@ describe('POST /api/v1/notifications/read-all', () => {
         }
 
         const res = await request(app).post('/api/v1/notifications/read-all').set('Cookie', invitee.cookie);
-        console.log(res.body.data)
         expect(res.status).toBe(200);
         expect(res.body.data).toBe(3);
 

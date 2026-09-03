@@ -197,7 +197,6 @@ describe('POST /api/v1/auth/logout', () => {
 
     it('should still succeed even without a refreshToken cookie (idempotent)', async () => {
         const res = await request(app).post('/api/v1/auth/logout');
-        // console.log(res)
         expect(res.status).toBe(200);
     });
 });

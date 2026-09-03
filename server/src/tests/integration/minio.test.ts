@@ -19,7 +19,6 @@ async function main() {
         body: file,
     });
 
-    console.log("Upload status:", response.status); 
 }
 
 main().catch(console.error);

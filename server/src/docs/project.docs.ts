@@ -128,5 +128,32 @@ registry.registerPath({
         409: { description: "User is already a member, already invited, or you tried to invite yourself" },
     },
 });
-
-
+registry.registerPath({
+    method: "delete",
+    path: "/api/v1/projects/{id}",
+    tags: ["Projects"],
+    summary: "Delete a project",
+    description:
+        "Deletes a project and all of its related data, including project members, project links, tasks, task submissions, submission attachments, task appeals, task swap requests, task ownership logs, and task comments. Only the project leader can delete the project.",
+    security: [{ cookieAuth: [] }],
+    request: {
+        params: idParams,
+    },
+    responses: {
+        200: {
+            description: "Project and all related data deleted successfully",
+        },
+        400: {
+            description: "Validation error",
+        },
+        401: {
+            description: "Not authenticated",
+        },
+        403: {
+            description: "Only the project leader can delete the project",
+        },
+        404: {
+            description: "Project not found",
+        },
+    },
+});

@@ -57,7 +57,8 @@ router.patch(
   validate(projectSchema.updateProjectSchema),
   projectController.updateProject,
 );
-router.get("/:id", authenticate, projectController.getDetailProject);
+router.delete("/:id", authenticate, validate(idParams, "params"), projectController.deleteProject)
+router.get("/:id", authenticate, validate(idParams, "params"), projectController.getDetailProject);
 router.get("/", authenticate, projectController.getProjectsByUserId);
 
 export default router;
