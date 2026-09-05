@@ -1,11 +1,13 @@
 import { db } from "../database/db"
 import * as submissionRepo from "../database/repositories/submission.repository"
 import * as taskRepo from "../database/repositories/task.repository"
+import * as projectMemberRepo from "../database/repositories/project.member.repository"
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError"
 import { CreateAttachmentInput, CreateFileAttachmentInput, CreateFileUploadUrlInput, CreateSubmissionInput, ReviewSubmissionInput, UpdateAttachmentInput } from "../schemas/submission.schema"
 import * as storageService from "./storage.service"
 import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper"
 import { assertTaskAccess } from "./helper/task.helper"
+import { notifyUser } from "./notification.service"
 import { file } from "zod"
 
 //POST /api/v1/tasks/:id/submissions
@@ -59,6 +61,17 @@ export async function createSubmission(
             throw new ConflictError(
                 "This task has already been submitted"
             );
+        }
+
+        const leader = await projectMemberRepo.getProjectLeader(task.projectId);
+        if (leader) {
+            await notifyUser({
+                userId: leader.userId,
+                type: "submission_pending",
+                referenceType: "submission",
+                referenceId: submission.id,
+                message: `New submission for task "${task.title}" is waiting for review`,
+            }, trx);
         }
 
         return submission;
@@ -199,6 +212,14 @@ export async function reviewSubmission(submissionId: number, leaderId: number, i
         } else if (input.reviewStatus == 'rejected') {
             await taskRepo.updateTask(task.id, { status: "rejected" }, trx)
         }
+
+        await notifyUser({
+            userId: submission.submittedBy,
+            type: "submission_reviewed",
+            referenceType: "submission",
+            referenceId: submission.id,
+            message: `Your submission for task "${task.title}" was ${input.reviewStatus.replace('_', ' ')}`,
+        }, trx)
 
         return updated
     })

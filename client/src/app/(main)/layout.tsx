@@ -4,6 +4,8 @@ import { ROUTES } from "@/lib/routes";
 import { getSession } from "@/lib/api/auth/session";
 import { SessionProvider } from "@/contexts/SessionContext";
 import { ProjectTitleProvider } from "@/contexts/ProjectTitleContext";
+import { NotificationCountProvider } from "@/contexts/NotificationCountContext";
+import { getUnreadNotificationCountAction } from "@/app/(main)/notifications/actions";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import "@/app/globals.css";
 
@@ -23,14 +25,18 @@ export default async function MainLayout({
     redirect(ROUTES.LOGIN);
   }
 
+  const initialUnreadCount = await getUnreadNotificationCountAction();
+
   return (
     <SessionProvider user={user}>
       <ProjectTitleProvider>
-        <ResponsiveLayout user={user}>
-          <div className="px-4 mt-2 h-full">
-            {children}
-          </div>
-        </ResponsiveLayout>
+        <NotificationCountProvider initialCount={initialUnreadCount}>
+          <ResponsiveLayout user={user}>
+            <div className="px-4 mt-2 h-full">
+              {children}
+            </div>
+          </ResponsiveLayout>
+        </NotificationCountProvider>
       </ProjectTitleProvider>
     </SessionProvider>
   );

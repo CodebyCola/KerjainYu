@@ -6,6 +6,7 @@ import { NotFoundError, ConflictError, ForbiddenError } from "../errors/AppError
 import { assertTaskAccess } from "./helper/task.helper"
 import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
 import { db } from "../database/db"
+import { notifyUser } from "./notification.service"
 
 export async function createSwapTask(
     taskId: number,
@@ -49,7 +50,17 @@ export async function createSwapTask(
         throw new ConflictError("This task already has a pending swap request");
     }
 
-    return taskSwapRequestRepo.createSwapRequest({ taskId, targetTaskId, requestedBy, requestedTo });
+    return db.transaction(async (trx) => {
+        const swapRequest = await taskSwapRequestRepo.createSwapRequest({ taskId, targetTaskId, requestedBy, requestedTo }, trx);
+        await notifyUser({
+            userId: requestedTo,
+            type: "swap_requested",
+            referenceType: "swap_request",
+            referenceId: swapRequest.id,
+            message: `You have a new task swap request for "${task.title}"`,
+        }, trx);
+        return swapRequest;
+    });
 }
 //PATCH /api/v1/swap-requests/:id/respond
 export async function respondSwapRequest(
@@ -108,7 +119,19 @@ export async function respondSwapRequest(
             }
         }
 
-        return taskSwapRequestRepo.updateSwapRequestStatus(swapId, status, resolvedBy, trx);
+        const updated = await taskSwapRequestRepo.updateSwapRequestStatus(swapId, status, resolvedBy, trx);
+
+        await notifyUser({
+            userId: swapRequest.requestedBy,
+            type: "task_swapped",
+            referenceType: "swap_request",
+            referenceId: swapRequest.id,
+            message: status === "approved"
+                ? `Your swap request for "${task.title}" was approved`
+                : `Your swap request for "${task.title}" was rejected`,
+        }, trx);
+
+        return updated;
     });
 }
 
