@@ -6,6 +6,7 @@ import { API_BASE_URL } from "@/lib/env";
 type NotificationCountContextValue = {
   count: number;
   resetCount: () => void;
+  restoreCount: (count: number) => void;
 };
 
 const NotificationCountContext = createContext<NotificationCountContextValue | undefined>(
@@ -58,8 +59,14 @@ export function NotificationCountProvider({
     setCount(0);
   }
 
+  // Dipakai NotificationBell buat rollback kalau markAllNotificationsAsReadAction
+  // gagal, supaya badge gak salah nunjukin 0 padahal masih ada yang unread di DB.
+  function restoreCount(previousCount: number) {
+    setCount(previousCount);
+  }
+
   return (
-    <NotificationCountContext.Provider value={{ count, resetCount }}>
+    <NotificationCountContext.Provider value={{ count, resetCount, restoreCount }}>
       {children}
     </NotificationCountContext.Provider>
   );

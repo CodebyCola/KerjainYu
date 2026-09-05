@@ -22,3 +22,10 @@ export async function getUnreadNotificationCount(): Promise<number> {
     return 0;
   }
 }
+
+export function markAllNotificationsAsReadRequest(cookie: string) {
+  return apiFetch<{ updatedCount: number }>(`${NOTIFICATIONS_PATH}/read-all`, {
+    method: "POST",
+    cookie,
+  });
+}
