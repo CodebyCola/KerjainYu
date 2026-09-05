@@ -1,4 +1,5 @@
 import { db } from "../db";
+import { Knex } from "knex";
 
 export async function getCommentById(id: number) {
     return db("comments_task")
@@ -12,8 +13,9 @@ export async function getCommentById(id: number) {
             "comment",
         ]);
 }
-export async function createComment(taskId: number, userId: number, comment: string) {
-    return db("comments_task").insert({ task_id: taskId, user_id: userId, comment: comment }).returning("*")
+export async function createComment(taskId: number, userId: number, comment: string, trx?: Knex.Transaction) {
+    const executor = trx || db;
+    return executor("comments_task").insert({ task_id: taskId, user_id: userId, comment: comment }).returning("*")
 }
 export async function deleteComment(id: number) {
     return db("comments_task")

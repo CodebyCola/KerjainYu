@@ -10,7 +10,9 @@ export async function streamNotifications(req: AuthRequest, res: Response) {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
-        "Access-Control-Allow-Origin": process.env.FRONTEND_URL, // sesuaikan CORS
+        // Sama dengan origin yang dipakai CORS global di app.ts, supaya tidak ada
+        // dua sumber kebenaran yang bisa berbeda diam-diam.
+        "Access-Control-Allow-Origin": process.env.FRONTEND_URL || "http://localhost:3000",
         "Access-Control-Allow-Credentials": "true",
     });
 
@@ -39,7 +41,7 @@ export async function getMyNotifications(req: AuthRequest, res: Response, next: 
         return res.status(200).json({
             success: true,
             message: "Notifications retrieved successfully",
-            data: { notifications, unreadCount: unreadNotificationCount },
+            data: { notifications, unreadNotificationCount }
         });
     } catch (error) {
         next(error);
@@ -74,7 +76,9 @@ export async function markAsReadAll(req: AuthRequest, res: Response, next: NextF
         return res.status(200).json({
             success: true,
             message: message,
-            data: updatedCount
+            data: {
+                updatedCount
+            }
         });
     } catch (error) {
         next(error);
@@ -86,7 +90,7 @@ export async function deleteNotificationById(req: AuthRequest, res: Response, ne
     try {
         const notifId = Number(req.params.id)
         await notificationService.deleteNotificationById(notifId, req.user!.id)
-        res.status(204).send()
+        res.send(204)
     } catch (error) {
         next(error);
     }

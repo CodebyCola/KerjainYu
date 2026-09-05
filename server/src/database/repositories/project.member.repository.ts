@@ -68,13 +68,15 @@ export async function getById(id: number) {
   return db("project_members").where({ id }).first()
 }
 
+export async function getProjectLeader(projectId: number) {
+  return db("project_members")
+    .where({ project_id: projectId, role: "leader", status: "active" })
+    .first();
+}
+
 export async function getInvitations(userId: number) {
   return db("project_members").join("projects", "project_members.project_id", "projects.id",).where("user_id", userId).where('project_members.status', 'invited').select("project_members.id", "project_members.project_id", "projects.title as project_title")
 }
-
-// export async function getProjects(userId: number) {
-//   return db("project_members").where("user_id", userId).select("project_id")
-// }
 
 export async function getMembersByProject(projectId: number) {
   return db("project_members")

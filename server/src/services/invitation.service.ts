@@ -1,5 +1,8 @@
 import * as projectMemberRepo from "../database/repositories/project.member.repository";
+import { findById } from "../database/repositories/user.repository";
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
+import { db } from "../database/db";
+import { notifyUser } from "./notification.service";
 
 
 export async function getAllInvitations(userId: number) {
@@ -19,5 +22,22 @@ export async function respondToInvitation(membershipId: number, userId: number, 
     }
 
     const newStatus = response === 'accept' ? 'active' : 'rejected'
-    return await projectMemberRepo.updateMembershipStatus(membership.id, newStatus)
+
+    return db.transaction(async (trx) => {
+        const updated = await projectMemberRepo.updateMembershipStatus(membership.id, newStatus, trx)
+        if (response === 'accept') {
+            const leader = await projectMemberRepo.getProjectLeader(membership.projectId)
+            if (leader) {
+                const user = await findById(userId) // butuh username utk pesan
+                await notifyUser({
+                    userId: leader.userId,
+                    type: "member_added",
+                    referenceType: "project",
+                    referenceId: membership.projectId,
+                    message: `${user?.username ?? "A user"} joined your project`,
+                }, trx)
+            }
+        }
+        return updated
+    })
 }

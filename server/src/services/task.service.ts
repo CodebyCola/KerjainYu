@@ -8,6 +8,7 @@ import {
 } from "./helper/auhtorization.helper";
 import { db } from "../database/db";
 import { assertTaskAccess, assertTaskDetailAccess } from "./helper/task.helper";
+import { notifyUser } from "./notification.service";
 
 //POST /api/v1/projects/:id/tasks
 export async function createTask(
@@ -101,6 +102,14 @@ export async function assignTask(taskId: number, leaderId: number, targetUserId:
       },
       trx
     );
+
+    await notifyUser({
+      userId: targetUserId,
+      type: "task_assigned",
+      referenceType: "task",
+      referenceId: taskId,
+      message: `You've been assigned to task "${task.title}"`,
+    }, trx);
 
     return assigned;
   });
