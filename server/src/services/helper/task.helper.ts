@@ -6,7 +6,7 @@ import { assertProjectMembership } from "./auhtorization.helper";
 export async function assertTaskAccess(taskId: number, userId: number) {
     const task = await getTaskById(taskId);
     if (!task) {
-        throw new NotFoundError("Task not found");
+        throw new NotFoundError("Tugas tidak dapat ditemukan");
     }
     await assertProjectMembership(task.projectId, userId);
     return task;
@@ -15,7 +15,7 @@ export async function assertTaskAccess(taskId: number, userId: number) {
 export async function assertTaskDetailAccess(taskId: number, userId: number) {
     const task = await getTaskDetailWithRelations(taskId);
     if (!task) {
-        throw new NotFoundError("Task not found");
+        throw new NotFoundError("Tugas tidak dapat ditemukan");
     }
     await assertProjectMembership(task.projectId, userId);
     return task;

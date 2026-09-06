@@ -41,7 +41,7 @@ registry.registerPath({
     path: "/api/v1/tasks/{id}",
     tags: ["Tasks"],
     summary: "Update a task",
-    description: "Only the leader of the task's project can update it.",
+    description: "Only the leader of the task's project can update it. Updates title/description/priority/deadline only — status cannot be changed through this endpoint; use the dedicated transition endpoints (/claim, /ongoing, /submissions, /review) instead.",
     security: [{ cookieAuth: [] }],
     request: {
         params: idParams,

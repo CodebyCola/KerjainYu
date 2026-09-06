@@ -4,7 +4,7 @@ import * as projectRepo from "../database/repositories/project.repository"
 import { createTaskLogOwnership } from "../database/repositories/task_ownership_log.repository"
 import { NotFoundError, ConflictError, ForbiddenError } from "../errors/AppError"
 import { assertTaskAccess } from "./helper/task.helper"
-import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
+import { assertProjectLeader, assertProjectMembership, assertProjectIsActive } from "./helper/auhtorization.helper";
 import { db } from "../database/db"
 import { notifyUser } from "./notification.service"
 
@@ -15,6 +15,12 @@ export async function createSwapTask(
     targetTaskId?: number,
 ) {
     const task = await assertTaskAccess(taskId, requestedBy);
+
+    const project = await projectRepo.getProjectById(task.projectId);
+    if (!project) {
+        throw new NotFoundError("Project not found");
+    }
+    assertProjectIsActive(project);
 
     if (task.assigneeId != requestedBy) {
         throw new ForbiddenError("You can only offer a swap for a task assigned to you");
@@ -84,6 +90,7 @@ export async function respondSwapRequest(
     if (!project) {
         throw new NotFoundError("Project not found");
     }
+    assertProjectIsActive(project);
 
     let resolvedBy: number | null = null;
 
@@ -96,6 +103,19 @@ export async function respondSwapRequest(
         // butuh leader
         await assertProjectLeader(project.id, userId);
         resolvedBy = userId;
+    }
+
+    if (!['todo', 'ongoing'].includes(task.status)) {
+        await taskSwapRequestRepo.updateSwapRequestStatus(swapId, "rejected", null);
+        throw new ConflictError("This task is no longer in a swappable state; the swap request has been automatically rejected");
+    }
+
+    if (swapRequest.targetTaskId) {
+        const targetTask = await taskRepo.getTaskById(swapRequest.targetTaskId);
+        if (!targetTask || !['todo', 'ongoing'].includes(targetTask.status)) {
+            await taskSwapRequestRepo.updateSwapRequestStatus(swapId, "rejected", null);
+            throw new ConflictError("The target task is no longer in a swappable state; the swap request has been automatically rejected");
+        }
     }
 
     return db.transaction(async (trx) => {

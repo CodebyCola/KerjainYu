@@ -2,10 +2,11 @@ import { db } from "../database/db"
 import * as submissionRepo from "../database/repositories/submission.repository"
 import * as taskRepo from "../database/repositories/task.repository"
 import * as projectMemberRepo from "../database/repositories/project.member.repository"
+import * as projectRepo from "../database/repositories/project.repository"
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError"
 import { CreateAttachmentInput, CreateFileAttachmentInput, CreateFileUploadUrlInput, CreateSubmissionInput, ReviewSubmissionInput, UpdateAttachmentInput } from "../schemas/submission.schema"
 import * as storageService from "./storage.service"
-import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper"
+import { assertProjectLeader, assertProjectMembership, assertProjectIsActive } from "./helper/auhtorization.helper"
 import { assertTaskAccess } from "./helper/task.helper"
 import { notifyUser } from "./notification.service"
 import { file } from "zod"
@@ -17,6 +18,12 @@ export async function createSubmission(
     input: CreateSubmissionInput,
 ) {
     const task = await assertTaskAccess(taskId, submittedBy);
+
+    const project = await projectRepo.getProjectById(task.projectId);
+    if (!project) {
+        throw new NotFoundError("Project not found");
+    }
+    assertProjectIsActive(project);
 
     if (task.assigneeId != submittedBy) {
         throw new ForbiddenError(
@@ -194,7 +201,8 @@ export async function reviewSubmission(submissionId: number, leaderId: number, i
     if (!task) {
         throw new NotFoundError("Task is not found")
     }
-    await assertProjectLeader(task.projectId, leaderId)
+    const { project } = await assertProjectLeader(task.projectId, leaderId)
+    assertProjectIsActive(project);
     if (!['pending', 'revision_requested'].includes(submission.reviewStatus)) {
         throw new ConflictError("Only submission on pending and revision that can be reviewed")
     }

@@ -10,6 +10,12 @@ const taskStatusSchema = z.enum([
   "rejected",
 ]);
 
+const notInThePast = (date: Date) => date.getTime() >= Date.now() - 60_000; // 60s clock-skew tolerance
+
+const deadlineSchema = z.coerce
+  .date()
+  .refine(notInThePast, { message: "Deadline cannot be in the past" });
+
 export const createTaskSchema = z
   .object({
     title: z
@@ -30,12 +36,39 @@ export const createTaskSchema = z
       .optional()
       .default(true)
       .openapi({ example: true }),
-    deadline: z.coerce.date().optional().openapi({
+
+    assigneeId: z.coerce.number().int().positive().optional().openapi({ example: 7 }),
+
+    deadline: deadlineSchema.optional().openapi({
       example: "2026-09-20T00:00:00.000Z",
     }),
 
   })
   .strict()
+  .refine(
+    (data) => {
+      if (data.isClaimable === false) {
+        return data.assigneeId !== undefined && data.assigneeId !== null;
+      }
+      return true;
+    },
+    {
+      message: "assigneeId is required when isClaimable is false",
+      path: ["assigneeId"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.isClaimable === true && data.assigneeId !== undefined) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "assigneeId must not be provided when isClaimable is true",
+      path: ["assigneeId"],
+    },
+  )
   .openapi("CreateTaskInput");
 
 export const updateTaskSchema = z
@@ -44,11 +77,9 @@ export const updateTaskSchema = z
 
     description: z.string(),
 
-    status: taskStatusSchema,
-
     priority: z.int(),
 
-    deadline: z.coerce.date(),
+    deadline: deadlineSchema,
   })
   .partial()
   .strict()

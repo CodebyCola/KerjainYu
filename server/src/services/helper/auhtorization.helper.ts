@@ -1,4 +1,4 @@
-import { ForbiddenError, NotFoundError } from "../../errors/AppError";
+import { ConflictError, ForbiddenError, NotFoundError } from "../../errors/AppError";
 import * as projectRepo from "../../database/repositories/project.repository";
 import * as projectMemberRepo from "../../database/repositories/project.member.repository";
 import * as projectSchema from "../../schemas/projectSchema";
@@ -9,12 +9,12 @@ export async function assertProjectMembership(
 ) {
   const project = await projectRepo.getProjectById(projectId);
   if (!project) {
-    throw new NotFoundError("Project's not found");
+    throw new NotFoundError("Proyek tidak dapat ditemukan");
   }
 
   const membership = await projectMemberRepo.getRole(projectId, userId);
   if (!membership || membership.status !== "active") {
-    throw new ForbiddenError("You're not part of this project");
+    throw new ForbiddenError("Kamu bukan bagian dari proyek ini");
   }
 
   return { project, membership };
@@ -24,8 +24,14 @@ export async function assertProjectLeader(projectId: number, userId: number) {
   const result = await assertProjectMembership(projectId, userId);
 
   if (result.membership.role !== "leader") {
-    throw new ForbiddenError("Only project leader can perform this action");
+    throw new ForbiddenError("Hanya ketua yang bisa melakukan aksi ini");
   }
 
   return result;
+}
+
+export function assertProjectIsActive(project: { status: string; isArchived: boolean }) {
+  if (project.isArchived || project.status === "completed") {
+    throw new ConflictError("Aksi ini tidak dapat dilakukan karena proyek sudah diarsipkan atau sudah selesai");
+  }
 }

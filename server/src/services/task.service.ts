@@ -5,6 +5,7 @@ import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError
 import {
   assertProjectMembership,
   assertProjectLeader,
+  assertProjectIsActive,
 } from "./helper/auhtorization.helper";
 import { db } from "../database/db";
 import { assertTaskAccess, assertTaskDetailAccess } from "./helper/task.helper";
@@ -16,8 +17,20 @@ export async function createTask(
   userId: number,
   input: taskInput.CreateTaskInput,
 ) {
-  await assertProjectLeader(projectId, userId);
-  const tasks = await taskRepo.createTask(projectId, input, userId);
+  const { project } = await assertProjectLeader(projectId, userId);
+  assertProjectIsActive(project);
+
+  let status: taskInput.TaskStatusSchema = "unclaimed";
+  if (input.isClaimable === false) {
+    await assertProjectMembership(projectId, input.assigneeId!);
+    status = "todo";
+  }
+
+  const tasks = await taskRepo.createTask(
+    projectId,
+    { ...input, status },
+    userId,
+  );
   return tasks;
 }
 
@@ -43,7 +56,8 @@ export async function updateTask(
   if (!task) {
     throw new NotFoundError("Task not found");
   }
-  await assertProjectLeader(task.projectId, userId);
+  const { project } = await assertProjectLeader(task.projectId, userId);
+  assertProjectIsActive(project);
   const tasks = await taskRepo.updateTask(task.id, input);
   return tasks;
 }
@@ -54,7 +68,8 @@ export async function claimTask(taskId: number, userId: number) {
   if (!task) {
     throw new NotFoundError("Task not found")
   }
-  await assertProjectMembership(task.projectId, userId)
+  const { project } = await assertProjectMembership(task.projectId, userId)
+  assertProjectIsActive(project);
   if (!task.isClaimable) {
     throw new ConflictError("This task is not claimable, only the leader who can assign the tasks")
   }
@@ -77,7 +92,8 @@ export async function assignTask(taskId: number, leaderId: number, targetUserId:
   if (task.assigneeId !== null) {
     throw new ConflictError("This task is already assign to other member")
   }
-  await assertProjectLeader(task.projectId, leaderId)
+  const { project } = await assertProjectLeader(task.projectId, leaderId)
+  assertProjectIsActive(project);
   await assertProjectMembership(task.projectId, targetUserId)
   return db.transaction(async (trx) => {
 
@@ -121,7 +137,8 @@ export async function doTask(taskId: number, userId: number) {
   if (!task) {
     throw new NotFoundError("Task not found")
   }
-  await assertProjectMembership(task.projectId, userId)
+  const { project } = await assertProjectMembership(task.projectId, userId)
+  assertProjectIsActive(project);
   if (task.assigneeId !== userId) {
     throw new ForbiddenError("Only the assignee can perform this action")
   }

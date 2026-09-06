@@ -647,6 +647,57 @@ describe("Task Submission Integration", () => {
 
             expect(res.status).toBe(400);
         });
+
+        it("should reject submitting a task after its project is archived", async () => {
+            const leader = await registerAndLogin(
+                "submission_leader_inactive_1",
+            );
+
+            const project = await createProject(
+                leader.cookie,
+            );
+
+            const projectId =
+                project.projectResult.body.data.id;
+
+            const taskRes = await createTask(
+                leader.cookie,
+                projectId, {
+                title: "Design Homepage ",
+                isClaimable: false,
+            },
+            );
+
+            const member = await inviteAndAccept(
+                leader.cookie,
+                projectId,
+                "submission_member_inactive_1",
+            );
+
+            const taskId = taskRes.body.data.id;
+
+            await assignTask(
+                leader.cookie,
+                taskId,
+                member.userId,
+            );
+            await request(app)
+                .patch(`/api/v1/tasks/${taskId}/ongoing`)
+                .set("Cookie", member.cookie);
+
+            await request(app)
+                .patch(`/api/v1/projects/${projectId}`)
+                .set("Cookie", leader.cookie)
+                .send({ isArchived: true });
+
+            const res2 = await request(app)
+                .post(`/api/v1/tasks/${taskId}/submissions`)
+                .set("Cookie", member.cookie)
+                .send({ contents: [] });
+
+            expect(res2.status).toBe(409);
+            expect(res2.body.error.code).toBe("CONFLICT");
+        });
     });
 
 
@@ -1026,6 +1077,30 @@ describe("Task Submission Integration", () => {
             );
 
             expect(secondReview.status).toBe(409);
+        });
+
+        it("should reject reviewing a submission after its project is archived", async () => {
+            const {
+                leader,
+                projectId,
+                submissionId,
+            } = await createPendingSubmission();
+
+            await request(app)
+                .patch(`/api/v1/projects/${projectId}`)
+                .set("Cookie", leader.cookie)
+                .send({ isArchived: true });
+
+            const reviewRes = await reviewSubmission(
+                leader.cookie,
+                submissionId,
+                {
+                    reviewStatus: "approved",
+                },
+            );
+
+            expect(reviewRes.status).toBe(409);
+            expect(reviewRes.body.error.code).toBe("CONFLICT");
         });
     });
 
