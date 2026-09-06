@@ -665,6 +665,44 @@ describe("POST /api/v1/tasks/:id/swap-requests", () => {
 
         expect(res.status).toBe(400);
     });
+
+
+    it("should reject creating a swap request after its project is archived", async () => {
+        const leader = await registerAndLogin("swap_leader_inactive_1");
+
+        const project = await createProject(leader.cookie);
+        const projectId = project.projectResult.body.data.id;
+
+        const member = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "swap_member_inactive_1",
+        );
+
+        const taskRes = await createTask(
+            leader.cookie,
+            projectId,
+            "Swap task on archived project",
+        );
+
+        const taskId = taskRes.body.data.id;
+
+        await assignTask(leader.cookie, taskId, member.userId);
+
+        await request(app)
+            .patch(`/api/v1/projects/${projectId}`)
+            .set("Cookie", leader.cookie)
+            .send({ isArchived: true });
+
+        const res = await createSwapRequest(
+            member.cookie,
+            taskId,
+            leader.userId,
+        );
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe("CONFLICT");
+    });
 });
 
 
@@ -1105,6 +1143,77 @@ describe("PATCH /api/v1/swap-requests/:id/respond", () => {
             });
 
         expect(res.status).toBe(401);
+    });
+
+
+    it("should reject approving a swap request if the task is no longer swappable, and auto-reject the stale request", async () => {
+        const leader = await registerAndLogin("respond_stale_leader");
+
+        const project = await createProject(leader.cookie);
+        const projectId = project.projectResult.body.data.id;
+
+        const memberA = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "respond_stale_a",
+        );
+
+        const memberB = await inviteAndAccept(
+            leader.cookie,
+            projectId,
+            "respond_stale_b",
+        );
+
+        const taskRes = await createTask(
+            leader.cookie,
+            projectId,
+            "Stale swap task",
+        );
+
+        const taskId = taskRes.body.data.id;
+
+        expect(
+            (await assignTask(
+                leader.cookie,
+                taskId,
+                memberA.userId,
+            )).status
+        ).toBe(200);
+
+        // Pastikan project memang allowFreeSwap, supaya memberB bisa langsung respond.
+        await db("projects")
+            .where({ id: projectId })
+            .update({ allow_free_swap: true });
+
+        const swapRes = await createSwapRequest(
+            memberA.cookie,
+            taskId,
+            memberB.userId,
+        );
+
+        expect(swapRes.status).toBe(200);
+
+        const swapId = swapRes.body.data.id;
+
+        // Task moves out of the swappable range before the swap is approved.
+        await request(app)
+            .patch(`/api/v1/tasks/${taskId}/ongoing`)
+            .set("Cookie", memberA.cookie);
+        await request(app)
+            .post(`/api/v1/tasks/${taskId}/submissions`)
+            .set("Cookie", memberA.cookie)
+            .send({ contents: [] });
+
+        const respondRes = await request(app)
+            .patch(`/api/v1/swap-requests/${swapId}/respond`)
+            .set("Cookie", memberB.cookie)
+            .send({ status: "approved" });
+
+        expect(respondRes.status).toBe(409);
+        expect(respondRes.body.error.code).toBe("CONFLICT");
+
+        const swapAfter = await getSwapRequestFromDb(swapId);
+        expect(swapAfter.status).toBe("rejected");
     });
 });
 

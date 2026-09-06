@@ -32,7 +32,7 @@ export async function createCommentTask(taskId: number, userId: number, comment:
                 type: "comment_added",
                 referenceType: "task",
                 referenceId: taskId,
-                message: `New comment on task "${task.title}"`,
+                message: `Ada komentar baru di tugas "${task.title}"`,
             }, trx);
         }
 

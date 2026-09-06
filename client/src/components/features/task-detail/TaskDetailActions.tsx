@@ -53,13 +53,25 @@ export default function TaskDetailActions({
     const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
     const [swapModalKey, setSwapModalKey] = useState(0);
 
-    const actions = getAvailableActions(task.status).filter((definition) => {
+    const isProjectActive = project.status !== "completed" && !project.isArchived;
+
+    const actions = getAvailableActions(task.status, isProjectActive).filter((definition) => {
         if (definition.actor === "leader") return isLeader;
         if (definition.actor === "assignee") return isTaskAssignee(task, currentUserId);
         return true; // "member" — siapapun anggota project boleh klaim
     });
-    const canAssign = isLeader && resolveTaskAssigneeId(task) === null;
+    const canAssign = isLeader && isProjectActive && resolveTaskAssigneeId(task) === null;
     const { canRequestSwap } = getSwapEligibility(task, project, currentUserId);
+
+    if (!isProjectActive) {
+        return (
+            <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs font-inter text-muted">
+                    Proyek ini sudah selesai atau diarsipkan, sehingga tidak ada aksi yang bisa dilakukan pada tugas ini.
+                </p>
+            </div>
+        );
+    }
 
     if (actions.length === 0 && !canAssign && !canRequestSwap) return null;
 

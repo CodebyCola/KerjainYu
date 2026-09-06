@@ -56,7 +56,11 @@ export const AVAILABLE_ACTIONS: Record<TaskStatus, ActionDefinition[]> = {
     rejected: [],
 };
 
-export function getAvailableActions(status: TaskStatus): ActionDefinition[] {
+export function getAvailableActions(
+  status: TaskStatus,
+  projectIsActive: boolean = true,
+): ActionDefinition[] {
+    if (!projectIsActive) return [];
     return AVAILABLE_ACTIONS[status] ?? [];
 }
 

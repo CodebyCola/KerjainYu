@@ -151,6 +151,96 @@ describe('POST /api/v1/projects/:id/tasks', () => {
     // (endpoint invite/add-member belum ada saat ini). Aktifkan begitu tersedia.
     it.skip('should reject task creation from a member who is not the leader', async () => {
     });
+
+    it('should create a pre-assigned task directly in todo status when isClaimable is false', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+        const member = await inviteAndAccept(leader.cookie, projectId);
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', leader.cookie)
+            .send({ title: 'Pre-assigned task', isClaimable: false, assigneeId: member.userId });
+
+        expect(res.status).toBe(201);
+        expect(res.body.data.status).toBe('todo');
+        expect(res.body.data.assigneeId).toBe(member.userId);
+        expect(res.body.data.isClaimable).toBe(false);
+    });
+
+    it('should reject creating a non-claimable task without an assigneeId', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie)
+            .send({ title: 'Missing assignee', isClaimable: false });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('should reject creating a claimable task that also specifies an assigneeId', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+        const member = await inviteAndAccept(leader.cookie, projectId);
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', leader.cookie)
+            .send({ title: 'Contradictory task', isClaimable: true, assigneeId: member.userId });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('should reject pre-assigning a task to a user who is not a project member', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+        const { userId: strangerId } = await registerAndLogin("bukan_member");
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie)
+            .send({ title: 'Assign to stranger', isClaimable: false, assigneeId: strangerId });
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('should reject a deadline in the past', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie)
+            .send({ title: 'Late task', deadline: '2020-01-01T00:00:00.000Z' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('should accept a deadline in the future', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie)
+            .send({ title: 'Future task', deadline: futureDate });
+
+        expect(res.status).toBe(201);
+    });
 });
 
 describe('GET /api/v1/tasks/:id', () => {
@@ -211,11 +301,72 @@ describe('PATCH /api/v1/tasks/:id', () => {
         const res = await request(app)
             .patch(`/api/v1/tasks/${taskId}`)
             .set('Cookie', cookie)
-            .send({ status: 'ongoing', priority: 2 });
+            .send({ priority: 2 });
 
         expect(res.status).toBe(200);
-        expect(res.body.data.status).toBe('ongoing');
         expect(res.body.data.priority).toBe(2);
+    });
+
+    it('should ignore/reject a status field sent to the plain update endpoint', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const createRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie)
+            .send({ title: 'Design homepage mockup' });
+        const taskId = createRes.body.data.id;
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}`)
+            .set('Cookie', cookie)
+            .send({ status: 'approved', priority: 3 });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('should allow updating only some fields without touching others', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const createRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie)
+            .send({ title: 'Design homepage mockup', priority: 1 });
+        const taskId = createRes.body.data.id;
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}`)
+            .set('Cookie', cookie)
+            .send({ title: 'Design homepage mockup v2' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.title).toBe('Design homepage mockup v2');
+        expect(res.body.data.priority).toBe(1); // untouched
+        expect(res.body.data.status).toBe('unclaimed'); // untouched
+    });
+
+    it('should reject a deadline in the past when updating a task', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        const createRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie)
+            .send({ title: 'Design homepage mockup' });
+        const taskId = createRes.body.data.id;
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}`)
+            .set('Cookie', cookie)
+            .send({ deadline: '2020-01-01T00:00:00.000Z' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe('VALIDATION_ERROR');
     });
 
     it('should return not found for a non-existent task', async () => {
@@ -224,7 +375,7 @@ describe('PATCH /api/v1/tasks/:id', () => {
         const res = await request(app)
             .patch('/api/v1/tasks/999999')
             .set('Cookie', cookie)
-            .send({ status: 'ongoing' });
+            .send({ priority: 2 });
 
         expect(res.status).toBe(404);
         expect(res.body.error.code).toBe('NOT_FOUND');
@@ -246,7 +397,7 @@ describe('PATCH /api/v1/tasks/:id', () => {
         const res = await request(app)
             .patch(`/api/v1/tasks/${taskId}`)
             .set('Cookie', strangerCookie)
-            .send({ status: 'ongoing' });
+            .send({ priority: 2 });
 
         expect(res.status).toBe(403);
         expect(res.body.error.code).toBe('FORBIDDEN');
@@ -342,6 +493,124 @@ describe('GET /api/v1/tasks', () => {
 
         const afterLeave = await request(app).get('/api/v1/tasks').set('Cookie', member.cookie);
         expect(afterLeave.body.data.map((t: any) => t.id)).not.toContain(taskId);
+    });
+});
+
+describe('Task actions on inactive projects', () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    });
+
+    it('should reject creating a task in an archived project', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        await request(app)
+            .patch(`/api/v1/projects/${projectId}`)
+            .set('Cookie', cookie)
+            .send({ isArchived: true });
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie)
+            .send({ title: 'Should not be created' });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('should reject creating a task in a completed project', async () => {
+        const { cookie } = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(cookie);
+        const projectId = projectResult.body.data.id;
+
+        await request(app)
+            .patch(`/api/v1/projects/${projectId}`)
+            .set('Cookie', cookie)
+            .send({ status: 'completed' });
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', cookie)
+            .send({ title: 'Should not be created' });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('should reject claiming a task after its project is archived', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+        const member = await inviteAndAccept(leader.cookie, projectId);
+
+        const taskRes = await createTask(leader.cookie, projectId);
+        const taskId = taskRes.body.data.id;
+
+        await request(app)
+            .patch(`/api/v1/projects/${projectId}`)
+            .set('Cookie', leader.cookie)
+            .send({ isArchived: true });
+
+        const res = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/claim`)
+            .set('Cookie', member.cookie);
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('should reject starting/submitting/reviewing on a completed project, but still let a non-member get 403 first', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+        const member = await inviteAndAccept(leader.cookie, projectId);
+
+        const taskRes = await createTask(leader.cookie, projectId);
+        const taskId = taskRes.body.data.id;
+        await request(app).patch(`/api/v1/tasks/${taskId}/claim`).set('Cookie', member.cookie);
+
+        await request(app)
+            .patch(`/api/v1/projects/${projectId}`)
+            .set('Cookie', leader.cookie)
+            .send({ status: 'completed' });
+
+        const startRes = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/ongoing`)
+            .set('Cookie', member.cookie);
+        expect(startRes.status).toBe(409);
+        expect(startRes.body.error.code).toBe('CONFLICT');
+
+        const { cookie: strangerCookie } = await registerAndLogin("bukan_member");
+        const strangerRes = await request(app)
+            .patch(`/api/v1/tasks/${taskId}/ongoing`)
+            .set('Cookie', strangerCookie);
+        expect(strangerRes.status).toBe(403); // membership check still wins over the active-project check
+    });
+
+    it('should still allow viewing tasks and task detail in an archived project', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const taskRes = await createTask(leader.cookie, projectId);
+        const taskId = taskRes.body.data.id;
+
+        await request(app)
+            .patch(`/api/v1/projects/${projectId}`)
+            .set('Cookie', leader.cookie)
+            .send({ isArchived: true });
+
+        const listRes = await request(app)
+            .get(`/api/v1/projects/${projectId}/tasks`)
+            .set('Cookie', leader.cookie);
+        expect(listRes.status).toBe(200);
+
+        const detailRes = await request(app)
+            .get(`/api/v1/tasks/${taskId}`)
+            .set('Cookie', leader.cookie);
+        expect(detailRes.status).toBe(200);
     });
 });
 
