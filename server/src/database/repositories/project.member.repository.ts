@@ -38,11 +38,11 @@ export async function addMember(projectId: number, userId: number, trx?: Knex.Tr
   });
 }
 
-export async function updateMembershipStatus(id: number, status: string, trx?: Knex.Transaction) {
+export async function updateMembershipStatus(id: number, status: string, trx?: Knex.Transaction, joinedAt?: Date) {
   const executor = trx || db
   return executor("project_members")
     .where("id", id)
-    .update({ status: status });
+    .update({ status: status, joined_at: joinedAt });
 }
 
 
