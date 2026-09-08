@@ -19,10 +19,10 @@ export async function searchByUsername(username: string, excludeProjectId?: numb
   return db("users").where("username", "ilike", `%${username}%`).modify((qb) => {
     if (excludeProjectId) {
       qb.whereNotIn("id", function () {
-        this.select("user_id").from("project_members").where("project_id", excludeProjectId)
+        this.select("user_id").from("project_members").where("project_id", excludeProjectId).whereIn("status", ["active", "invited"])
       })
     }
-  }).select("id", "username", "fullName", "avatarUrl").limit(10)
+  }).select("id", "username", "fullName", "avatarUrl")
 }
 
 export async function updateUser(
