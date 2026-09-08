@@ -648,7 +648,8 @@ describe('PATCH /api/v1/tasks/:id/claim', () => {
 
         const member = await inviteAndAccept(leader.cookie, projectId);
 
-        const taskRes = await createTask(leader.cookie, projectId, { isClaimable: false });
+        const taskRes = await createTask(leader.cookie, projectId);
+        await db("tasks").where({ id: taskRes.body.data.id }).update({ is_claimable: false })
         const taskId = taskRes.body.data.id;
 
         const res = await request(app)
