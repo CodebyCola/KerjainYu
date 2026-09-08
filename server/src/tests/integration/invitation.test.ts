@@ -54,7 +54,7 @@ describe('POST /api/v1/projects/:id/invitations', () => {
         expect(res.body.error.code).toBe('CONFLICT');
     });
 
-    it.skip('should reject inviting a user who is already an active member', async () => {
+    it('should reject inviting a user who is already an active member', async () => {
         const leader = await registerAndLogin("budiman");
         const { projectResult } = await createProject(leader.cookie);
         const projectId = projectResult.body.data.id;
