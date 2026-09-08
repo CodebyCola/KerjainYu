@@ -49,7 +49,7 @@ router.get(
   validate(idParams, "params"),
   projectMemberController.getMembersByProject,
 );
-router.patch("/:id/leader", authenticate, writeRateLimiter, validate(userIdParams, "body"), projectMemberController.promoteToLeader)
+router.patch("/:id/leader", authenticate, writeRateLimiter, validate(idParams, "params"), validate(userIdParams, "body"), projectMemberController.promoteToLeader)
 router.patch(
   "/:id",
   authenticate,
