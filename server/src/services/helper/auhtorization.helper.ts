@@ -32,6 +32,6 @@ export async function assertProjectLeader(projectId: number, userId: number) {
 
 export function assertProjectIsActive(project: { status: string; isArchived: boolean }) {
   if (project.isArchived || project.status === "completed") {
-    throw new ConflictError("Aksi ini tidak dapat dilakukan karena proyek sudah diarsipkan atau sudah selesai");
+    throw new ConflictError("Can't do this action because the project's already done / archived");
   }
 }

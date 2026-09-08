@@ -4,7 +4,7 @@ import * as projectLinkRepo from "../database/repositories/project.link.reposito
 import * as taskRepo from "../database/repositories/task.repository"
 import * as projectSchema from "../schemas/projectSchema";
 import { findById } from "../database/repositories/user.repository";
-import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
+import { assertProjectIsActive, assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
 import { db } from "../database/db";
 import {
   ConflictError,
@@ -35,6 +35,8 @@ export async function createProjectWithLinks(
 //POST /api/v1/projects/:id/invitations
 export async function inviteMember(projectId: number, leaderId: number, targetUserId: number) {
   await assertProjectLeader(projectId, leaderId)
+  const project = await projectRepo.getProjectById(projectId)
+  await assertProjectIsActive({ status: project!.status, isArchived: project!.isArchived })
   const prospectiveMember = await findById(targetUserId)
   if (!prospectiveMember) {
     throw new NotFoundError("User is not found")

@@ -2,7 +2,7 @@
 import * as taskRepo from "../database/repositories/task.repository"
 import * as projectMemberRepo from "../database/repositories/project.member.repository";
 import * as projectRepo from "../database/repositories/project.repository"
-import { assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
+import { assertProjectIsActive, assertProjectLeader, assertProjectMembership } from "./helper/auhtorization.helper";
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
 import { db } from "../database/db";
 
@@ -16,7 +16,8 @@ export async function getMembersByProject(projectId: number, userId: number) {
 //PATCH /api/v1/projects/:id/leader
 export async function promoteToLeader(projectId: number, currentLeaderId: number, prospectiveLeaderId: number) {
     await assertProjectLeader(projectId, currentLeaderId)
-    const { membership: prospectiveMembership } = await assertProjectMembership(projectId, prospectiveLeaderId)
+    const { membership: prospectiveMembership, project } = await assertProjectMembership(projectId, prospectiveLeaderId)
+    await assertProjectIsActive({ status: project.status, isArchived: project.isArchived });
     if (prospectiveMembership.status !== "active") {
         throw new ConflictError("Only active member can be promoted to leader")
     }
@@ -32,8 +33,11 @@ export async function promoteToLeader(projectId: number, currentLeaderId: number
 
 //DELETE /api/v1/projects/:id/members/:userId
 export async function removeMember(projectId: number, leaderId: number, targetUserId: number) {
+    const project = await projectRepo.getProjectById(projectId)
+    await assertProjectIsActive({
+        status: project!.status, isArchived: project!.isArchived
+    })
     await assertProjectLeader(projectId, leaderId);
-
     if (targetUserId == leaderId) {
         throw new ConflictError("Leader cannot remove themselves. Transfer leadership first.");
     }
@@ -45,7 +49,6 @@ export async function removeMember(projectId: number, leaderId: number, targetUs
     if (membership.status != "active") {
         throw new ConflictError("This member is not currently active in the project");
     }
-
     return db.transaction(async (trx) => {
         await projectMemberRepo.removeMember(projectId, targetUserId, trx);
         await taskRepo.unassignTask(projectId, targetUserId, trx);
