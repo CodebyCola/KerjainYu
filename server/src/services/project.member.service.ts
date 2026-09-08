@@ -34,8 +34,11 @@ export async function promoteToLeader(projectId: number, currentLeaderId: number
 //DELETE /api/v1/projects/:id/members/:userId
 export async function removeMember(projectId: number, leaderId: number, targetUserId: number) {
     const project = await projectRepo.getProjectById(projectId)
+    if (!project) {
+        throw new NotFoundError("Project Not Found")
+    }
     await assertProjectIsActive({
-        status: project!.status, isArchived: project!.isArchived
+        status: project.status, isArchived: project.isArchived
     })
     await assertProjectLeader(projectId, leaderId);
     if (targetUserId == leaderId) {
