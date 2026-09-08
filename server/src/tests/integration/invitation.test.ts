@@ -3,6 +3,7 @@ import request from 'supertest';
 import app from '../../app';
 import { cleanDatabase, closeDb } from '../helpers/testDb';
 import { registerAndLogin } from '../helpers/auth';
+import { db } from '../../database/db';
 
 export async function createProject(cookie: string) {
     const projectResult = await request(app)
@@ -153,6 +154,41 @@ describe('POST /api/v1/projects/:id/invitations', () => {
             .send({ userId: 1 });
 
         expect(res.status).toBe(401);
+    });
+    it('should reject inviting when project is archived', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const invitee = await registerAndLogin("sari");
+
+        await db("projects").where({ id: projectId }).update({ isArchived: true });
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/invitations`)
+            .set('Cookie', leader.cookie)
+            .send({ userId: invitee.userId });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('should reject inviting when project is completed', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const invitee = await registerAndLogin("sari");
+
+        await db("projects").where({ id: projectId }).update({ status: "completed" });
+
+        const res = await request(app)
+            .post(`/api/v1/projects/${projectId}/invitations`)
+            .set('Cookie', leader.cookie)
+            .send({ userId: invitee.userId });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
     });
 });
 

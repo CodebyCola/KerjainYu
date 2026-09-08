@@ -171,6 +171,42 @@ describe('PATCH /api/v1/projects/:id/leader', () => {
         expect(oldLeaderTaskRes.status).toBe(403);
     });
 
+    it('should reject leadership transfer when project is archived', async () => {
+        const oldLeader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(oldLeader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const newLeader = await inviteAndAccept(oldLeader.cookie, projectId);
+
+        await db("projects").where({ id: projectId }).update({ isArchived: true });
+
+        const res = await request(app)
+            .patch(`/api/v1/projects/${projectId}/leader`)
+            .set('Cookie', oldLeader.cookie)
+            .send({ userId: newLeader.userId });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('should reject leadership transfer when project is completed', async () => {
+        const oldLeader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(oldLeader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const newLeader = await inviteAndAccept(oldLeader.cookie, projectId);
+
+        await db("projects").where({ id: projectId }).update({ status: "completed" });
+
+        const res = await request(app)
+            .patch(`/api/v1/projects/${projectId}/leader`)
+            .set('Cookie', oldLeader.cookie)
+            .send({ userId: newLeader.userId });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+    });
+
     it('should reject transferring leadership to yourself', async () => {
         const leader = await registerAndLogin("budiman");
         const { projectResult } = await createProject(leader.cookie);
@@ -493,6 +529,39 @@ describe("DELETE /api/v1/projects/:id/members/:userId", () => {
         expect(task.assigneeId).toBeNull();
         expect(task.status).toBe("unclaimed")
     });
+    it("should reject removing a member when project is archived", async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(leader.cookie, projectId, "sari");
+
+        await db("projects").where({ id: projectId }).update({ isArchived: true });
+
+        const res = await request(app)
+            .delete(`/api/v1/projects/${projectId}/members/${member.userId}`)
+            .set("Cookie", leader.cookie);
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe("CONFLICT");
+    });
+
+    it("should reject removing a member when project is completed", async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const member = await inviteAndAccept(leader.cookie, projectId, "sari");
+
+        await db("projects").where({ id: projectId }).update({ status: "completed" });
+
+        const res = await request(app)
+            .delete(`/api/v1/projects/${projectId}/members/${member.userId}`)
+            .set("Cookie", leader.cookie);
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe("CONFLICT");
+    });
 
     it("should reject a non-leader member from removing another member", async () => {
         const leader = await registerAndLogin("budiman");
@@ -596,7 +665,7 @@ describe("DELETE /api/v1/projects/:id/members/:userId", () => {
                 `/api/v1/projects/999999/members/${target.userId}`
             )
             .set("Cookie", leader.cookie);
-
+        console.log(res.body)
         expect(res.status).toBe(404);
         expect(res.body.error.code).toBe("NOT_FOUND");
     });
