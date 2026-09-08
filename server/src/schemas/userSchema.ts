@@ -85,7 +85,7 @@ export const changePasswordSchema = z
   .openapi("ChangePasswordInput");
 
 export const userIdParams = z.object({
-  userId: z.coerce.number()
+  userId: z.coerce.number().int().positive()
 })
 
 export const searchUserQuerySchema = z.object({
