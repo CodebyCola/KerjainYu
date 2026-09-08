@@ -32,7 +32,7 @@ describe('GET /api/v1/projects/:id/members', () => {
         expect(res.body.data[0].status).toBe('active');
     });
 
-    it.skip('should be visible to any active member, not just the leader', async () => {
+    it('should be visible to any active member, not just the leader', async () => {
         // Catatan: test ini butuh cara menambahkan member kedua ke project.
         // Jika endpoint "add member" / "accept invite" belum ada, skip dulu
         // test ini (it.skip) dan tambahkan lagi begitu endpoint itu dibuat —
