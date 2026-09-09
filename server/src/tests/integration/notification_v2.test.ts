@@ -37,13 +37,13 @@ describe('GET /api/v1/notifications/me', () => {
 
         const res = await request(app).get('/api/v1/notifications/me').set('Cookie', cookie);
 
-        expect(res.status).toBe(200);// Contoh perbaikan pada file test (Jest)
+        expect(res.status).toBe(200);
         expect(res.body.data).toEqual({
             notifications: [],
-            unreadCount: 0
+            unreadNotificationCount: 0
         });
 
-        expect(res.body.data.unreadCount).toBe(0);
+        expect(res.body.data.unreadNotificationCount).toBe(0);
     });
 
     it('should return notifications belonging to the current user with correct unread count', async () => {
@@ -58,7 +58,7 @@ describe('GET /api/v1/notifications/me', () => {
         expect(res.body.data.notifications.length).toBe(1);
         expect(res.body.data.notifications[0].type).toBe('member_invited');
         expect(res.body.data.notifications[0].isRead).toBe(false);
-        expect(res.body.data.unreadCount).toBe(1);
+        expect(res.body.data.unreadNotificationCount).toBe(1);
     });
 
     it('should not show notifications belonging to a different user', async () => {
@@ -183,7 +183,7 @@ describe('POST /api/v1/notifications/read-all', () => {
 
         const res = await request(app).post('/api/v1/notifications/read-all').set('Cookie', invitee.cookie);
         expect(res.status).toBe(200);
-        expect(res.body.data).toBe(3);
+        expect(res.body.data.updatedCount).toBe(3);
 
         const unreadRows = await db('notifications').where({ userId: invitee.userId, isRead: false });
         expect(unreadRows.length).toBe(0);
@@ -195,7 +195,7 @@ describe('POST /api/v1/notifications/read-all', () => {
         const res = await request(app).post('/api/v1/notifications/read-all').set('Cookie', cookie);
 
         expect(res.status).toBe(200);
-        expect(res.body.data).toBe(0);
+        expect(res.body.data.updatedCount).toBe(0);
     });
 
     it('should not affect another user\'s notifications', async () => {
@@ -230,12 +230,11 @@ describe('DELETE /api/v1/notifications/:id', () => {
 
         const listRes = await request(app).get('/api/v1/notifications/me').set('Cookie', invitee.cookie);
         const notificationId = listRes.body.data.notifications[0].id;
-
         const res = await request(app)
             .delete(`/api/v1/notifications/${notificationId}`)
             .set('Cookie', invitee.cookie);
 
-        expect(res.status).toBe(204);
+        expect(res.body).toBe(204);
 
         const row = await db('notifications').where({ id: notificationId }).first();
         expect(row).toBeUndefined();
