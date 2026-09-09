@@ -1,45 +1,54 @@
 services:
   db:
     image: postgres:16-alpine
+    container_name: kerjainyu-db-dev
     restart: always
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: kerjainyu
-      POSTGRES_PASSWORD: kerjainyu123
-      POSTGRES_DB: kerjainyu_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U kerjainyu -d kerjainyu_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 2s
       timeout: 5s
       retries: 10
 
   db_test:
     image: postgres:16-alpine
+    container_name: kerjainyu-db-test
+    env_file:
+      - .env.test
     environment:
-      POSTGRES_USER: kerjainyu
-      POSTGRES_PASSWORD: kerjainyu123
-      POSTGRES_DB: kerjainyu_test_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME_TEST}
     ports:
       - "5433:5432"
+    volumes:
+      - pgdata_test:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U kerjainyu -d kerjainyu_test_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME_TEST}" ]
       interval: 2s
       retries: 10
 
   minio:
-    image: minio/minio
+    image: minio/minio:latest
     container_name: kerjainyu-minio
     ports:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
     volumes:
       - minio_data:/data
+    entrypoint: [ "/usr/bin/minio" ]
     command: server /data --console-address ":9001"
 
   redis:
@@ -53,5 +62,6 @@ services:
 
 volumes:
   pgdata:
+  pgdata_test:
   minio_data:
   redis_data:

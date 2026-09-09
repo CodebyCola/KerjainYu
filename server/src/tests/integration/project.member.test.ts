@@ -435,7 +435,7 @@ describe("POST /api/v1/projects/:id/leave", () => {
     });
 });
 
-describe("DELETE /api/v1/projects/:id/members/:userId", () => {
+describe("c /api/v1/projects/:id/members/:userId", () => {
     beforeEach(async () => {
         await cleanDatabase();
     });
