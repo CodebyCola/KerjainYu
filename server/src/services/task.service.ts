@@ -18,17 +18,11 @@ export async function createTask(
   input: taskInput.CreateTaskInput,
 ) {
   const { project } = await assertProjectLeader(projectId, userId);
-  assertProjectIsActive(project);
-
-  let status: taskInput.TaskStatusSchema = "unclaimed";
-  if (input.isClaimable === false) {
-    await assertProjectMembership(projectId, input.assigneeId!);
-    status = "todo";
-  }
+  await assertProjectIsActive(project);
 
   const tasks = await taskRepo.createTask(
     projectId,
-    { ...input, status },
+    { ...input, },
     userId,
   );
   return tasks;

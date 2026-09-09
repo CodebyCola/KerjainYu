@@ -10,7 +10,6 @@ export async function createTask(
     status: TaskStatusSchema;
     priority?: number;
     isClaimable: boolean;
-    assigneeId?: number;
     deadline?: Date;
   },
   createdBy: number,

@@ -5,13 +5,9 @@ import { cleanDatabase, closeDb } from '../helpers/testDb';
 import { registerAndLogin } from '../helpers/auth';
 import { createProject, inviteAndAccept } from '../helpers/project';
 import { db } from '../../database/db';
+import { createTask } from '../helpers/task';
 
-async function createTask(leaderCookie: string, projectId: number, overrides: Record<string, any> = {}) {
-    return request(app)
-        .post(`/api/v1/projects/${projectId}/tasks`)
-        .set('Cookie', leaderCookie)
-        .send({ title: 'Setup CI/CD pipeline', isClaimable: true, ...overrides });
-}
+
 
 afterAll(async () => {
     await closeDb();
@@ -152,51 +148,6 @@ describe('POST /api/v1/projects/:id/tasks', () => {
     it.skip('should reject task creation from a member who is not the leader', async () => {
     });
 
-    it('should create a pre-assigned task directly in todo status when isClaimable is false', async () => {
-        const leader = await registerAndLogin("budiman");
-        const { projectResult } = await createProject(leader.cookie);
-        const projectId = projectResult.body.data.id;
-        const member = await inviteAndAccept(leader.cookie, projectId);
-
-        const res = await request(app)
-            .post(`/api/v1/projects/${projectId}/tasks`)
-            .set('Cookie', leader.cookie)
-            .send({ title: 'Pre-assigned task', isClaimable: false, assigneeId: member.userId });
-
-        expect(res.status).toBe(201);
-        expect(res.body.data.status).toBe('todo');
-        expect(res.body.data.assigneeId).toBe(member.userId);
-        expect(res.body.data.isClaimable).toBe(false);
-    });
-
-    it('should reject creating a non-claimable task without an assigneeId', async () => {
-        const { cookie } = await registerAndLogin("budiman");
-        const { projectResult } = await createProject(cookie);
-        const projectId = projectResult.body.data.id;
-
-        const res = await request(app)
-            .post(`/api/v1/projects/${projectId}/tasks`)
-            .set('Cookie', cookie)
-            .send({ title: 'Missing assignee', isClaimable: false });
-
-        expect(res.status).toBe(400);
-        expect(res.body.error.code).toBe('VALIDATION_ERROR');
-    });
-
-    it('should reject creating a claimable task that also specifies an assigneeId', async () => {
-        const leader = await registerAndLogin("budiman");
-        const { projectResult } = await createProject(leader.cookie);
-        const projectId = projectResult.body.data.id;
-        const member = await inviteAndAccept(leader.cookie, projectId);
-
-        const res = await request(app)
-            .post(`/api/v1/projects/${projectId}/tasks`)
-            .set('Cookie', leader.cookie)
-            .send({ title: 'Contradictory task', isClaimable: true, assigneeId: member.userId });
-
-        expect(res.status).toBe(400);
-        expect(res.body.error.code).toBe('VALIDATION_ERROR');
-    });
 
     it('should reject pre-assigning a task to a user who is not a project member', async () => {
         const { cookie } = await registerAndLogin("budiman");
@@ -204,11 +155,11 @@ describe('POST /api/v1/projects/:id/tasks', () => {
         const projectId = projectResult.body.data.id;
         const { userId: strangerId } = await registerAndLogin("bukan_member");
 
-        const res = await request(app)
+        const task = await request(app)
             .post(`/api/v1/projects/${projectId}/tasks`)
             .set('Cookie', cookie)
-            .send({ title: 'Assign to stranger', isClaimable: false, assigneeId: strangerId });
-
+            .send({ title: 'Assign to stranger', isClaimable: false });
+        const res = await (await request(app).patch(`/api/v1/tasks/${task.body.data.id}/assign`).set('Cookie', cookie).send({ userId: strangerId }))
         expect(res.status).toBe(403);
         expect(res.body.error.code).toBe('FORBIDDEN');
     });

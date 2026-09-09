@@ -76,7 +76,7 @@ registry.registerPath({
     path: "/api/v1/projects/{id}/tasks",
     tags: ["Tasks"],
     summary: "Create a new task within a project",
-    description: "Only the project leader can create tasks. `createdBy` is taken from the authenticated user, not from the request body. If `isClaimable` is false, `assigneeId` is required (must be an active project member) and the task is created directly with status `todo`. If `isClaimable` is true (the default), `assigneeId` must not be provided and the task is created with status `unclaimed`, available in the task pool for members to claim.",
+    description: "Only the project leader can create tasks. `createdBy` is taken from the authenticated user, not from the request body.",
     security: [{ cookieAuth: [] }],
     request: {
         params: idParams,

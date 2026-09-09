@@ -37,38 +37,12 @@ export const createTaskSchema = z
       .default(true)
       .openapi({ example: true }),
 
-    assigneeId: z.coerce.number().int().positive().optional().openapi({ example: 7 }),
-
     deadline: deadlineSchema.optional().openapi({
       example: "2026-09-20T00:00:00.000Z",
     }),
 
   })
   .strict()
-  .refine(
-    (data) => {
-      if (data.isClaimable === false) {
-        return data.assigneeId !== undefined && data.assigneeId !== null;
-      }
-      return true;
-    },
-    {
-      message: "assigneeId is required when isClaimable is false",
-      path: ["assigneeId"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (data.isClaimable === true && data.assigneeId !== undefined) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "assigneeId must not be provided when isClaimable is true",
-      path: ["assigneeId"],
-    },
-  )
   .openapi("CreateTaskInput");
 
 export const updateTaskSchema = z
