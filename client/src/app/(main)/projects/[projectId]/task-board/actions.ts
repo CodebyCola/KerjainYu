@@ -30,7 +30,7 @@ import {
 } from "@/types/task";
 import { TaskFormState } from "@/lib/api/tasks/taskFormState";
 import { validateCreateTaskFields } from "@/lib/validation/taskSchema";
-import { projectRoutes, taskDetailRoute } from "@/lib/routes";
+import { ROUTES, projectRoutes, taskDetailRoute } from "@/lib/routes";
 
 export type TransitionTaskState = {
   success: boolean;
@@ -349,6 +349,8 @@ export async function respondToSwapRequestAction(
   swapRequestId: number,
   status: "approved" | "rejected",
   projectId: string,
+  taskId?: number,
+  targetTaskId?: number | null,
 ): Promise<SwapRequestState> {
   try {
     const cookieStore = await cookies();
@@ -366,6 +368,13 @@ export async function respondToSwapRequestAction(
   }
 
   revalidatePath(projectRoutes(projectId).TASK_BOARD);
+  if (taskId != null) {
+    revalidatePath(taskDetailRoute(projectId, taskId));
+  }
+  if (targetTaskId != null) {
+    revalidatePath(taskDetailRoute(projectId, targetTaskId));
+  }
+  revalidatePath(ROUTES.MY_TASK);
   return { success: true, error: null };
 }
 
