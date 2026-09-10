@@ -27,9 +27,10 @@ export async function deleteComment(id: number) {
             deleted_at: db.fn.now(),
         });
 }
+
 export async function getCommentsByTask(taskId: number) {
     return db("comments_task")
-        .where({ taskId })
+        .where({ taskId, deleted_at:null })
         .join('users', 'users.id', 'comments_task.user_id')
         .orderBy('comments_task.created_at', 'asc')
         .select(

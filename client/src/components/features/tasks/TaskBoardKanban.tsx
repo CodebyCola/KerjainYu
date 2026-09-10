@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Task, TaskStatus } from "@/types/task";
 import { ProjectMember } from "@/types/project";
 import { BOARD_COLUMNS, getColumnForStatus } from "@/lib/api/tasks/taskStatus";
@@ -21,12 +21,14 @@ export default function TaskBoardKanban({
     isLeader,
     members,
 }: TaskBoardKanbanProps) {
-    // Optimistic status override: begitu user menekan aksi, langsung
-    // pindahkan card ke kolom baru tanpa menunggu response server. Kalau
-    // action gagal, TaskBoardCard menampilkan error tapi kita sengaja tidak
-    // membatalkan pindahan supaya tidak "lompat" bolak-balik — revalidatePath
-    // dari server action akan menyinkronkan ulang begitu berhasil.
     const [overrides, setOverrides] = useState<Record<number, TaskStatus>>({});
+    const tasksRef = useRef(tasks);
+    useEffect(() => {
+        if (tasksRef.current !== tasks) {
+            tasksRef.current = tasks;
+            setOverrides({});
+        }
+    }, [tasks]);
 
     const effectiveTasks = useMemo(
         () => tasks.map((task) => (overrides[task.id] ? { ...task, status: overrides[task.id] } : task)),

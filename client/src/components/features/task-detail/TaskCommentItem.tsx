@@ -26,13 +26,19 @@ export default function TaskCommentItem({ comment, projectId, taskId }: TaskComm
     const user = useSession();
     const [isPending, startTransition] = useTransition();
     const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     // Bandingkan sebagai string — kolom bigint dari backend bisa berupa
     // string di JSON walau tipe TS-nya `number`.
     const isOwner = user != null && String(user.id) === String(comment.userId);
 
     function handleDelete() {
+        setError(null);
         startTransition(async () => {
-            await deleteTaskCommentAction(projectId, taskId, comment.id);
+            const result = await deleteTaskCommentAction(projectId, taskId, comment.id);
+            if (!result.success) {
+                setError(result.error ?? "Gagal menghapus komentar.");
+                return;
+            }
             setConfirmingDelete(false);
         });
     }
@@ -49,6 +55,10 @@ export default function TaskCommentItem({ comment, projectId, taskId }: TaskComm
                     <span className="shrink-0 text-[11px] font-inter text-muted">{formatDateTime(comment.createdAt)}</span>
                 </div>
                 <p className="whitespace-pre-wrap text-sm font-inter text-foreground">{comment.comment}</p>
+
+                {error && (
+                    <p className="mt-1 text-xs font-inter text-status-blocked-text">{error}</p>
+                )}
 
                 {isOwner && (
                     <div className="mt-1 -ml-2">

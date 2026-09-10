@@ -103,6 +103,8 @@ export default function NotificationModal({ isOpen, onClose }: NotificationModal
                 request.id,
                 status,
                 String(request.task.projectId),
+                request.task.id,
+                request.targetTask?.id ?? null,
             );
             setRespondingSwapId(null);
 
