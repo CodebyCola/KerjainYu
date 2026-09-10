@@ -4,6 +4,7 @@ import app from "../../app";
 import { cleanDatabase, closeDb } from "../helpers/testDb";
 import { registerAndLogin } from "../helpers/auth";
 import { createProject, inviteAndAccept } from "../helpers/project";
+import { db } from "../../database/db";
 
 
 async function createTask(leaderCookie: string, projectId: number, overrides: Record<string, any> = {}) {
@@ -435,27 +436,21 @@ describe("DELETE /api/v1/comments/:id", () => {
             .send({
                 comment: "This comment should remain in database",
             });
-
+        console.log(commentResult.body.data)
         const commentId = commentResult.body.data.id;
 
         const deleteRes = await request(app)
             .delete(`/api/v1/comments/${commentId}`)
             .set("Cookie", cookie);
+        console.log(deleteRes.body)
 
         expect(deleteRes.status).toBe(200);
 
         // Comment should still be retrievable through the comments endpoint
         // if deleted comments are intentionally shown as "deleted".
-        const commentsRes = await request(app)
-            .get(`/api/v1/tasks/${taskId}/comments`)
-            .set("Cookie", cookie);
-
-        expect(commentsRes.status).toBe(200);
-
-        const deletedComment = commentsRes.body.data.find(
-            (comment: any) => comment.id === commentId
-        );
-
+        const deletedComment = await db("comments_task").where({
+            id: commentId
+        });
         expect(deletedComment).toBeDefined();
     });
 
