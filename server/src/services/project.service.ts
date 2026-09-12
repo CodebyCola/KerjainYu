@@ -55,8 +55,9 @@ export async function inviteMember(projectId: number, leaderId: number, targetUs
   return db.transaction(async (trx) => {
     await notifyUser({ userId: prospectiveMember.id, type: "member_invited", referenceType: "project", referenceId: projectId, message: "You got invited to join this project" }, trx)
     if (existing) {
-      //re-invite after the invitation before got rejected
-      return await projectMemberRepo.updateMembershipStatus(existing.id, "invited", trx)
+      //re-invite after the invitation before got rejected (or after removal): reset joined_at
+      //explicitly since this membership is back to "not yet joined"
+      return await projectMemberRepo.resetToInvited(existing.id, trx)
     }
     return await projectMemberRepo.addMember(projectId, prospectiveMember.id, trx)
   })
