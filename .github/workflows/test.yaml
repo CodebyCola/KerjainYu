@@ -59,7 +59,7 @@ jobs:
             -p 9001:9001 \
             -e MINIO_ROOT_USER=ci_minio_user \
             -e MINIO_ROOT_PASSWORD=ci_minio_pass \
-            quay.io/minio/minio:RELEASE.2024-08-26T13-52-28Z server /data --console-address ":9001"
+            quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data --console-address ":9001"
 
       - name: Wait for MinIO to be healthy
         run: |
