@@ -3,8 +3,6 @@ import { findById } from "../database/repositories/user.repository";
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
 import { db } from "../database/db";
 import { notifyUser } from "./notification.service";
-import { timeStamp } from "node:console";
-
 
 export async function getAllInvitations(userId: number) {
     return projectMemberRepo.getInvitations(userId)
@@ -25,8 +23,8 @@ export async function respondToInvitation(membershipId: number, userId: number, 
     const newStatus = response === 'accept' ? 'active' : 'rejected'
 
     return db.transaction(async (trx) => {
-        const timestamp = new Date()
-        const updated = await projectMemberRepo.updateMembershipStatus(membership.id, newStatus, trx, timestamp)
+        const joinedAt = response === 'accept' ? new Date() : undefined
+        const updated = await projectMemberRepo.updateMembershipStatus(membership.id, newStatus, trx, joinedAt)
         if (response === 'accept') {
             const leader = await projectMemberRepo.getProjectLeader(membership.projectId)
             if (leader) {

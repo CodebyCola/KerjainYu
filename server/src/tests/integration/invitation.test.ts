@@ -190,6 +190,176 @@ describe('POST /api/v1/projects/:id/invitations', () => {
         expect(res.status).toBe(409);
         expect(res.body.error.code).toBe('CONFLICT');
     });
+
+    it('should let a leader re-invite a user who previously rejected, with a fresh joinedAt on accept', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const invitee = await registerAndLogin("sari");
+
+        // first invite, then reject
+        await request(app)
+            .post(`/api/v1/projects/${projectId}/invitations`)
+            .set('Cookie', leader.cookie)
+            .send({ userId: invitee.userId });
+
+        const firstInvitationRes = await request(app).get('/api/v1/invitations').set('Cookie', invitee.cookie);
+        const firstInvitationId = firstInvitationRes.body.data[0].id;
+        await request(app)
+            .patch(`/api/v1/invitations/${firstInvitationId}`)
+            .set('Cookie', invitee.cookie)
+            .send({ status: 'reject' });
+
+        // leader re-invites the same user
+        const reInviteRes = await request(app)
+            .post(`/api/v1/projects/${projectId}/invitations`)
+            .set('Cookie', leader.cookie)
+            .send({ userId: invitee.userId });
+        expect(reInviteRes.status).toBe(200);
+
+        const invitationsRes = await request(app).get('/api/v1/invitations').set('Cookie', invitee.cookie);
+        expect(invitationsRes.body.data.length).toBe(1);
+        const invitationId = invitationsRes.body.data[0].id;
+
+        // the reset row must not carry over joined_at from any earlier state
+        const beforeAccept = await db("project_members").where({ id: invitationId }).first();
+        expect(beforeAccept.status).toBe('invited');
+        expect(beforeAccept.joinedAt).toBeNull();
+
+        const beforeAcceptTime = Date.now();
+        const acceptRes = await request(app)
+            .patch(`/api/v1/invitations/${invitationId}`)
+            .set('Cookie', invitee.cookie)
+            .send({ status: 'accept' });
+        expect(acceptRes.status).toBe(200);
+
+        const afterAccept = await db("project_members").where({ id: invitationId }).first();
+        expect(afterAccept.status).toBe('active');
+        expect(afterAccept.joinedAt).not.toBeNull();
+        expect(new Date(afterAccept.joinedAt).getTime()).toBeGreaterThanOrEqual(beforeAcceptTime - 5000);
+    });
+});
+
+describe('PATCH /api/v1/invitations/:id', () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+    });
+
+    it('should set status to active and fill joinedAt when invitee accepts', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const invitee = await registerAndLogin("sari");
+        await request(app)
+            .post(`/api/v1/projects/${projectId}/invitations`)
+            .set('Cookie', leader.cookie)
+            .send({ userId: invitee.userId });
+
+        const invitationsRes = await request(app).get('/api/v1/invitations').set('Cookie', invitee.cookie);
+        const invitationId = invitationsRes.body.data[0].id;
+
+        const res = await request(app)
+            .patch(`/api/v1/invitations/${invitationId}`)
+            .set('Cookie', invitee.cookie)
+            .send({ status: 'accept' });
+
+        expect(res.status).toBe(200);
+
+        const row = await db("project_members").where({ id: invitationId }).first();
+        expect(row.status).toBe('active');
+        expect(row.joinedAt).not.toBeNull();
+    });
+
+    it('should set status to rejected and leave joinedAt null when invitee rejects', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const invitee = await registerAndLogin("sari");
+        await request(app)
+            .post(`/api/v1/projects/${projectId}/invitations`)
+            .set('Cookie', leader.cookie)
+            .send({ userId: invitee.userId });
+
+        const invitationsRes = await request(app).get('/api/v1/invitations').set('Cookie', invitee.cookie);
+        const invitationId = invitationsRes.body.data[0].id;
+
+        const res = await request(app)
+            .patch(`/api/v1/invitations/${invitationId}`)
+            .set('Cookie', invitee.cookie)
+            .send({ status: 'reject' });
+
+        expect(res.status).toBe(200);
+
+        const row = await db("project_members").where({ id: invitationId }).first();
+        expect(row.status).toBe('rejected');
+        expect(row.joinedAt).toBeNull();
+    });
+
+    it('should reject when a user who is not the invitee tries to respond', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const invitee = await registerAndLogin("sari");
+        await request(app)
+            .post(`/api/v1/projects/${projectId}/invitations`)
+            .set('Cookie', leader.cookie)
+            .send({ userId: invitee.userId });
+
+        const invitationsRes = await request(app).get('/api/v1/invitations').set('Cookie', invitee.cookie);
+        const invitationId = invitationsRes.body.data[0].id;
+
+        const { cookie: strangerCookie } = await registerAndLogin("bukan_invitee");
+
+        const res = await request(app)
+            .patch(`/api/v1/invitations/${invitationId}`)
+            .set('Cookie', strangerCookie)
+            .send({ status: 'accept' });
+
+        expect(res.status).toBe(403);
+    });
+
+    it('should reject responding twice to the same invitation', async () => {
+        const leader = await registerAndLogin("budiman");
+        const { projectResult } = await createProject(leader.cookie);
+        const projectId = projectResult.body.data.id;
+
+        const invitee = await registerAndLogin("sari");
+        await request(app)
+            .post(`/api/v1/projects/${projectId}/invitations`)
+            .set('Cookie', leader.cookie)
+            .send({ userId: invitee.userId });
+
+        const invitationsRes = await request(app).get('/api/v1/invitations').set('Cookie', invitee.cookie);
+        const invitationId = invitationsRes.body.data[0].id;
+
+        await request(app)
+            .patch(`/api/v1/invitations/${invitationId}`)
+            .set('Cookie', invitee.cookie)
+            .send({ status: 'accept' });
+
+        const res = await request(app)
+            .patch(`/api/v1/invitations/${invitationId}`)
+            .set('Cookie', invitee.cookie)
+            .send({ status: 'reject' });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+    });
+
+    it('should return 404 when responding to a non-existent invitation', async () => {
+        const invitee = await registerAndLogin("sari");
+
+        const res = await request(app)
+            .patch(`/api/v1/invitations/999999`)
+            .set('Cookie', invitee.cookie)
+            .send({ status: 'accept' });
+
+        expect(res.status).toBe(404);
+    });
 });
 
 describe('GET /api/v1/users/search', () => {
