@@ -78,7 +78,7 @@ jobs:
       - name: Create MinIO bucket
         run: |
           docker run --rm --network host \
-            --entrypoint sh quay.io/minio/mc:RELEASE.2024-08-26T13-52-28Z -c "
+            --entrypoint sh quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z -c "
             mc alias set local http://localhost:9000 ci_minio_user ci_minio_pass &&
             mc mb --ignore-existing local/${{ secrets.S3_BUCKET }}
           "
