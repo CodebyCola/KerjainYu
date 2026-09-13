@@ -55,7 +55,7 @@ jobs:
       # MinIO can't be declared as a `services:` container because GitHub
       # Actions services don't support custom `command:` — so it's run
       # manually as a background container instead.
-      - name: Start MinIO
+            - name: Start MinIO
         run: |
           docker run -d \
             --name minio \
@@ -63,7 +63,7 @@ jobs:
             -p 9001:9001 \
             -e MINIO_ROOT_USER=ci_minio_user \
             -e MINIO_ROOT_PASSWORD=ci_minio_pass \
-            minio/minio:latest server /data --console-address ":9001"
+            minio/minio:RELEASE.2024-08-26T13-52-28Z server /data --console-address ":9001"
 
       - name: Wait for MinIO to be healthy
         run: |
@@ -82,7 +82,7 @@ jobs:
       - name: Create MinIO bucket
         run: |
           docker run --rm --network host \
-            --entrypoint sh minio/mc:latest -c "
+            --entrypoint sh minio/mc:RELEASE.2024-08-26T13-52-28Z -c "
             mc alias set local http://localhost:9000 ci_minio_user ci_minio_pass &&
             mc mb --ignore-existing local/${{ secrets.S3_BUCKET }}
           "
