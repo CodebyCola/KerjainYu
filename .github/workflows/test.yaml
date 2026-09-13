@@ -55,7 +55,7 @@ jobs:
       # MinIO can't be declared as a `services:` container because GitHub
       # Actions services don't support custom `command:` — so it's run
       # manually as a background container instead.
-            - name: Start MinIO
+      - name: Start MinIO
         run: |
           docker run -d \
             --name minio \
